@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package api;
+
+enum ErrorCode {
+	INTERNAL_ERROR = 0;
+	OK = 1;
+	
+	ACCESS_DENIED = 2;
+	INVALID_SERVICE = 3;
+	INVALID_QUERY = 4;
+	INVALID_CREDENTIALS = 5;
+
+	SESSION_ALREADY_IN_USE = 6;
+}
+
+message Response {
+	ErrorCode code = 1;
+	int64 seq_id = 3;
+	bytes response = 2;
+}
+
+// Route /status
+message StatusResponse {
+	string version = 1;
+	string build_type = 2;
+	int64 server_time = 3;
+}

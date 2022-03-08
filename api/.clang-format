@@ -1,0 +1,37 @@
+BasedOnStyle: Google
+IndentWidth: 4
+
+TabWidth: 4
+UseTab: ForContinuationAndIndentation
+AccessModifierOffset: -4
+NamespaceIndentation: Inner
+DerivePointerAlignment: false
+PointerAlignment: Right
+AllowShortBlocksOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortLoopsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: Never
+SpaceAfterCStyleCast: true
+ColumnLimit: 100
+IndentCaseBlocks: false
+
+IndentPPDirectives: AfterHash
+IncludeCategories:
+  - Regex:           '^<ext/.*\.h>'
+    Priority:        2
+    SortPriority:    0
+  - Regex:           '^\"stdafx\.h\"'
+    Priority:        0
+    SortPriority:    0
+  - Regex:           '^\"config\.h\"'
+    Priority:        0
+    SortPriority:    1
+  - Regex:           '^<.*\.h>'
+    Priority:        1
+    SortPriority:    0
+  - Regex:           '^<.*'
+    Priority:        2
+    SortPriority:    0
+  - Regex:           '.*'
+    Priority:        3
+    SortPriority:    0

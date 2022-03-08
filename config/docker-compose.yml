@@ -1,0 +1,15 @@
+version: '3.3'
+
+services:
+  postgresql:
+    ports:
+      - "5432:5432"
+    
+    build: ./postgresql
+
+    container_name: kege_postgresql
+
+    environment:
+      - POSTGRES_USER=kege
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=kege

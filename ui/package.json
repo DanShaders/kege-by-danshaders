@@ -1,0 +1,30 @@
+{
+  "name": "kege-by-danshaders-ui",
+  "version": "0.0.0",
+  "description": "Web Interface for KEGE by DanShaders",
+  "author": "Dan Klishch",
+  "license": "MIT",
+  "scripts": {
+    "build": "node tools/build.js dev",
+    "watch": "node tools/build.js watch",
+    "build-prod": "node tools/build.js prod",
+    "prettify": "prettier --write .",
+    "lint": "shopt -s globstar && GLOBIGNORE='src/proto/*' && eslint src/**/*.ts tools/**/*",
+    "gen-proto": "mkdir -p src/proto && protoc --plugin=\"protoc-gen-ts=./node_modules/.bin/protoc-gen-ts\" --js_out=\"import_style=commonjs,binary:./src/proto\" --ts_out=\"./src/proto\" -I ../proto api.proto"
+  },
+  "devDependencies": {
+    "@types/google-protobuf": "^3.15.5",
+    "@typescript-eslint/eslint-plugin": "^5.14.0",
+    "@typescript-eslint/parser": "^5.14.0",
+    "esbuild": "^0.14.25",
+    "eslint": "^8.10.0",
+    "eslint-config-google": "^0.14.0",
+    "eslint-config-prettier": "^8.5.0",
+    "prettier": "^2.5.1",
+    "ts-protoc-gen": "github:DanShaders/ts-protoc-gen#set-return-type",
+    "typescript": "^4.6.2"
+  },
+  "dependencies": {
+    "google-protobuf": "^3.20.0-rc.1"
+  }
+}

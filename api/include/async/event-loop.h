@@ -91,16 +91,6 @@ public:
 };
 
 namespace detail {
-	/* from https://stackoverflow.com/questions/16868129 */
-	template <int... Is>
-	struct index {};
-
-	template <int N, int... Is>
-	struct gen_seq : gen_seq<N - 1, N - 1, Is...> {};
-
-	template <int... Is>
-	struct gen_seq<0, Is...> : index<Is...> {};
-
 	void log_top_level_exception(const std::string & = "");
 }  // namespace detail
 

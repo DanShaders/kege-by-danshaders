@@ -18,8 +18,8 @@ inline void coro<T>::void_promise_type::return_void() {}
 
 /* ==== async::coro<T>::value_promise_type ==== */
 template <typename T>
-inline void coro<T>::value_promise_type::return_value(const T &&value) {
-	this->ret_val = value;
+inline void coro<T>::value_promise_type::return_value(T &&value) {
+	this->ret_val = std::move(value);
 }
 
 template <typename T>

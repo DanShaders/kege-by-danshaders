@@ -7,6 +7,7 @@
 #include "async/coro.h"
 #include "async/curl.h"
 #include "async/libev-event-loop.h"
+#include "async/pq.h"
 #include "logging.h"
 #include "routes.h"
 
@@ -86,10 +87,16 @@ signed main() {
 		data.loop->run(false);
 	};
 
+	async::pq::connection_pool::creation_info pq_creation_info = {
+		.db_path = conf.db.path,
+		.connections = conf.db.connections,
+		.creation_cooldown = std::chrono::milliseconds(conf.db.cooldown)};
+
 	for (std::size_t worker = 0; worker < conf.request_workers; ++worker) {
 		auto &data = workers[worker];
 		data.loop = std::make_shared<async::libev_event_loop>();
 		data.loop->register_source(std::make_shared<async::curl_event_source>());
+		data.loop->register_source(std::make_shared<async::pq::connection_pool>(pq_creation_info));
 		data.loop->register_source(std::make_shared<fcgx::server>(
 			socket_address_apply_id(conf.fastcgi, worker), FCGI_QUEUE_SIZE,
 			[](FCGX_Request *raw) { schedule_detached(perform_request_wrap(raw)); }));

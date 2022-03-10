@@ -24,8 +24,8 @@ void stackful_resume(void *);
 }  // namespace detail
 
 template <typename Func, typename... Args>
-template <int... Is>
-inline void stackful<Func, Args...>::invoke2(detail::index<Is...>) {
+template <std::size_t... Is>
+inline void stackful<Func, Args...>::invoke2(std::index_sequence<Is...>) {
 	try {
 		if constexpr (std::is_same_v<void, return_t>) {
 			func(std::get<Is>(args)...);
@@ -49,7 +49,7 @@ inline void stackful<Func, Args...>::invoke() {
 	auto ctx = (detail::stackful_context *) context;
 	detail::stackful_asan_finish_switch(0, &(ctx->stack_bottom), &(ctx->stack_size));
 #endif
-	invoke2(detail::gen_seq<sizeof...(Args)>());
+	invoke2(std::index_sequence_for<Args...>{});
 }
 
 template <typename Func, typename... Args>

@@ -22,8 +22,8 @@ set(
 	src/async/future.cc
 	src/async/libev-event-loop.cc
 	src/async/mutex.cc
+	src/async/pq.cc
 	src/async/stackful.cc
-	src/async/websocket.cc
 	src/config.cc
 	src/fcgx.cc
 	src/logging.cc
@@ -47,28 +47,6 @@ set(
 	PROTO_SOURCES
 	../proto/api.proto
 )
-
-
-# ==== Target libwebsockets ====
-ExternalProject_Add(
-	WEBSOCKETS
-	GIT_REPOSITORY "https://github.com/warmcat/libwebsockets.git"
-	GIT_TAG "v4.3.0"
-	CMAKE_ARGS 
-		-DBUILD_TESTING:BOOL=OFF
-		-DCMAKE_BUILD_TYPE=Release
-		-DLWS_WITHOUT_CLIENT:BOOL=ON
-		-DLWS_WITHOUT_BUILTIN_SHA1:BOOL=ON
-		-DLWS_WITHOUT_TESTAPPS:BOOL=ON
-		-DLWS_MAX_SMP=32
-		-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-		-DLWS_WITH_LIBEV:BOOL=ON
-	EXCLUDE_FROM_ALL
-	UPDATE_COMMAND ""
-)
-ExternalProject_Get_property(WEBSOCKETS INSTALL_DIR)
-set(WEBSOCKETS_INSTALL_DIR "${INSTALL_DIR}")
-link_directories(${WEBSOCKETS_INSTALL_DIR}/lib/)
 
 
 # ==== Target cpp-protoc-initializers ====
@@ -107,7 +85,7 @@ endforeach()
 # ==== Target KEGE_BASE ====
 add_library(KEGE_BASE INTERFACE)
 
-add_dependencies(KEGE_BASE WEBSOCKETS CPP_PROTOC_INITIALIZERS)
+add_dependencies(KEGE_BASE CPP_PROTOC_INITIALIZERS)
 pkg_check_modules(LUA_JIT REQUIRED luajit)
 pkg_check_modules(CURL REQUIRED libcurl)
 pkg_check_modules(FCGI REQUIRED fcgi)
@@ -131,7 +109,6 @@ target_include_directories(
 	${URIPARSER_INCLUDE_DIRS}
 	${PROTOBUF_INCLUDE_DIRS}
 	${PQ_INCLUDE_DIRS}
-	"${WEBSOCKETS_INSTALL_DIR}/include"
 )
 
 target_compile_options(
@@ -154,7 +131,6 @@ target_link_libraries(
 	${PQ_LIBRARIES}
 	pthread
 	dl
-	websockets
 	ev
 )
 

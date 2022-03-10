@@ -48,7 +48,7 @@ public:
 	struct value_promise_type : base_promise_type {
 		std::optional<T> ret_val;
 
-		void return_value(const T &&);
+		void return_value(T &&);
 		void return_value(const T &);
 	};
 

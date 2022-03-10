@@ -10,7 +10,7 @@ namespace detail {
 		ONLY_DEFAULT_MOVABLE_CLASS(future_base)
 
 	protected:
-		enum { CLEAR, READY, AWAITING, FULFILLED } status;
+		enum { CLEAR, READY, AWAITING, FULFILLED } status = CLEAR;
 
 		event_loop_work work;
 

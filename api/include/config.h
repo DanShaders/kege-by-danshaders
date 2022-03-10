@@ -10,13 +10,20 @@ struct hl_socket_address {
 	int perms;
 };
 
+struct db_info_t {
+	std::string path;
+	std::size_t connections;
+	long long cooldown;
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(db_info_t, path, connections, cooldown)
+};
+
 struct config_t {
 	std::size_t request_workers;
 	std::string api_root;
 	std::filesystem::path root;
 	hl_socket_address fastcgi;
-	std::string db_path;
-	std::size_t db_connections;
+	db_info_t db;
 };
 
 void from_json(const json &j, hl_socket_address &o);

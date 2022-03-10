@@ -22,10 +22,7 @@ void config::from_json(const json &j, config_t &obj) {
 	j.at("workers").get_to(obj.request_workers);
 	j.at("api_root").get_to(obj.api_root);
 	j.at("fastcgi").get_to(obj.fastcgi);
-
-	auto &db = j.at("db");
-	db.at("path").get_to(obj.db_path);
-	db.at("connections").get_to(obj.db_connections);
+	j.at("db").get_to(obj.db);
 }
 
 config_t config::find_config(const std::filesystem::path &path) {

@@ -33,8 +33,8 @@ private:
 	bool ret_ready = false;
 	event_loop_work resume_work;
 
-	template <int... Is>
-	void invoke2(detail::index<Is...>);
+	template <std::size_t... Is>
+	void invoke2(std::index_sequence<Is...>);
 	void invoke();
 
 public:

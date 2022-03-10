@@ -4,12 +4,13 @@
 
 	"fastcgi": {
 		"use_unix_sockets": true,
-		"path": "/var/www//fcgi-{id}.sock",
+		"path": "/var/www/kege/fcgi-{id}.sock",
 		"perms": 502
 	},
 
 	"db": {
 		"path": "postgresql://kege:password@localhost:5432/kege",
-		"connections": 3
+		"connections": 3,
+		"cooldown": 10000
 	}
 }

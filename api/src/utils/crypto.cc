@@ -17,6 +17,19 @@ std::string utils::hmac_sign(const std::string_view &value, const std::string_vi
 	return utils::b64_encode(std::string_view((char *) result, result_len));
 }
 
+std::string utils::sha3_256(const std::string_view &data) {
+	unsigned char result[EVP_MAX_MD_SIZE];
+	unsigned int result_len = 0;
+
+	EVP_MD_CTX *context = EVP_MD_CTX_new();
+	EVP_DigestInit_ex(context, EVP_sha3_256(), nullptr);
+	EVP_DigestUpdate(context, data.data(), data.size());
+	EVP_DigestFinal_ex(context, result, &result_len);
+	EVP_MD_CTX_destroy(context);
+
+	return std::string{result, result + result_len};
+}
+
 static const std::string &get_sign_key(bool create = true) {
 	static std::string key;
 	if (create && key.empty()) {

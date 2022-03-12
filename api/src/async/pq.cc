@@ -19,14 +19,6 @@ PGconn *connection::get_raw_connection() const noexcept {
 	return conn.get();
 }
 
-// coro<PGresult *> connection::exec(const char *command) {
-// 	detail::exec_params params = {
-// 		.conn = get_raw_connection(),
-// 		.command = command
-// 	};
-// 	return detail::exec_do(&params);
-// }
-
 /* ==== async::pq::connection_pool::impl ==== */
 struct connection_pool::impl {
 	std::string db_path;
@@ -159,19 +151,33 @@ coro<connection> connection_pool::get_connection() {
 }
 
 /* ==== async::pq::result ==== */
-result::result(PGresult *raw_) : raw({raw_, PQclear}) {
-	int status = PQresultStatus(raw_);
+result::result(PGresult *raw) : res({raw, PQclear}) {
+	int status = PQresultStatus(raw);
 	if (status != PGRES_COMMAND_OK && status != PGRES_TUPLES_OK) {
-		throw db_error{PQresultErrorMessage(raw_)};
+		throw db_error{PQresultErrorMessage(raw)};
 	}
 }
 
 PGresult *result::get_raw_result() {
-	return raw.get();
+	return res.get();
 }
 
-std::size_t result::size() const {
-	return std::size_t(PQntuples(raw.get()));
+std::size_t result::rows() const {
+	return std::size_t(PQntuples(res.get()));
+}
+
+std::size_t result::columns() const {
+	return std::size_t(PQnfields(res.get()));
+}
+
+char const *result::operator()(std::size_t i, std::size_t j) const {
+	return PQgetvalue(res.get(), int(i), int(j));
+}
+
+void result::expect0() const {
+	if (rows()) {
+		throw db_error{"Expected 0 rows as a result"};
+	}
 }
 
 /* ==== async::pq::detail ==== */

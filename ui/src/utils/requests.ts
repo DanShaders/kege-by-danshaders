@@ -36,10 +36,11 @@ export async function request<T>(
     headers: { "Content-Type": "application/x-protobuf" },
     body: req?.serializeBinary(),
   });
-  if (result.status !== 200) {
+  const buffer = new Uint8Array(await result.arrayBuffer());
+  if (result.status !== 200 && buffer.length === 0) {
     return [-1];
   } else {
-    const response = Response.deserializeBinary(new Uint8Array(await result.arrayBuffer()));
+    const response = Response.deserializeBinary(buffer);
     return [response.getCode(), resType.deserializeBinary(response.getResponse_asU8())];
   }
 }

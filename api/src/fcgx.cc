@@ -282,7 +282,8 @@ coro<request_t *> fcgx::from_raw(FCGX_Request *raw) {
 	char *remote_ip = FCGX_GetParam("REMOTE_ADDR", raw->envp),
 		 *method = FCGX_GetParam("REQUEST_METHOD", raw->envp),
 		 *query_string = FCGX_GetParam("QUERY_STRING", raw->envp),
-		 *request_uri = FCGX_GetParam("DOCUMENT_URI", raw->envp);
+		 *request_uri = FCGX_GetParam("DOCUMENT_URI", raw->envp),
+		 *cookie_string = FCGX_GetParam("HTTP_COOKIES", raw->envp);
 
 	if (!remote_ip || !method || !query_string || !request_uri) {
 		FCGX_PutS("status: 400\r\n\r\n", raw->out);
@@ -380,6 +381,7 @@ coro<request_t *> fcgx::from_raw(FCGX_Request *raw) {
 		std::string(request_uri),
 		std::string(query_string),
 		utils::parse_query_string(query_string),
+		utils::parse_cookies(cookie_string),
 		body_type,
 		std::move(body),
 		std::move(raw_body),

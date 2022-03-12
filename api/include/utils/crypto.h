@@ -6,6 +6,7 @@
 
 namespace utils {
 std::string hmac_sign(const std::string_view &value, const std::string_view &key);
+std::string sha3_256(const std::string_view &data);
 
 std::string sign_url(const std::string_view &url,
 					 const std::vector<std::pair<std::string_view, std::string_view>> &params,

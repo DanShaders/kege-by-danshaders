@@ -72,7 +72,7 @@ CREATE TABLE users (
 	display_name text,
 	permissions integer,
 	salt char(64),
-	password char(64), -- = b16encode(sha3_256(b16decode(salt) + password))
+	password char(64), -- = b16encode(sha3_256(password + b16decode(salt)))
 	last_login_time timestamp,
 	last_login_method text
 );
@@ -80,7 +80,7 @@ CREATE TABLE users (
 CREATE TABLE sessions (
 	id char(64) NOT NULL PRIMARY KEY,
 	user_id integer,
-	login_time timestamp,
+	login_time bigint, 
 
 	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

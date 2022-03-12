@@ -28,13 +28,14 @@ set(
 	src/fcgx.cc
 	src/logging.cc
 	src/routes.cc
+	src/routes/session.cc
 	src/utils/api.cc
 	src/utils/common.cc
 	src/utils/crypto.cc
 
 	routes/_basic.cc
 	routes/_wrap.cc
-	routes/test.cc
+	routes/login.cc
 )
 
 set(

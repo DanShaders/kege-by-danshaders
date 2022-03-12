@@ -7,11 +7,17 @@
 namespace async {
 namespace pq {
 	using raw_connection = std::shared_ptr<PGconn>;
+	using raw_result = std::shared_ptr<PGresult>;
+
 	class connection;
 	class connection_pool;
 	template <typename... T>
 	class iterable_typed_result;
 	class result;
+
+	class db_error : public std::runtime_error {
+		using runtime_error::runtime_error;
+	};
 
 	class connection {
 		ONLY_DEFAULT_MOVABLE_CLASS(connection)
@@ -27,7 +33,7 @@ namespace pq {
 		PGconn *get_raw_connection() const noexcept;
 
 		template <typename... Params>
-		coro<result> exec(const char *command, Params &&...params);
+		coro<result> exec(const char *command, Params &&...params) const;
 	};
 
 	class connection_pool : public event_source {
@@ -64,52 +70,47 @@ namespace pq {
 
 	class result {
 	private:
-		std::shared_ptr<PGresult> raw;
+		raw_result res;
 
 	public:
-
-		result(PGresult *raw_);
+		result(PGresult *raw);
 
 		PGresult *get_raw_result();
-		std::size_t size() const;
-
-		char *get_unchecked(std::size_t i, std::size_t j) const {
-			return PQgetvalue(raw.get(), int(i), int(j));
-		}
+		std::size_t rows() const;
+		std::size_t columns() const;
+		char const *operator()(std::size_t i, std::size_t j) const;
 
 		template <typename... T>
-		iterable_typed_result<T...> iter() const;
+		iterable_typed_result<T...> iter() const {
+			return {res};
+		}
+
+		void expect0() const;
+		template <typename... T>
+		std::tuple<T...> expect1() const;
 	};
 
 	template <typename... T>
 	class iterable_typed_result {
 	private:
-		result const *res;
+		raw_result res;
 
 	public:
 		template <std::size_t... Is>
 		class iterator {
 		private:
 			std::size_t i;
-			result const *res;
-		
-			template <typename U, std::size_t j>
-			U row_value_cast() {
-				char *data = res->get_unchecked(i, j);
+			iterable_typed_result<T...> *res;
 
-				if constexpr (std::same_as<U, std::string>) {
-					return {data};
-				} else if constexpr (std::integral<U>) {
-					return U{strtoll(data, nullptr, 10)};
-				} else {
-					return {};
-				}
-			}
+			template <typename U, std::size_t j>
+			U get_cell_value();
+
 		public:
-			iterator(std::size_t i_, result const *res_, std::index_sequence<Is...>) : i(i_), res(res_) {}
-			
+			iterator(std::size_t i_, iterable_typed_result<T...> *res_, std::index_sequence<Is...>)
+				: i(i_), res(res_) {}
+
 			std::tuple<T...> operator*() {
-				return {row_value_cast<T, Is>()...};
+				return {get_cell_value<T, Is>()...};
 			}
 
 			iterator &operator++() {
@@ -120,19 +121,20 @@ namespace pq {
 			std::strong_ordering operator<=>(const iterator &) const = default;
 		};
 
-		iterable_typed_result(result const *res_) : res(res_) {}
+		iterable_typed_result(raw_result res_) : res(res_) {
+			if (sizeof...(T) != PQnfields(res.get())) {
+				throw db_error{"Unexpected number of columns"};
+			}
+		}
 
 		auto begin() {
-			return iterator{0, res, std::index_sequence_for<T...>{}};
+			return iterator{(std::size_t) 0, this, std::index_sequence_for<T...>{}};
 		}
 
 		auto end() {
-			return iterator{res->size(), res, std::index_sequence_for<T...>{}};
+			return iterator{(std::size_t) PQntuples(res.get()), this,
+							std::index_sequence_for<T...>{}};
 		}
-	};
-
-	class db_error : public std::runtime_error {
-		using runtime_error::runtime_error;
 	};
 
 	namespace detail {
@@ -157,7 +159,7 @@ namespace pq {
 		};
 
 		coro<result> exec(PGconn *conn, const char *command, int size, const char *values[],
-							  int lengths[], int formats[]);
+						  int lengths[], int formats[]);
 	}  // namespace detail
 
 #include "detail/pq.impl.h"

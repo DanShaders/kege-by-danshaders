@@ -2,6 +2,7 @@
 using namespace utils;
 
 static const char *HEX = "0123456789ABCDEF";
+static const char *HEXL = "0123456789abcdef";
 static const int BASE64_IDX[256] = {
 	0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
 	0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -46,8 +47,8 @@ std::string utils::url_encode(const std::string_view &str) {
 			ret += c;
 		} else {
 			ret += '%';
-			ret += HEX[c / 16];
-			ret += HEX[c % 16];
+			ret += HEX[(unsigned char) (c) / 16];
+			ret += HEX[(unsigned char) (c) % 16];
 		}
 	}
 	return ret;
@@ -59,9 +60,7 @@ std::map<std::string, std::string> utils::parse_query_string(const std::string_v
 	bool on_key = true;
 	for (char c : qs) {
 		if (c == '&') {
-			std::string dkey = url_decode(key), dvalue = url_decode(value);
-			if (data.find(dkey) == data.end())
-				data[dkey] = dvalue;
+			data[url_decode(key)] = url_decode(value);
 			key.clear();
 			value.clear();
 			on_key = true;
@@ -74,6 +73,51 @@ std::map<std::string, std::string> utils::parse_query_string(const std::string_v
 	if (key != "" || value != "")
 		data[url_decode(key)] = url_decode(value);
 	return data;
+}
+
+std::map<std::string, std::string> utils::parse_cookies(const char *s) {
+	if (!s) {
+		return {};
+	}
+	std::map<std::string, std::string> data;
+	std::string key, value;
+	bool on_key = true;
+	for (char c : std::string_view{s}) {
+		if (c == ' ' || c == '"') {
+			continue;
+		}
+		if (c == '=') {
+			on_key = false;
+		} else if (c == ';') {
+			data[url_decode(key)] = url_decode(value);
+			key.clear();
+			value.clear();
+			on_key = true;
+		} else {
+			(on_key ? key : value) += c;
+		}
+	}
+	if (key != "" || value != "") {
+		data[url_decode(key)] = url_decode(value);
+	}
+	return data;
+}
+
+std::string utils::b16_encode(const std::string_view &s) {
+	std::string res(s.size() * 2, '0');
+	for (std::size_t i = 0; i < s.size(); ++i) {
+		res[2 * i] = HEXL[(unsigned char) (s[i]) / 16];
+		res[2 * i + 1] = HEXL[(unsigned char) (s[i]) % 16];
+	}
+	return res;
+}
+
+std::string utils::b16_decode(const std::string_view &s) {
+	std::string res(s.size() / 2, 0);
+	for (std::size_t i = 0; i < s.size() / 2; ++i) {
+		res[i] = char(from_hex_char(s[2 * i]) * 16 + from_hex_char(s[2 * i + 1]));
+	}
+	return res;
 }
 
 std::string utils::b64_decode(const std::string_view &s) {

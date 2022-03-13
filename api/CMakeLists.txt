@@ -35,7 +35,7 @@ set(
 
 	routes/_basic.cc
 	routes/_wrap.cc
-	routes/login.cc
+	routes/user.cc
 )
 
 set(
@@ -47,6 +47,7 @@ set(
 set(
 	PROTO_SOURCES
 	../proto/api.proto
+	../proto/user.proto
 )
 
 

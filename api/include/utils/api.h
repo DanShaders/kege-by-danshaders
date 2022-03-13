@@ -6,6 +6,15 @@
 #include "fcgx.h"
 
 namespace utils {
+struct empty_payload {
+	struct initializable_type {};
+
+	empty_payload() {}
+	empty_payload(initializable_type) {}
+
+	void SerializeToString(const std::string *) {}
+};
+
 template <typename T>
 T expect(fcgx::request_t *r);
 

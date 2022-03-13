@@ -1,5 +1,6 @@
 #pragma once
 
+#include "api.pb.h"
 #include "async/coro.h"
 #include "async/pq.h"
 #include "fcgx.h"
@@ -19,6 +20,8 @@ struct session {
 	const std::string display_name;
 	const unsigned perms;
 	std::atomic<int64_t> last_activity;
+
+	api::UserInfo::initializable_type serialize() const;
 };
 
 using psession = std::shared_ptr<session>;
@@ -32,7 +35,8 @@ enum {
 };
 
 coro<psession> _restore_session(const async::pq::connection &db, fcgx::request_t *r);
-coro<psession> require_auth(const async::pq::connection &db, fcgx::request_t *r, int perms = 0);
+coro<psession> require_auth(const async::pq::connection &db, fcgx::request_t *r,
+							unsigned perms = 0);
 coro<void> session_store(const async::pq::connection &db, fcgx::request_t *r, psession s);
 coro<void> session_logout(const async::pq::connection &db, psession s);
 }  // namespace routes

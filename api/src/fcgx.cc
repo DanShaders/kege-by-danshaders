@@ -283,7 +283,7 @@ coro<request_t *> fcgx::from_raw(FCGX_Request *raw) {
 		 *method = FCGX_GetParam("REQUEST_METHOD", raw->envp),
 		 *query_string = FCGX_GetParam("QUERY_STRING", raw->envp),
 		 *request_uri = FCGX_GetParam("DOCUMENT_URI", raw->envp),
-		 *cookie_string = FCGX_GetParam("HTTP_COOKIES", raw->envp);
+		 *cookie_string = FCGX_GetParam("HTTP_COOKIE", raw->envp);
 
 	if (!remote_ip || !method || !query_string || !request_uri) {
 		FCGX_PutS("status: 400\r\n\r\n", raw->out);

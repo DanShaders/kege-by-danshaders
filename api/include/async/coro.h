@@ -24,7 +24,7 @@ namespace detail {
 }  // namespace detail
 
 template <typename T>
-class coro {
+class [[nodiscard]] coro {
 public:
 	struct base_promise_type;
 	struct void_promise_type;

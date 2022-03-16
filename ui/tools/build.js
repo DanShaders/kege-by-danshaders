@@ -11,5 +11,8 @@ require("esbuild")
     minify: type === PROD,
     sourcemap: type !== PROD,
     watch: type === WATCH,
+    loader: {
+      ".svg": "dataurl",
+    },
   })
   .catch(() => process.exit(1));

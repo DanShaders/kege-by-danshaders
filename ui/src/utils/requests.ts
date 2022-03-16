@@ -1,6 +1,5 @@
 import { ErrorCode, Response } from "../proto/api_pb";
-
-export class ExpectedError extends Error {}
+import { ExpectedError } from "./common";
 
 interface BinaryDeserializable<T> {
   deserializeBinary(bytes: Uint8Array): T;
@@ -37,10 +36,10 @@ export async function request<T>(
     body: req?.serializeBinary(),
   });
   const buffer = new Uint8Array(await result.arrayBuffer());
-  if (result.status !== 200 && buffer.length === 0) {
-    return [-1];
+  const response = Response.deserializeBinary(buffer);
+  if (result.status !== 200 && response.getCode() === 0) {
+    return [-result.status];
   } else {
-    const response = Response.deserializeBinary(buffer);
     return [response.getCode(), resType.deserializeBinary(response.getResponse_asU8())];
   }
 }

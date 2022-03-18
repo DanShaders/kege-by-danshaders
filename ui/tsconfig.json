@@ -6,6 +6,9 @@
     "allowJs": false,
     "rootDir": "src/",
     "noEmit": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "jsx": "react",
+    "jsxFactory": "jsx.jsx",
+    "jsxFragmentFactory": "jsx.Fragment"
   }
 }

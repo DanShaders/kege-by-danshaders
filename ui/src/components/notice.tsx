@@ -1,6 +1,7 @@
-import { Component } from "./component";
+import { Component, createComponentFactory } from "./component";
+import * as jsx from "../utils/jsx";
 
-type NoticeSettings = {
+export type NoticeSettings = {
   shown: boolean;
   message: string;
   type: "error" | "info";
@@ -12,26 +13,27 @@ export class NoticeComponent extends Component<NoticeSettings> {
 
   createElement(): HTMLElement {
     const elem = document.createElement("div");
-    elem.innerHTML = `
-      <span>
-        <svg ${this.settings.type === "error" ? "" : "hidden"}>
-          <use xlink:href='#notice-${this.settings.type}'></use>
-        </svg>
-        <span></span>
-      </span>
-      <button class='wrapper'>
-        <svg><use xlink:href='#close'></use></svg>
-      </button>`;
-    const [messageWrap, closeButton] = elem.children;
+    const [messageSpan, closeButton] = (
+      <>
+        <span>
+          <svg hiddenIf={this.settings.type !== "error"}>
+            <use xlink:href={"#notice-" + this.settings.type}></use>
+          </svg>
+          <span ref>{this.settings.message}</span>
+        </span>
+        <button ref class='wrapper'>
+          <svg><use xlink:href='#close'></use></svg>
+        </button>
+      </>
+    ).insertInto(elem) as [HTMLSpanElement, HTMLButtonElement];
+    this.messageSpan = messageSpan;
+    
     closeButton.addEventListener("click", () => {
       this.setVisibility(false);
     });
-    this.messageSpan = messageWrap.children[1] as HTMLSpanElement;
-    this.messageSpan.innerHTML = this.settings.message;
     if (!this.settings.shown) {
       elem.setAttribute("hidden", "");
     }
-    this.doSetVisibility(elem, this.settings.shown);
     elem.classList.add("notice", "notice-" + this.settings.type);
     return elem;
   }
@@ -76,3 +78,5 @@ export class NoticeComponent extends Component<NoticeSettings> {
     }
   }
 }
+
+export const Notice = createComponentFactory<NoticeSettings>(NoticeComponent);

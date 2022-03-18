@@ -2,39 +2,47 @@ import { Router } from "../utils/router";
 import { setupForm, toggleLoadingScreen, byId } from "../utils/common";
 import { request, requestU, EmptyPayload } from "../utils/requests";
 import { userInfo, setGlobalUserInfo } from "./common";
-import { NoticeComponent } from "../components/notice";
+import { Notice, NoticeComponent, NoticeSettings } from "../components/notice";
 import { ErrorCode, UserInfo } from "../proto/api_pb";
 import { LoginRequest, LogoutRequest } from "../proto/user_pb";
+import * as jsx from "../utils/jsx";
 
 async function showLoginPage(params: URLSearchParams): Promise<void> {
   if (userInfo) {
     Router.instance.redirect("");
   }
-  byId("main")!.innerHTML = `
-    <div id='notice-wrap' style='padding-top: 20px;'></div>
-	  <h1 id='page-title'>kege-by-danshaders</h1>
-    <div id='login-container'>
-      <form id='login-form'>
-        <label for='login-field'>Логин</label>
-        <input required class='focusable' id='login-field' type="text" name="login">
-        <label for='password-field'>Пароль</label>
-        <input required class='focusable' id='password-field' type="password" name="password">
-        <button class='button-blue' id='button-login' type="submit" name="button_login" value="1">Войти</button>
-      </form>
-    </div>`;
 
-  const notice = new NoticeComponent({ shown: false, message: "", type: "error" }, null);
+  let noticeSettings: NoticeSettings = {shown: false, message: "", type: "error"};
   if (params.has("logged_out")) {
-    notice.apply({ shown: true, message: "Выход успешно осуществлен", type: "info" });
+    noticeSettings = { shown: true, message: "Выход успешно осуществлен", type: "info" };
     params.delete("logged_out");
     Router.instance.setUrl("login?" + params.toString());
   }
-  byId("notice-wrap")!.appendChild(notice.elem);
 
-  setupForm(byId("login-form")!, async (): Promise<boolean> => {
+  const [notice, loginForm, loginField, passwordField] = (
+    <>
+      <div id="notice-wrap" style="padding-top: 20px;">
+        <Notice ref settings={noticeSettings} parent={null}></Notice>
+      </div>
+      <h1 id="page-title">kege-by-danshaders</h1>
+      <div id="login-container">
+        <form ref>
+          <label for="login-field">Логин</label>
+          <input ref required class="focusable" id="login-field" type="text" name="login" spellcheck="false" />
+          <label for="password-field">Пароль</label>
+          <input ref required class="focusable" id="password-field" type="password" name="password" />
+          <button class="button-blue" id="button-login" type="submit" name="button_login" value="1">
+            Войти
+          </button>
+        </form>
+      </div>
+    </>
+  ).replaceContentsOf("main") as [NoticeComponent, HTMLFormElement, HTMLInputElement, HTMLInputElement];
+
+  setupForm(loginForm, async (): Promise<boolean> => {
     const data = new LoginRequest()
-      .setUsername((byId("login-field") as HTMLInputElement).value)
-      .setPassword((byId("password-field") as HTMLInputElement).value);
+      .setUsername(loginField.value)
+      .setPassword(passwordField.value);
     const [code, result] = await request(UserInfo, "/api/user/login", data);
 
     if (code !== ErrorCode.OK || !result) {

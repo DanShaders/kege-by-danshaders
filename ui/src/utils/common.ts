@@ -46,6 +46,8 @@ ${e.stack}
 caused UI to produce yet another exception:
 ${e2}
 `);
+      console.error(e);
+      console.error(e2);
     }
   },
   defaultSuccessfulSubmitCallback: undefined,

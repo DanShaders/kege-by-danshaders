@@ -1,4 +1,5 @@
 import { assert } from "../utils/assert";
+import { Fragment } from "../utils/jsx";
 
 interface EventSource<A, B> {
   addEventListener(a: A, b: B): any;
@@ -7,11 +8,11 @@ interface EventSource<A, B> {
 
 export abstract class Component<T> {
   settings: T;
-  parent: Component<any> | null;
+  parent: Component<unknown> | null;
   unproxiedElem?: HTMLElement;
   unmountHooks?: (() => void)[];
 
-  constructor(settings: T, parent: Component<any> | null) {
+  constructor(settings: T, parent: Component<unknown> | null) {
     this.settings = settings;
     this.parent = parent;
     this.unproxiedElem = undefined;
@@ -66,4 +67,13 @@ export abstract class Component<T> {
   }
 
   abstract createElement(): HTMLElement;
+}
+
+type ComponentConstructor<T> = new (a: T, b: Component<unknown> | null) => Component<unknown>;
+export type ComponentFactory<T> = (a: {settings: T, parent: Component<unknown> | null, ref?: boolean}) => Fragment;
+
+export function createComponentFactory<T>(constructor: ComponentConstructor<T>): ComponentFactory<T> {
+  return ({settings, parent, ref} : {settings: T, parent: Component<unknown> | null, ref?: boolean}): Fragment => {
+    return Fragment.fromComponent(ref ? {"ref": true} : {}, new constructor(settings, parent));
+  };
 }

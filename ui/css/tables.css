@@ -1,0 +1,38 @@
+main table {
+  border-collapse: collapse;
+  border-style: hidden;
+  border-radius: 4px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 0 0 0px #c5c8ce;
+}
+
+main table td {
+  padding: 12px;
+  white-space: nowrap;
+}
+
+main table thead {
+  font-weight: bold;
+}
+
+main table tr {
+  border-bottom: 1px solid #ddd;
+  transition: background-color 0.1s;
+}
+
+main table tbody tr:hover {
+  background-color: #0000000a;
+}
+
+.column-min {
+  width: 0.1%;
+}
+
+.column-norm {
+  width: auto;
+}
+
+.table-first-col-left tbody td:nth-child(1) {
+  text-align: left;
+}

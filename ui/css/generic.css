@@ -1,0 +1,317 @@
+html {
+  line-height: 1.15;
+  -webkit-text-size-adjust: 100%;
+
+  --modern-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell,
+    "Helvetica Neue", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+body {
+  overflow-y: scroll;
+
+  font-family: var(--modern-font-family);
+  font-size: 16px;
+
+  margin: 10px;
+  margin-top: 60px;
+  margin-bottom: 30px;
+  padding: 0;
+
+  background-color: #faf9f9;
+}
+
+main {
+  display: block;
+  max-width: 950px;
+  margin: 0px auto;
+}
+
+h1 {
+  font-size: 24.5px;
+  font-weight: 600;
+  margin: 0.67em 0;
+}
+
+hr {
+  box-sizing: content-box;
+  height: 0;
+  overflow: visible;
+  margin: 10px 0px;
+  border: none;
+  border-top: 1px solid #888;
+}
+
+pre {
+  font-family: monospace, monospace;
+  font-size: 1em;
+}
+
+a {
+  background-color: transparent;
+}
+
+abbr[title] {
+  border-bottom: none;
+  text-decoration: underline;
+  text-decoration: underline dotted;
+}
+
+b,
+strong {
+  font-weight: 600;
+}
+
+code,
+kbd,
+samp {
+  font-family: monospace, monospace;
+  font-size: 1em;
+}
+
+small {
+  font-size: 80%;
+}
+
+sub,
+sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+sub {
+  bottom: -0.25em;
+}
+
+sup {
+  top: -0.5em;
+}
+
+img {
+  border-style: none;
+}
+
+button,
+input,
+optgroup,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 100%;
+  margin: 0;
+}
+
+button,
+a {
+  cursor: pointer;
+  color: inherit;
+  outline: none;
+
+  border: 1px solid #dbdbdb;
+  background-color: transparent;
+  padding: 0;
+}
+
+a:focus-visible {
+  outline: auto;
+}
+
+button,
+input {
+  overflow: visible;
+}
+
+button,
+select {
+  text-transform: none;
+}
+
+button,
+label {
+  user-select: none;
+}
+
+button,
+[type="button"],
+[type="reset"],
+[type="submit"] {
+  -webkit-appearance: button;
+}
+
+button::-moz-focus-inner,
+[type="button"]::-moz-focus-inner,
+[type="reset"]::-moz-focus-inner,
+[type="submit"]::-moz-focus-inner {
+  border-style: none;
+  padding: 0;
+}
+
+fieldset {
+  padding: 0.35em 0.75em 0.625em;
+}
+
+legend {
+  box-sizing: border-box;
+  color: inherit;
+  display: table;
+  max-width: 100%;
+  padding: 0;
+  white-space: normal;
+}
+
+progress {
+  vertical-align: baseline;
+}
+
+textarea[modern] {
+  overflow: auto;
+  outline: none;
+  border: none;
+  background-color: transparent;
+}
+
+[type="checkbox"],
+[type="radio"] {
+  box-sizing: border-box;
+  padding: 0;
+}
+
+[type="number"]::-webkit-inner-spin-button,
+[type="number"]::-webkit-outer-spin-button {
+  height: auto;
+}
+
+[type="search"] {
+  -webkit-appearance: textfield;
+  outline-offset: -2px;
+}
+
+[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
+::-webkit-file-upload-button {
+  -webkit-appearance: button;
+  font: inherit;
+}
+
+details {
+  display: block;
+}
+
+summary {
+  display: list-item;
+}
+
+template {
+  display: none;
+}
+
+[hidden], .hidden {
+  display: none !important;
+}
+
+main a {
+  border: none;
+  color: blue;
+  text-decoration: none;
+}
+
+main a:hover {
+  text-decoration: underline;
+}
+
+main hr {
+  margin: 24px 0;
+}
+
+main form {
+  display: inline;
+}
+
+main h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+p.si {
+  /* small indent */
+  margin: 0;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+p.ni,
+ul.ni {
+  /* no indent */
+  margin: 0;
+}
+
+.hr-intext {
+  margin: 10px 0;
+}
+
+.monospace {
+  font-family: monospace;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.focusable {
+  background-color: #fff;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.focusable:focus-within {
+  border-color: #80bdff;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.loading-screen {
+  display: flex;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #00000033;
+  z-index: 20000;
+}
+
+.loading-screen:before {
+  content: "";
+  width: 100%;
+  height: 100%;
+  background: url(../images/loading.svg) no-repeat center center;
+  background-size: 150px 150px;
+}
+
+#page-title {
+  font-size: 1.75em;
+  font-weight: 600;
+  margin: 16px 0;
+}
+
+.padded-ul li {
+  padding: 2.5px;
+}
+
+.bl {
+  border-top: 1px solid #888;
+  padding-top: 5px;
+  margin-top: 5px;
+}
+
+.visible-if-first-child {
+  display: none;
+}
+
+.visible-if-first-child:first-child {
+  display: initial;
+}

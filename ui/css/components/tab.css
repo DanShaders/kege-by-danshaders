@@ -1,0 +1,41 @@
+.tab-wrap {
+  padding: 10px 6px;
+}
+
+.tab-wrap nav {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1px;
+  margin-bottom: 10px;
+}
+
+.tab-wrap .tab-button {
+  border: none;
+  color: #c4c4c4;
+  border-bottom: 2px solid transparent;
+  padding: 0px 8px 9px;
+}
+
+.tab-wrap .tab-button:hover {
+  color: black;
+  border-bottom: 2px solid #c4c4c4;
+}
+
+.tab-wrap .tab-button[disabled] {
+  color: black;
+  font-weight: 600;
+  border-bottom: 2px solid #232d6a;
+}
+
+.tab-wrap .tab-button[disabled]:hover {
+  border-bottom: 2px solid #232d6a;
+}
+
+.tab-wrap .tab-inactive {
+  display: none;
+}
+
+.tab-textarea {
+  width: 100%;
+  height: 100px;
+  resize: vertical;
+}

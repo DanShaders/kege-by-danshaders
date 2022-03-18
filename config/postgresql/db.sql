@@ -155,3 +155,12 @@ INSERT INTO users (username, display_name, permissions, salt, password) VALUES (
 	'8a339ca48b640a58dfac3c8f40963e7ed99ad0f525146f8c1b6a14fe6b07adf7',
 	'4db6fac3b8811822e57a926e9ff52b5e1aea0bd52e58125e0d5fccc45d0c0057'
 );
+
+--user:password
+INSERT INTO users (username, display_name, permissions, salt, password) VALUES (
+	'user',
+	'User',
+	0,
+	'a93c87f2f88b9aca33ba64fdb35bde919c0aadfd690507d9b2da38cb1a9ba4ff',
+	'e1bdae5584062bf6a4472260180be513e1db4cfe334fec1c67cb5e5eb26452fa'
+);

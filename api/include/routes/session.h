@@ -19,6 +19,7 @@ struct session {
 	const std::string username;
 	const std::string display_name;
 	const unsigned perms;
+	std::atomic<bool> logged_out;
 	std::atomic<int64_t> last_activity;
 
 	api::UserInfo::initializable_type serialize() const;

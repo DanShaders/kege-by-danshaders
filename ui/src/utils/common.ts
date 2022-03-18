@@ -33,6 +33,9 @@ type FormCallbacks = {
 
 export const formCallbacks: FormCallbacks = {
   reportUnexpectedError: (e: any) => {
+    if ((e.prototype === ExpectedError) || (e instanceof RedirectNotification)) {
+      return;
+    }
     try {
       throw Error("Not implemented");
     } catch (e2) {
@@ -46,7 +49,6 @@ ${e.stack}
 caused UI to produce yet another exception:
 ${e2}
 `);
-      console.error(e);
       console.error(e2);
     }
   },
@@ -114,9 +116,14 @@ export function setupForm(
 
 window.addEventListener("unhandledrejection", (e): void => {
   e = e.reason;
-  if (!(e instanceof RedirectNotification) && !(e instanceof ExpectedError)) {
-    formCallbacks.reportUnexpectedError(e);
-  }
+  formCallbacks.reportUnexpectedError(e);
+  return true;
+});
+
+window.addEventListener("error", (e): void => {
+  e = e.error;
+  formCallbacks.reportUnexpectedError(e);
+  return true;
 });
 
 export const byId = (id: string): HTMLElement | null => document.getElementById(id);

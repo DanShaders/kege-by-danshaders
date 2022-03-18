@@ -47,7 +47,7 @@ export async function request<T>(
 export async function requestU<T>(resType: BinaryDeserializable<T>, url: string, req?: BinarySerializable): Promise<T> {
   const [code, res] = await request(resType, url, req);
   if (code !== ErrorCode.OK || res === undefined) {
-    throw new ExpectedError();
+    throw new Error(`Failed to request ${url}, got code=${code}`);
   } else {
     return res;
   }

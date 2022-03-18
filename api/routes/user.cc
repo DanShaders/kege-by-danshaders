@@ -29,7 +29,7 @@ static coro<void> handle_user_login(fcgx::request_t *r) {
 	}
 
 	auto s = std::make_shared<routes::session>(
-		user_id, utils::b16_encode(utils::urandom(32)), username, display_name, perms,
+		user_id, utils::b16_encode(utils::urandom(32)), username, display_name, perms, false,
 		routes::session_clock::now().time_since_epoch().count());
 	co_await routes::session_store(db, r, s);
 

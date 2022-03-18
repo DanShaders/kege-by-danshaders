@@ -117,13 +117,11 @@ export function setupForm(
 window.addEventListener("unhandledrejection", (e): void => {
   e = e.reason;
   formCallbacks.reportUnexpectedError(e);
-  return true;
 });
 
 window.addEventListener("error", (e): void => {
   e = e.error;
   formCallbacks.reportUnexpectedError(e);
-  return true;
 });
 
 export const byId = (id: string): HTMLElement | null => document.getElementById(id);

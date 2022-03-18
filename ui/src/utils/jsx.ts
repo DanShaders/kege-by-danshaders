@@ -28,6 +28,7 @@ export class Fragment {
   private children: Node[];
   private comp?: Component<unknown>;
   private isRef: boolean;
+  private elem?: Element;
 
   constructor(tag: JSX.Tag | null, attributes: Attributes, children: Node[], comp?: Component<unknown>) {
     this.tag = tag;
@@ -42,25 +43,26 @@ export class Fragment {
     return new Fragment(null, attrs, [], comp);
   }
 
-  insertInto(elem: Element, inSvg: boolean = false, refs: any[] = []): any[] {
+  insertInto(elem: Element | null, inSvg: boolean = false, refs: any[] = []): any[] {
     if (this.comp) {
-      elem.appendChild(this.comp.elem);
       if (this.isRef) {
         refs.push(this.comp);
       }
+      elem?.appendChild(this.comp.elem);
       return refs;
     }
 
-    let place: Element = elem;
+    let place: Element | null = elem;
     if (this.tag) {
       if (this.tag === "svg") {
         inSvg = true;
       }
       place = document.createElementNS(inSvg ? XML_NS_SVG : XML_NS_XHTML, this.tag);
+      this.elem = place;
       if (this.isRef) {
         refs.push(place);
       }
-      elem.appendChild(place);
+      elem?.appendChild(place);
       for (const [prop, value] of Object.entries(this.attributes ?? {})) {
         let namespace: string | null = null, propName = prop;
         if (prop.indexOf(":") !== -1) {
@@ -94,6 +96,11 @@ export class Fragment {
     }
     elem.innerHTML = "";
     return this.insertInto(elem);
+  }
+
+  asElement(): Element {
+    this.insertInto(null);
+    return nonNull(this.elem);
   }
 }
 

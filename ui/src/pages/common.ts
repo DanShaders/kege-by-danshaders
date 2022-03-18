@@ -89,6 +89,7 @@ async function updateHeader(): Promise<void> {
       },
     };
     if (userInfo.perms & 1) {
+      import("../admin");
       headerSettings = {
         ...headerSettings,
         ...adminHeaderSettings,

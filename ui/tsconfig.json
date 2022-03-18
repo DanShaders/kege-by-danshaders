@@ -6,6 +6,7 @@
     "allowJs": false,
     "rootDir": "src/",
     "noEmit": true,
+    "module": "commonjs",
     "moduleResolution": "node",
     "jsx": "react",
     "jsxFactory": "jsx.jsx",

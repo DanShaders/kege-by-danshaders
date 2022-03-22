@@ -1,6 +1,7 @@
 import { Router } from "../../utils/router";
 import { toggleLoadingScreen } from "../../utils/common";
 import { ButtonIcon } from "../../components/button-icon";
+import { Checkbox } from "../../components/checkbox";
 import { TextEditor } from "../../components/text-editor";
 
 import * as jsx from "../../utils/jsx";
@@ -29,6 +30,15 @@ async function showTaskListPage(params: URLSearchParams): Promise<void> {
         <div class="group-15-right">
           <div class="group-15-wrap-border focusable">
             <TextEditor settings={{}} />
+          </div>
+        </div>
+      </div>
+
+      <div class="group-15-row">
+        <label class="group-15-label group-15-left">Ответ</label>
+        <div class="group-15-right">
+          <div class="group-15-wrap-no">
+            <Checkbox settings={{text: "Проверять независимо"}} />
           </div>
         </div>
       </div>

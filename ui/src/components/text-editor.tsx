@@ -583,8 +583,6 @@ export class TextEditorComponent extends Component<{}> {
   }
 
   onTabSwitch(index: number, oldIndex: number) {
-    console.log(index, oldIndex);
-
     if (oldIndex === EditorTabs.CODE) {
       const code = this.codeContainer.value;
       if (this.textHtml[oldIndex] !== code) {

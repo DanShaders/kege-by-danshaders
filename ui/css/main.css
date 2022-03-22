@@ -7,6 +7,7 @@
 @import "./layout";
 @import "./tables";
 
+@import "./components/checkbox";
 @import "./components/file-input";
 @import "./components/header";
 @import "./components/notice";

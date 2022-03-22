@@ -126,3 +126,9 @@ window.addEventListener("error", (e): void => {
 });
 
 export const byId = (id: string): HTMLElement | null => document.getElementById(id);
+
+let uniqueIdCounter = 0;
+
+export function uniqueId(): string {
+  return "uniqueid-" + (uniqueIdCounter++);
+}

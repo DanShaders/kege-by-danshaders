@@ -94,18 +94,21 @@ struct connection_pool::impl {
 		if (stop_requested) {
 			reject_request(&fut);
 		} else {
+			while (pool.size() && PQstatus(pool.back().get()) != CONNECTION_OK) {
+				--conns_alive;
+				logging::warn("Connection to the database was lost");
+				pool.pop_back();
+			}
 			if (conns_alive != conns_desired) {
 				populate_pool();
 			}
 			if (!conns_alive) {
 				reject_request(&fut);
+			} else if (pool.empty()) {
+				requests.push(&fut);
 			} else {
-				if (pool.empty()) {
-					requests.push(&fut);
-				} else {
-					fut.set_result(pool.back());
-					pool.pop_back();
-				}
+				fut.set_result(pool.back());
+				pool.pop_back();
 			}
 		}
 		co_return {co_await fut, parent};

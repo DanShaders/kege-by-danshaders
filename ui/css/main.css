@@ -1,3 +1,6 @@
+@import "quill/dist/quill.snow";
+@import "katex/dist/katex.min";
+
 @import "./generic";
 
 @import "./buttons";
@@ -7,6 +10,6 @@
 @import "./components/file-input";
 @import "./components/header";
 @import "./components/notice";
-@import "./components/tab";
+@import "./components/tab-select";
 
 @import "./pages/login";

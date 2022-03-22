@@ -33,48 +33,6 @@ const headerSettingsLoggedOut = {
   },
 };
 
-const adminHeaderSettings = {
-  highlightedId: "",
-  nav: {
-    items: [
-      {
-        id: "kims",
-        text: "Варианты",
-        url: "admin/kims",
-      },
-      {
-        id: "tasks",
-        text: "Задания",
-        url: "admin/tasks",
-      },
-      {
-        id: "standings",
-        text: "Результаты",
-        url: "admin/standings",
-      },
-      {
-        id: "control",
-        text: "Управление",
-        items: [
-          {
-            text: "Пользователи",
-            url: "admin/users",
-          },
-          {
-            text: "Группы",
-            url: "admin/groups",
-          },
-          {
-            text: "Сессии",
-            url: "admin/sessions",
-          },
-        ],
-      },
-    ],
-    moreText: "Ещё",
-  },
-};
-
 async function updateHeader(): Promise<void> {
   if (!header) {
     header = new HeaderComponent(headerSettingsLoggedOut, null);
@@ -89,10 +47,10 @@ async function updateHeader(): Promise<void> {
       },
     };
     if (userInfo.perms & 1) {
-      import("../admin");
+      const adminSpecific = await import("../admin");
       headerSettings = {
         ...headerSettings,
-        ...adminHeaderSettings,
+        ...adminSpecific.headerSettings,
       };
     }
     header.apply(headerSettings);

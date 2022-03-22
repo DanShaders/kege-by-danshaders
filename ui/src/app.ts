@@ -8,7 +8,7 @@ import "./pages/main";
 async function initApplication(): Promise<void> {
   await Router.instance.goTo("#init");
   try {
-    await Router.instance.goTo(location.hash.substr(1));
+    await Router.instance.goTo(location.hash.substr(1), false);
   } catch (e) {
     if (!(e instanceof RedirectNotification)) {
       if (e instanceof RouteNotFoundError) {

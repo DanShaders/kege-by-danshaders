@@ -10,6 +10,8 @@ export class Router {
   private public_routes: Map<string, Handler>;
   private private_routes: Map<string, Handler>;
 
+  currentURL: string = "";
+
   private constructor() {
     this.public_routes = new Map();
     this.private_routes = new Map();
@@ -33,8 +35,6 @@ export class Router {
 
   async goTo(url: string, isPrivate: boolean = true): Promise<void> {
     toggleLoadingScreen(true);
-    if (!isPrivate) {
-    }
     const [page, params] = url.split("?", 2);
     let handler = this.public_routes.get(page);
     if (handler) {
@@ -44,6 +44,7 @@ export class Router {
       handler ??= this.private_routes.get(page);
     }
     if (handler) {
+      Router.instance.currentURL = url;
       await handler(new URLSearchParams(params));
     } else {
       throw new RouteNotFoundError(`Route for '${url}' is not found`);

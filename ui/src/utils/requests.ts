@@ -1,5 +1,4 @@
 import { ErrorCode, Response } from "../proto/api_pb";
-import { ExpectedError } from "./common";
 
 interface BinaryDeserializable<T> {
   deserializeBinary(bytes: Uint8Array): T;

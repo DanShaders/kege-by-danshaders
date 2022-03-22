@@ -6,16 +6,25 @@ interface EventSource<A, B> {
   removeEventListener(a: A, b: B): any;
 }
 
+type SomeComponent = Component<unknown>;
+
 export abstract class Component<T> {
   settings: T;
   parent: Component<unknown> | null;
   unproxiedElem?: HTMLElement;
   unmountHooks?: (() => void)[];
+  children: Fragment[];
 
-  constructor(settings: T, parent: Component<unknown> | null) {
+  constructor(settings: T, parent: SomeComponent | null, children?: Fragment[]) {
     this.settings = settings;
     this.parent = parent;
     this.unproxiedElem = undefined;
+    this.children = children ?? [];
+    for (const child of this.children) {
+      if (child.comp instanceof Component) {
+        child.comp.parent = this;
+      }
+    }
   }
 
   get elem(): HTMLElement {
@@ -69,11 +78,17 @@ export abstract class Component<T> {
   abstract createElement(): HTMLElement;
 }
 
-type ComponentConstructor<T> = new (a: T, b: Component<unknown> | null) => Component<unknown>;
-export type ComponentFactory<T> = (a: {settings: T, parent: Component<unknown> | null, ref?: boolean}) => Fragment;
+type ComponentConstructor<T> = new (a: T, b: SomeComponent | null, c?: Fragment[]) => SomeComponent;
+export type ComponentFactory<T> = (
+  a: { settings: T; parent?: SomeComponent; ref?: boolean },
+  b: Fragment[]
+) => Fragment;
 
 export function createComponentFactory<T>(constructor: ComponentConstructor<T>): ComponentFactory<T> {
-  return ({settings, parent, ref} : {settings: T, parent: Component<unknown> | null, ref?: boolean}): Fragment => {
-    return Fragment.fromComponent(ref ? {"ref": true} : {}, new constructor(settings, parent));
+  return (
+    { settings, parent, ref }: { settings: T; parent?: SomeComponent; ref?: boolean },
+    children: Fragment[]
+  ): Fragment => {
+    return Fragment.fromComponent(ref ? { ref: true } : {}, new constructor(settings, parent ?? null, children));
   };
 }

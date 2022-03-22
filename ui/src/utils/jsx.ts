@@ -1,6 +1,7 @@
 import { Component, ComponentFactory } from "../components/component";
-import { nonNull } from "./assert";
+import { assert, nonNull } from "./assert";
 
+/* eslint-disable no-unused-vars */
 export declare namespace JSX {
   type Element = Fragment;
   interface IntrinsicElements extends IntrinsicElementMap {}
@@ -13,24 +14,28 @@ export declare namespace JSX {
 
   type Tag = keyof JSX.IntrinsicElements;
 }
+/* eslint-enable no-unused-vars */
 
 type Attributes = { [key: string]: string | boolean };
 
 const XML_NS_XHTML = "http://www.w3.org/1999/xhtml";
 const XML_NS_SVG = "http://www.w3.org/2000/svg";
-const XML_NS_PREFIXES: Map<string, string> = new Map([
-  ["xlink", "http://www.w3.org/1999/xlink"],
-]);
+const XML_NS_PREFIXES: Map<string, string> = new Map([["xlink", "http://www.w3.org/1999/xlink"]]);
 
 export class Fragment {
   private tag: JSX.Tag | null;
   private attributes: Attributes;
-  private children: Node[];
-  private comp?: Component<unknown>;
+  private children: (Fragment | Node | Fragment[])[];
+  comp?: Component<unknown>;
   private isRef: boolean;
   private elem?: Element;
 
-  constructor(tag: JSX.Tag | null, attributes: Attributes, children: Node[], comp?: Component<unknown>) {
+  constructor(
+    tag: JSX.Tag | null,
+    attributes: Attributes,
+    children: (Fragment | Node | Fragment[])[],
+    comp?: Component<unknown>
+  ) {
     this.tag = tag;
     this.attributes = attributes;
     this.children = children;
@@ -39,7 +44,7 @@ export class Fragment {
     delete attributes["ref"];
   }
 
-  static fromComponent(attrs: Attributes, comp: Component<unknown>) {
+  static fromComponent(attrs: Attributes, comp: Component<unknown>): Fragment {
     return new Fragment(null, attrs, [], comp);
   }
 
@@ -48,7 +53,11 @@ export class Fragment {
       if (this.isRef) {
         refs.push(this.comp);
       }
-      elem?.appendChild(this.comp.elem);
+      if (elem) {
+        elem.appendChild(this.comp.elem);
+      } else {
+        this.elem = this.comp.elem;
+      }
       return refs;
     }
 
@@ -64,29 +73,37 @@ export class Fragment {
       }
       elem?.appendChild(place);
       for (const [prop, value] of Object.entries(this.attributes ?? {})) {
-        let namespace: string | null = null, propName = prop;
+        let namespace: string | null = null;
+        let propName = prop;
         if (prop.indexOf(":") !== -1) {
           [namespace, propName] = prop.split(":", 2);
           namespace = XML_NS_PREFIXES.get(namespace) ?? null;
         }
         if (typeof value === "boolean" && propName.endsWith("If")) {
-            if (value) {
-                place.setAttributeNS(namespace, propName.substr(0, propName.length - 2), "");
-            }
+          if (value) {
+            place.setAttributeNS(namespace, propName.substr(0, propName.length - 2), "");
+          }
         } else {
-            place.setAttributeNS(namespace, propName, value.toString());
+          place.setAttributeNS(namespace, propName, value.toString());
         }
       }
     }
     for (const child of this.children) {
-        if (typeof child === "string") {
-          place.appendChild(new Text(child));
-        } else if (child instanceof Fragment) {
-          child.insertInto(place, inSvg, refs);
-        } else {
-          throw Error("Unknown children type");
+      if (typeof child === "string") {
+        place!.appendChild(new Text(child));
+      } else if (child instanceof Fragment) {
+        child.insertInto(place, inSvg, refs);
+      } else if (Array.isArray(child)) {
+        for (const grandchild of child) {
+          grandchild.insertInto(place, inSvg, refs);
         }
+      } else if (child instanceof Node) {
+        place!.appendChild(child);
+      } else {
+        console.log(child);
+        throw Error("Unknown children type");
       }
+    }
     return refs;
   }
 
@@ -98,8 +115,8 @@ export class Fragment {
     return this.insertInto(elem);
   }
 
-  asElement(): Element {
-    this.insertInto(null);
+  asElement(refs?: any[]): Element {
+    this.insertInto(null, false, refs);
     return nonNull(this.elem);
   }
 }
@@ -107,12 +124,19 @@ export class Fragment {
 export function jsx(
   tag: JSX.Tag | typeof Fragment | ComponentFactory<unknown>,
   attributes: Attributes | null,
-  ...children: Node[]
+  ...children: (Node | Fragment | Fragment[])[]
 ): Fragment {
   if (tag === Fragment) {
     return new Fragment(null, {}, children);
   } else if (typeof tag === "function") {
-    return (tag as ComponentFactory<unknown>)((attributes ?? {}) as any);
+    const wrappedChildren = children.map((child) => {
+      if (child instanceof Node) {
+        return new Fragment(null, {}, [child]);
+      }
+      assert(child instanceof Fragment);
+      return child;
+    });
+    return (tag as ComponentFactory<unknown>)((attributes ?? {}) as any, wrappedChildren);
   } else {
     return new Fragment(tag, attributes ?? {}, children);
   }

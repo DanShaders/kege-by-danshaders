@@ -3,6 +3,12 @@
   justify-content: center;
 }
 
+.flex-space-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 /* Two column group 1:5 */
 .group-15-row {
   display: flex;

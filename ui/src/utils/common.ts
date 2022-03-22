@@ -33,7 +33,7 @@ type FormCallbacks = {
 
 export const formCallbacks: FormCallbacks = {
   reportUnexpectedError: (e: any) => {
-    if ((e.prototype === ExpectedError) || (e instanceof RedirectNotification)) {
+    if (e.prototype === ExpectedError || e instanceof RedirectNotification) {
       return;
     }
     try {
@@ -49,6 +49,7 @@ ${e.stack}
 caused UI to produce yet another exception:
 ${e2}
 `);
+      console.error(e);
       console.error(e2);
     }
   },

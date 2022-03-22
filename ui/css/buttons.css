@@ -1,5 +1,5 @@
 button.wrapper {
-  display: flex;
+  display: inline-flex;
   border: none;
 }
 
@@ -99,4 +99,33 @@ button.wrapper:focus-visible {
 .button-blue:active,
 .button-blue:focus-visible {
   box-shadow: 0 0 0 0.2rem rgba(38, 143, 255, 0.5);
+}
+
+.button-icon {
+  margin-right: 5px;
+  width: 26px;
+  height: 26px;
+  padding: 3px;
+  border-radius: 4px;
+  vertical-align: middle;
+  display: inline-block;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.button-icon:last-child {
+  margin-right: 0;
+}
+
+.button-icon:hover {
+  background-color: #00000025;
+}
+
+.button-icon svg {
+  width: 20px;
+  height: 20px;
+  transition: fill 0.2s ease-in-out;
+}
+
+.button-icon:hover svg {
+  fill: var(--button-icon-hover-fill);
 }

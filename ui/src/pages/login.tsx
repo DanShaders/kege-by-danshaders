@@ -1,5 +1,5 @@
 import { Router } from "../utils/router";
-import { setupForm, toggleLoadingScreen, byId } from "../utils/common";
+import { setupForm, toggleLoadingScreen } from "../utils/common";
 import { request, requestU, EmptyPayload } from "../utils/requests";
 import { userInfo, setGlobalUserInfo } from "./common";
 import { Notice, NoticeComponent, NoticeSettings } from "../components/notice";
@@ -12,7 +12,7 @@ async function showLoginPage(params: URLSearchParams): Promise<void> {
     Router.instance.redirect("");
   }
 
-  let noticeSettings: NoticeSettings = {shown: false, message: "", type: "error"};
+  let noticeSettings: NoticeSettings = { shown: false, message: "", type: "error" };
   if (params.has("logged_out")) {
     noticeSettings = { shown: true, message: "Выход успешно осуществлен", type: "info" };
     params.delete("logged_out");
@@ -22,7 +22,7 @@ async function showLoginPage(params: URLSearchParams): Promise<void> {
   const [notice, loginForm, loginField, passwordField] = (
     <>
       <div id="notice-wrap" style="padding-top: 20px;">
-        <Notice ref settings={noticeSettings} parent={null}></Notice>
+        <Notice ref settings={noticeSettings}></Notice>
       </div>
       <h1 id="page-title">kege-by-danshaders</h1>
       <div id="login-container">
@@ -40,9 +40,7 @@ async function showLoginPage(params: URLSearchParams): Promise<void> {
   ).replaceContentsOf("main") as [NoticeComponent, HTMLFormElement, HTMLInputElement, HTMLInputElement];
 
   setupForm(loginForm, async (): Promise<boolean> => {
-    const data = new LoginRequest()
-      .setUsername(loginField.value)
-      .setPassword(passwordField.value);
+    const data = new LoginRequest().setUsername(loginField.value).setPassword(passwordField.value);
     const [code, result] = await request(UserInfo, "/api/user/login", data);
 
     if (code !== ErrorCode.OK || !result) {

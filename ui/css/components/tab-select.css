@@ -15,7 +15,8 @@
   padding: 0px 8px 9px;
 }
 
-.tab-wrap .tab-button:hover {
+.tab-wrap .tab-button:hover,
+.tab-wrap .tab-button:focus-within {
   color: black;
   border-bottom: 2px solid #c4c4c4;
 }
@@ -23,11 +24,7 @@
 .tab-wrap .tab-button[disabled] {
   color: black;
   font-weight: 600;
-  border-bottom: 2px solid #232d6a;
-}
-
-.tab-wrap .tab-button[disabled]:hover {
-  border-bottom: 2px solid #232d6a;
+  border-bottom: 2px solid #232d6a !important;
 }
 
 .tab-wrap .tab-inactive {

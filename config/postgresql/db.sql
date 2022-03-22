@@ -121,6 +121,7 @@ CREATE TABLE users_answers (
 	pos integer,
 	user_id integer,
 	answer bytea,
+	submit_time bigint,
 
 	FOREIGN KEY (kim_id, pos) REFERENCES kims_tasks(kim_id, pos) ON DELETE CASCADE,
 	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

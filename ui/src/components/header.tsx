@@ -37,9 +37,7 @@ type TooltipFiller = (event: Event) => void;
 export class HeaderComponent extends Component<HeaderSettings> {
   override createElement(): HTMLElement {
     const goTo = (url: string) => {
-      return () => {
-        Router.instance.goTo(url);
-      };
+      return () => Router.instance.redirect(url);
     };
 
     const forceHighlightOn = (id: string): void => {

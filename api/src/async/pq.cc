@@ -1,5 +1,8 @@
 #include "async/pq.h"
 
+#define _BSD_SOURCE
+#include <endian.h>
+
 #include "async/future.h"
 using namespace async;
 using namespace pq;
@@ -184,8 +187,50 @@ void result::expect0() const {
 }
 
 /* ==== async::pq::detail ==== */
+bool pq_recv_bool(char const *data, int len) {
+	assert(len == 1);
+	return bool(data[0]);
+}
+
+int64_t pq_recv_int64(char const *data, int len) {
+	assert(len == 8);
+	uint64_t res;
+	memcpy(&res, data, len);
+	res = be64toh(res);
+	return int64_t(res);
+}
+
+int pq_recv_int32(char const *data, int len) {
+	assert(len == 4);
+	uint32_t res;
+	memcpy(&res, data, len);
+	res = be32toh(res);
+	return int(res);
+}
+
+std::string_view pq_recv_text(char const *data, int len) {
+	return {data, (unsigned) len};
+}
+
+double pq_recv_double(char const *data, int len) {
+	assert(len == 8);
+	double res;
+	memcpy(&res, data, len);
+	return res;
+}
+
+std::vector<std::pair<Oid, void *>> pq::detail::pq_decoder::map = {
+	{16, (void *) pq_recv_bool},
+	{17, (void *) pq_recv_text},
+	{20, (void *) pq_recv_int64},
+	{23, (void *) pq_recv_int32},
+	{25, (void *) pq_recv_text},
+	{701, (void *) pq_recv_double},
+	{1042, (void *) pq_recv_text},
+};
+
 coro<result> pq::detail::exec(PGconn *conn, const char *command, int size, const char *values[],
 							  int lengths[], int formats[]) {
-	PGresult *raw = PQexecParams(conn, command, size, nullptr, values, lengths, formats, 0);
+	PGresult *raw = PQexecParams(conn, command, size, nullptr, values, lengths, formats, 1);
 	co_return result{raw};
 }

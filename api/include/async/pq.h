@@ -94,6 +94,7 @@ namespace pq {
 	class iterable_typed_result {
 	private:
 		raw_result res;
+		Oid oids[sizeof...(T)];
 
 	public:
 		template <std::size_t... Is>
@@ -124,6 +125,9 @@ namespace pq {
 		iterable_typed_result(raw_result res_) : res(res_) {
 			if (sizeof...(T) != PQnfields(res.get())) {
 				throw db_error{"Unexpected number of columns"};
+			}
+			for (std::size_t i = 0; i < sizeof...(T); ++i) {
+				oids[i] = PQftype(res.get(), int(i));
 			}
 		}
 
@@ -157,6 +161,18 @@ namespace pq {
 			params_lowerer(std::index_sequence<Is...>, Params &&...params);
 			params_lowerer(Params &&...params);
 		};
+
+		struct pq_decoder {
+			static std::vector<std::pair<Oid, void *>> map;
+		};
+
+		template <typename T>
+		constexpr bool is_optional(T const&) { return false; }
+		template <typename T>
+		constexpr bool is_optional(std::optional<T> const&) { return true; }
+
+		template<typename T>
+		T get_raw_cell_value(PGresult *res, unsigned *oids, int i, int j);
 
 		coro<result> exec(PGconn *conn, const char *command, int size, const char *values[],
 						  int lengths[], int formats[]);

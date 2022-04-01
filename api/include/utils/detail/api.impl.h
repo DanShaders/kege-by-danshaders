@@ -8,9 +8,16 @@ inline T expect(fcgx::request_t *r) {
 }
 
 template <typename T>
-void ok(fcgx::request_t *r, const typename T::initializable_type &response) {
+inline void ok(fcgx::request_t *r, const typename T::initializable_type &response) {
 	std::string data;
 	T obj{response};
 	obj.SerializeToString(&data);
+	send_raw(r, api::OK, data);
+}
+
+template <typename T>
+inline void ok(fcgx::request_t *r, const T &response) {
+	std::string data;
+	response.SerializeToString(&data);
 	send_raw(r, api::OK, data);
 }

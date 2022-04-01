@@ -76,14 +76,15 @@ thread_local std::shared_ptr<event_loop> event_loop::local;
 
 /* ==== async::detail ==== */
 void detail::log_top_level_exception(const std::string &what) {
+	using namespace std::literals;
+
 	int status = 0;
 	char *buff = __cxxabiv1::__cxa_demangle(__cxxabiv1::__cxa_current_exception_type()->name(), 0,
 											0, &status);
-	std::cout << "Uncaught exception (in top-level async function): thrown "
-				 "instance of '"
-			  << buff << "'";
-	if (what.size())
-		std::cout << "\n  what():  " << what;
-	std::cout << std::endl;
+	logging::info("Uncaught exception (in top-level async function): thrown instance of '"s + buff +
+				  "'");
+	if (what.size()) {
+		std::cout << "  what():  " << what << std::endl;
+	}
 	std::free(buff);
 }

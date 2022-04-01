@@ -130,5 +130,9 @@ export const byId = (id: string): HTMLElement | null => document.getElementById(
 let uniqueIdCounter = 0;
 
 export function uniqueId(): string {
-  return "uniqueid-" + (uniqueIdCounter++);
+  return "uniqueid-" + uniqueIdCounter++;
+}
+
+export function dbId(): number {
+  return Math.round(new Date().getTime() * 1000 + Math.random() * 1_000_000);
 }

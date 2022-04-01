@@ -26,7 +26,7 @@ type TraverseTextHandler = [TraverseTextInHandler, TraverseTextOutHandler];
 type TraverseRule = [string, TraverseHandler] | [string, TraverseHandler, boolean | number] | [0, TraverseTextHandler];
 type TraverseRules = TraverseRule[];
 
-const ALLOWED_TAGS = ["a", "b", "i", "s", "u", "div", "img", "font", "sub", "sup", "br", "formula"];
+const ALLOWED_TAGS = ["a", "b", "i", "s", "u", "div", "img", "font", "sub", "sup", "br", "formula", "pre"];
 const ALLOWED_CLOSE_TAGS = new Set(ALLOWED_TAGS.map((elem) => "/" + elem));
 ALLOWED_CLOSE_TAGS.delete("/img");
 const ALLOWED_COLORS = new Set(["black", "red", "yellow", "green", "blue", "gray", "white"]);
@@ -34,11 +34,10 @@ const ALLOWED_COLORS = new Set(["black", "red", "yellow", "green", "blue", "gray
 const CODE_TO_PREVIEW_RULES: TraverseRules = [
   [0, useText()], // 0 is a selector for text nodes
   ["br", useBrInPreview()],
-  ["b, i, u, s, sub, sup", useTagWithoutAttributes()],
+  ["b, i, u, s, sub, sup, pre", useTagWithoutAttributes()],
   ["a", useTagWithAttributes(["href"])],
   ["font", useFontInPreview()],
   ["img", useImageSanitized()],
-  ["div.codeblock, div.quoteblock, div.Ramka1, div.Ramka2, div.Ramka3", useTagWithAttributes(["class"])],
   ["div[align=center], div[align=left], div[align=right], div[align=justify]", useTagWithAttributes(["align"])],
   ["formula", useTagWithoutAttributes()],
 ];
@@ -46,20 +45,17 @@ const CODE_TO_PREVIEW_RULES: TraverseRules = [
 const PREVIEW_TO_CODE_RULES: TraverseRules = [
   [0, useText()],
   ["br", insertNewLine()],
-  ["div", useDivInCode()],
+  ["div, pre", useDivInCode()],
   ["*", useTag()],
 ];
 
 const PREVIEW_TO_QUILL_RULES: TraverseRules = [
   [0, useTextInQuill()],
   ["br", useTagWithoutAttributes()],
-  ["b, i, u, s, sub, sup", useTagWithoutAttributes()],
+  ["b, i, u, s, sub, sup, pre", useTagWithoutAttributes()],
   ["a", useTagWithAttributes(["href"])],
   ["img", useTagWithAttributes(["src"])],
   ["font", useFontInQuill()],
-  ["div.Ramka1, div.Ramka2, div.Ramka3", dropTag()], // no luck supporting this in Quill
-  ["div.codeblock", wrapInto("pre", [])],
-  ["div.quoteblock", wrapInto("blockquote", [])],
   ["div[align]", useAlignInQuill()],
   ["formula", useFormulaInQuill()],
 ];
@@ -94,9 +90,8 @@ const QUILL_TO_CODE_RULES: TraverseRules = [
   ["em", wrapInto("i", [])],
   ["a", useTagWithAttributes(["href"])],
   ["img", useTagWithAttributes(["src"])],
-  ["blockquote", wrapInto("div", [["class", "quoteblock"]])],
-  ["div.ql-code-block", wrapInto("div", [["class", "codeblock"]])],
-  ["pre", wrapInto("div", [["class", "codeblock"]])],
+  ["div.ql-code-block", wrapInto("pre", [])],
+  ["pre", useTagWithoutAttributes()],
   ["p", insertNewLine()],
   ["formula", useFormulaInCode()],
 ];
@@ -143,19 +138,26 @@ function useTagWithAttributes(attrs: string[]): TraverseHandler {
   ];
 }
 
-function isDivCreatingBr(elem: any): boolean {
-  if (!(elem instanceof HTMLDivElement)) return false;
-  if (elem.getAttribute("class") !== null) return true;
-  let flag = false;
-  for (let c of elem.innerText) if (c !== " ") flag = true;
-  return flag;
+function isElementCreatingBr(elem: any): boolean {
+  if (!(elem instanceof HTMLDivElement || elem instanceof HTMLPreElement)) {
+    return false;
+  }
+  if (elem.classList.length) {
+    return true;
+  }
+  for (let c of elem.innerText) {
+    if (c !== " ") {
+      return true;
+    }
+  }
+  return false;
 }
 
 function useBrInPreview(): TraverseHandler {
   return [
     () => {},
     (elem, children, ctx): HTMLElement[] => {
-      if (isDivCreatingBr(elem.previousSibling)) return []; // don't want <br> tag in situations like "</div> <ENTER> 123"
+      if (isElementCreatingBr(elem.previousSibling)) return []; // don't want <br> tag in situations like "</div> <ENTER> 123"
       return [document.createElement("br")];
     },
   ];
@@ -167,7 +169,7 @@ function useDivInCode(): TraverseHandler {
     (elem, children, ctx): TraverseElement[] => {
       let res = cloneTag(elem, children);
       for (let attr of elem.attributes) res.setAttribute(attr.name, attr.value);
-      if (isDivCreatingBr(elem)) return [res, new Text("\n")];
+      if (isElementCreatingBr(elem)) return [res, new Text("\n")];
       return [res];
     },
   ];
@@ -507,7 +509,7 @@ function previewToCode(data: string) {
 //   ON_SHOW[currentLayout]();
 // }
 
-export class TextEditorComponent extends Component<{}> {
+export class TextEditorComponent extends Component<{text: string}> {
   private quill: Quill;
   private quillWrap: HTMLDivElement;
   private previewContainer: HTMLDivElement;
@@ -516,16 +518,24 @@ export class TextEditorComponent extends Component<{}> {
   private domVersions = [0, 0, 0];
   private textHtml = ["", "", ""];
 
-  constructor(settings: {}, parent: Component<unknown> | null, children?: jsx.Fragment[]) {
+  constructor(settings: {text: string}, parent: Component<unknown> | null, children?: jsx.Fragment[]) {
     super(settings, parent, children);
 
     this.quillWrap = document.createElement("div");
+    this.quillWrap.classList.add("ql-wrap");
     this.quillWrap.innerHTML = `<div></div>`;
 
     this.previewContainer = document.createElement("div");
+    this.previewContainer.classList.add("preview-container");
     this.codeContainer = (
       <textarea id="code-container" class="tab-textarea monospace" style="font-size: 14px;" />
     ).asElement() as HTMLTextAreaElement;
+    this.codeContainer.addEventListener("focusout", () => {
+      this.onTabSwitch(-1, EditorTabs.CODE);
+    });
+    this.quillWrap.children[0].addEventListener("focusout", () => {
+      this.onTabSwitch(-1, EditorTabs.QUILL);
+    })
     this.quill = new Quill(this.quillWrap.children[0], {
       modules: {
         syntax: false,
@@ -536,8 +546,8 @@ export class TextEditorComponent extends Component<{}> {
               { align: [false, "center", "right", "justify"] },
               { size: ["xsmall", "small", false, "large", "xlarge", "xxlarge"] },
             ],
-            [{ color: ALLOWED_COLORS }],
-            [{ script: "sub" }, { script: "super" }, "blockquote", "code-block"],
+            [{ color: Array.from(ALLOWED_COLORS) }],
+            [{ script: "sub" }, { script: "super" }, "code-block"],
             ["image", "link", "formula"],
             ["clean"],
           ],
@@ -558,7 +568,7 @@ export class TextEditorComponent extends Component<{}> {
             }
             let selection = this.quill.getSelection();
             let html = previewToQuill(codeToPreview(quillToCode((this.quill as any).getSemanticHTML())));
-            this.quill.setContents(this.quill.clipboard.convert({html: html, text: "\n"}));
+            this.quill.setContents(this.quill.clipboard.convert({ html: html, text: "\n" }));
             // FIXME selection will change unexpectedly if pasted text contains forbidden tags
             if (selection) {
               this.quill.setSelection(selection);
@@ -576,10 +586,21 @@ export class TextEditorComponent extends Component<{}> {
             },
           },
         },
+        history: {
+          userOnly: true,
+        }
       },
       placeholder: "",
       theme: "snow",
     });
+
+    if (settings.text !== "") {
+      this.textVersion = 1;
+      this.textHtml[EditorTabs.PREVIEW] = settings.text;
+      this.textHtml[EditorTabs.CODE] = previewToCode(settings.text);
+      this.textHtml[EditorTabs.QUILL] = previewToQuill(settings.text);
+      this.onTabSwitch(0, -1);
+    }
   }
 
   onTabSwitch(index: number, oldIndex: number) {
@@ -588,23 +609,24 @@ export class TextEditorComponent extends Component<{}> {
       if (this.textHtml[oldIndex] !== code) {
         this.textHtml[oldIndex] = code;
         ++this.textVersion;
-        const preview = this.textHtml[EditorTabs.PREVIEW] = codeToPreview(code);  
+        const preview = (this.textHtml[EditorTabs.PREVIEW] = codeToPreview(code));
+        this.settings.text = preview;
         this.textHtml[EditorTabs.QUILL] = previewToQuill(preview);
       }
     } else if (oldIndex === EditorTabs.QUILL) {
-      let quill = (this.quill as any).getSemanticHTML();
-      if (quill.startsWith("<div class=\"ql-editor\" contenteditable=\"true\">") && quill.endsWith("</div>")) {
+      let quill = (this.quill as any).getSemanticHTML() as string;
+      if (quill.startsWith('<div class="ql-editor" contenteditable="true">') && quill.endsWith("</div>")) {
         quill = quill.substr(46, quill.length - 52);
       }
       if (this.textHtml[oldIndex] !== quill) {
         this.textHtml[oldIndex] = quill;
         ++this.textVersion;
-        const code = this.textHtml[EditorTabs.CODE] = quillToCode(quill);
-        this.textHtml[EditorTabs.PREVIEW] = codeToPreview(code);
+        const code = (this.textHtml[EditorTabs.CODE] = quillToCode(quill).trimEnd());
+        this.settings.text = this.textHtml[EditorTabs.PREVIEW] = codeToPreview(code);
       }
     }
     this.domVersions[oldIndex] = this.textVersion;
-    
+
     if (this.domVersions[index] !== this.textVersion) {
       this.domVersions[index] = this.textVersion;
       if (index === EditorTabs.CODE) {
@@ -612,24 +634,30 @@ export class TextEditorComponent extends Component<{}> {
       } else if (index === EditorTabs.PREVIEW) {
         this.previewContainer.innerHTML = this.textHtml[index];
         for (const elem of this.previewContainer.querySelectorAll("formula")) {
-          katex.render((elem as HTMLElement).innerText, elem as HTMLElement, {throwOnError: false});
+          katex.render((elem as HTMLElement).innerText, elem as HTMLElement, { throwOnError: false });
         }
       } else if (index === EditorTabs.QUILL) {
-        this.quill.setContents(this.quill.clipboard.convert({html: this.textHtml[index], text: "\n"}));
+        this.quill.setContents(this.quill.clipboard.convert({ html: this.textHtml[index], text: "\n" }));
       }
     }
 
-    if (index === EditorTabs.QUILL) {
-      this.quill.focus();
-    } else if (index === EditorTabs.CODE) {
-      this.codeContainer.focus();
+    if (index !== -1 && oldIndex !== -1) {
+      if (index === EditorTabs.QUILL) {
+        this.quill.focus();
+      } else if (index === EditorTabs.CODE) {
+        this.codeContainer.focus();
+      }
     }
   }
 
   createElement(): HTMLElement {
     return (
       <TabSelect
-        settings={{ selectedTab: 0, tabNames: ["Редактор", "Код", "Предпросмотр"], onTabSwitch: this.onTabSwitch.bind(this) }}
+        settings={{
+          selectedTab: 0,
+          tabNames: ["Редактор", "Код", "Предпросмотр"],
+          onTabSwitch: this.onTabSwitch.bind(this),
+        }}
       >
         {this.quillWrap}
         {this.codeContainer}

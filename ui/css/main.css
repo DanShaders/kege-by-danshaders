@@ -12,5 +12,6 @@
 @import "./components/header";
 @import "./components/notice";
 @import "./components/tab-select";
+@import "./components/text-editor";
 
 @import "./pages/login";

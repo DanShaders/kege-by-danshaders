@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package api;
+
+enum GradingPolicy {
+	UNKNOWN = 0;
+	FULL_MATCH = 1;
+	INDEPENDENT = 2;
+	INDEPENDENT_SWAP_PENALTY = 3;
+	FULL_MATCH_CASE_SENSITIVE = 4;
+}
+
+message TaskType {
+	int64 id = 1;
+
+	optional bool obsolete = 2;
+	optional string short_name = 3;
+	optional string full_name = 4;
+	optional GradingPolicy grading = 5;
+	optional double scale_factor = 6;
+	optional bool deleted = 7;
+}
+
+// Route /task-types/list
+message TaskTypeListResponse {
+	repeated TaskType type = 1;
+}

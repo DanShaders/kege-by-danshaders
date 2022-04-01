@@ -123,9 +123,10 @@ button.wrapper:focus-visible {
 .button-icon svg {
   width: 20px;
   height: 20px;
-  transition: fill 0.2s ease-in-out;
+  transition: fill 0.2s;
 }
 
-.button-icon:hover svg {
+.button-icon:hover svg,
+.button-icon:focus-visible svg {
   fill: var(--button-icon-hover-fill);
 }

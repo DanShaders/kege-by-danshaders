@@ -79,7 +79,7 @@ export class Fragment {
           [namespace, propName] = prop.split(":", 2);
           namespace = XML_NS_PREFIXES.get(namespace) ?? null;
         }
-        if (typeof value === "boolean" && propName.endsWith("If")) {
+        if ((typeof value === "boolean" || value === undefined) && propName.endsWith("If")) {
           if (value) {
             place.setAttributeNS(namespace, propName.substr(0, propName.length - 2), "");
           }

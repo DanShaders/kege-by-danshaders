@@ -11,6 +11,11 @@
     "moduleResolution": "node",
     "jsx": "react",
     "jsxFactory": "jsx.jsx",
-    "jsxFragmentFactory": "jsx.Fragment"
+    "jsxFragmentFactory": "jsx.Fragment",
+    "baseUrl": ".",
+    "paths": {
+      "*": ["src/*"],
+      "jsx": ["src/utils/jsx"]
+    }
   }
 }

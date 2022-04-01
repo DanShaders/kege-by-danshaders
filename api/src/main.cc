@@ -84,6 +84,7 @@ signed main() {
 		auto &data = workers[worker_id];
 		logging::set_thread_name("worker-" + std::to_string(worker_id));
 		data.loop->bind_to_thread();
+		logging::info("Worker is ready to process requests");
 		data.loop->run(false);
 	};
 

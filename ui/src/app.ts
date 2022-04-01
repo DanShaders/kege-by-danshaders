@@ -1,6 +1,7 @@
 import { Router, RedirectNotification, RouteNotFoundError } from "./utils/router";
 import { formCallbacks } from "./utils/common";
 
+import "./pages/404";
 import "./pages/common";
 import "./pages/login";
 import "./pages/main";

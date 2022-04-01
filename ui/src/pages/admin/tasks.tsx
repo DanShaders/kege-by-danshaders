@@ -6,8 +6,9 @@ import * as jsx from "../../utils/jsx";
 
 async function showTaskListPage(): Promise<void> {
   requireAuth(1);
+
   const newTaskHandler = (): never =>
-    Router.instance.redirect("admin/tasks/new?back=" + encodeURIComponent(Router.instance.currentURL));
+    Router.instance.redirect("admin/tasks/edit?back=" + encodeURIComponent(Router.instance.currentURL));
   (
     <>
       <h1 id="page-title" class="flex-space-between">

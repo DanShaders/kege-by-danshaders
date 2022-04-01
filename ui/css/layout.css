@@ -3,10 +3,24 @@
   justify-content: center;
 }
 
+.flex-align-center {
+  display: flex;
+  align-items: center;
+}
+
+.flex-align-end {
+  display: flex;
+  align-items: end;
+}
+
 .flex-space-between {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.pad-right {
+  margin-right: 5px;
 }
 
 /* Two column group 1:5 */
@@ -46,11 +60,4 @@
 
 .group-15-not-first {
   margin-top: 0.6em;
-}
-
-.group-15-textarea-line {
-  padding: 6px 10px;
-  width: calc(100% - 20px);
-  min-height: 18px;
-  resize: vertical;
 }

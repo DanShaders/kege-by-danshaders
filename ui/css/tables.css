@@ -25,6 +25,10 @@ main table tbody tr:hover {
   background-color: #0000000a;
 }
 
+.table-width-auto {
+  width: auto;
+}
+
 .column-min {
   width: 0.1%;
 }
@@ -33,6 +37,39 @@ main table tbody tr:hover {
   width: auto;
 }
 
+.column-200px {
+  width: 200px;
+}
+
 .table-first-col-left tbody td:nth-child(1) {
   text-align: left;
+}
+
+.table-bordered {
+  box-shadow: 0 0 0 1px #ddd;
+}
+
+.table-bordered td {
+  border: 1px solid #ddd;
+}
+
+.table-bordered tr:first-child td:first-child {
+  border-top-left-radius: 4px;
+}
+
+.table-bordered tr:first-child td:last-child {
+  border-top-right-radius: 4px;
+}
+
+.table-bordered tr:last-child td:first-child {
+  border-bottom-left-radius: 4px;
+}
+
+.table-bordered tr:last-child td:last-child {
+  border-bottom-right-radius: 4px;
+}
+
+.table-input td {
+  background-color: white;
+  padding: 0;
 }

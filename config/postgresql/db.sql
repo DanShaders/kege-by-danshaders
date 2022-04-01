@@ -1,50 +1,43 @@
 CREATE SEQUENCE seq_id;
 
-CREATE TYPE grading_policy AS ENUM ('full_match', 'independent_check');
-
-CREATE TABLE ege_types (
-	id integer DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY,
+CREATE TABLE task_types (
+	id bigint DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY,
 	obsolete bool,
 	short_name text,
 	full_name text,
-	grading grading_policy,
-	scale_factor double precision CHECK (scale_factor > 0)
+	grading integer,
+	scale_factor double precision CHECK (scale_factor > 0),
+	deleted bool
 );
 
 CREATE TABLE tasks (
-	id integer DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY,
-	ege_type integer,
-	parent integer,
+	id bigint DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY,
+	task_type bigint,
+	parent bigint,
 	task text,
-	source text,
 	answer_rows integer,
 	answer_cols integer,
 	answer bytea,
+	deleted bool,
 
-	FOREIGN KEY (ege_type) REFERENCES ege_types(id),
+	FOREIGN KEY (task_type) REFERENCES task_types(id),
 	FOREIGN KEY (parent) REFERENCES tasks(id)
 );
 
 CREATE TABLE task_attachments (
-	id integer DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY,
-	task_id integer,
-	orig_filename text,
-	fs_filename text,
-
-	FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
-);
-
-CREATE TABLE task_images (
-	id integer DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY,
-	task_id integer,
+	id bigint DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY,
+	task_id bigint,
+	filename text,
+	hash text,
 	mime_type text,
-	fs_filename text,
+	shown_to_user bool,
+	deleted bool,
 
 	FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
 );
 
 CREATE TABLE kims (
-	id integer NOT NULL PRIMARY KEY,
+	id bigint NOT NULL PRIMARY KEY,
 	duration integer,
 	virtual boolean,
 	exam boolean,
@@ -56,8 +49,8 @@ CREATE TABLE kims (
 );
 
 CREATE TABLE kims_tasks (
-	kim_id integer,
-	task_id integer,
+	kim_id bigint,
+	task_id bigint,
 	pos integer,
 	name text,
 
@@ -67,7 +60,7 @@ CREATE TABLE kims_tasks (
 );
 
 CREATE TABLE users (
-	id integer DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY, 
+	id bigint DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY, 
 	username text,
 	display_name text,
 	permissions integer,
@@ -79,36 +72,36 @@ CREATE TABLE users (
 
 CREATE TABLE sessions (
 	id char(64) NOT NULL PRIMARY KEY,
-	user_id integer,
+	user_id bigint,
 	login_time bigint, 
 
 	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE groups (
-	id integer DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY,
+	id bigint DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY,
 	display_name text
 );
 
 CREATE TABLE users_groups (
-	user_id integer,
-	group_id integer,
+	user_id bigint,
+	group_id bigint,
 
 	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
 	FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
 );
 
 CREATE TABLE groups_kims (
-	group_id integer,
-	kim_id integer,
+	group_id bigint,
+	kim_id bigint,
 
 	FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
 	FOREIGN KEY (kim_id) REFERENCES kims(id) ON DELETE CASCADE
 );
 
 CREATE TABLE users_kims (
-	user_id integer,
-	kim_id integer,
+	user_id bigint,
+	kim_id bigint,
 	start_time timestamp,
 	end_time timestamp,
 
@@ -117,9 +110,9 @@ CREATE TABLE users_kims (
 );
 
 CREATE TABLE users_answers (
-	kim_id integer,
+	kim_id bigint,
 	pos integer,
-	user_id integer,
+	user_id bigint,
 	answer bytea,
 	submit_time bigint,
 
@@ -128,18 +121,18 @@ CREATE TABLE users_answers (
 );
 
 CREATE TABLE users_results (
-	kim_id integer,
-	user_id integer,
-	points integer[],
-	total integer,
+	kim_id bigint,
+	user_id bigint,
+	points double precision[],
+	total double precision,
 
 	FOREIGN KEY (kim_id) REFERENCES kims(id) ON DELETE CASCADE,
 	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE standings (
-	kim_id integer,
-	group_id integer,
+	kim_id bigint,
+	group_id bigint,
 	name text,
 	fs_filename text,
 	creation_time timestamp,
@@ -164,4 +157,46 @@ INSERT INTO users (username, display_name, permissions, salt, password) VALUES (
 	0,
 	'a93c87f2f88b9aca33ba64fdb35bde919c0aadfd690507d9b2da38cb1a9ba4ff',
 	'e1bdae5584062bf6a4472260180be513e1db4cfe334fec1c67cb5e5eb26452fa'
+);
+
+COPY task_types (obsolete, short_name, full_name, grading, scale_factor, deleted) FROM stdin;
+f	1	1. Анализ информационных моделей	1	1	f
+f	2	2. Таблицы истинности логических выражений	1	1	f
+f	3	3. Поиск и сортировка в базах данных	1	1	f
+f	4	4. Кодирование и декодирование данных. Условие Фано	1	1	f
+f	5	5. Анализ алгоритмов для исполнителей	1	1	f
+f	6	6. Анализ программ с циклами	1	1	f
+f	7	7. Кодирование графической и звуковой информации	1	1	f
+f	8	8. Комбинаторика	1	1	f
+f	9	9. Обработка числовой информации в электронных таблицах	1	1	f
+f	10	10. Поиск слова в текстовом документе	1	1	f
+f	11	11. Вычисление количества информации	1	1	f
+f	12	12. Алгоритмы для исполнителей с циклами и ветвлениями	1	1	f
+f	13	13. Количество путей в ориентированном графе	1	1	f
+f	14	14. Позиционные системы счисления	1	1	f
+f	15	15. Истинность логического выражения	1	1	f
+f	16	16. Вычисление значения рекурсивной функции	1	1	f
+f	17	17. Обработка целочисленных данных. Проверка делимости	1	1	f
+f	18	18. Динамическое программирование в электронных таблицах	1	1	f
+f	19	19. Теория игр	1	1	f
+f	20	20. Теория игр	1	1	f
+f	21	21. Теория игр	1	1	f
+f	22	22. Анализ программ с циклами и ветвлениями	1	1	f
+f	23	23. Динамическое программирование (количество программ)	1	1	f
+f	24	24. Обработка символьных строк	1	1	f
+f	25	25. Обработка целочисленных данных. Поиск делителей	1	1	f
+f	26	26. Обработка данных с помощью сортировки	3	1	f
+f	27	27. Обработка потока данных	3	1	f
+t	103	103. Поиск и сортировка в базах данных (Архив)	1	1	f
+t	109	109. Обработка числовой информации в электронных таблицах (Архив)	1	1	f
+t	117	117. Обработка целочисленных данных. Проверка делимости (Архив)	1	1	f
+\.
+
+INSERT INTO tasks (task_type, task, answer_rows, answer_cols, answer, deleted) VALUES (
+	29,
+	'Имеется набор данных, состоящий из пар положительных целых чисел. Необходимо выбрать из каждой пары ровно одно число так, чтобы сумма всех выбранных чисел не делилась на 3 и при этом была максимально возможной. Гарантируется, что искомую сумму получить можно. Программа должна напечатать одно число – максимально возможную сумму, соответствующую условиям задачи.<br><br>Входные данные.<br>Даны два входных файла (файл A и файл B), каждый из которых содержит в первой строке количество пар <formula>n</formula> (<formula>1 \le n \le 100\,000</formula>). Каждая из следующих <formula>n</formula> строк содержит два натуральных числа, не превышающих <formula>10\,000</formula>.<br>Пример организации исходных данных во входном файле:<br>	Tab<br><pre>6<br>1 3<br>5 12<br>6 9<br>5 4<br>3 3<br>1 1<br></pre>Для указанных входных данных значением искомой суммы должно быть число 32. В ответе укажите два числа: сначала значение искомой суммы для файла А, затем для файла B.<br><br><b>Предупреждение: </b>для обработки файла B <b>не следует </b>использовать переборный алгоритм, вычисляющий сумму для всех возможных вариантов, поскольку написанная по такому алгоритму программа будет выполняться слишком долго.',
+	1,
+	2,
+	'127127\000399762080'::bytea,
+	false
 );

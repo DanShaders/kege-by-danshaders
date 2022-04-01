@@ -1,3 +1,6 @@
+import { requestU } from "./utils/requests";
+import { TaskTypeListResponse } from "./proto/task-types_pb";
+
 import "./pages/admin/tasks";
 import "./pages/admin/tasks-new";
 
@@ -42,3 +45,12 @@ export const headerSettings = {
     moreText: "Ещё",
   },
 };
+
+let cachedTaskTypes: TaskTypeListResponse.AsObject;
+
+export async function getTaskTypes(): Promise<TaskTypeListResponse.AsObject> {
+  if (!cachedTaskTypes) {
+    cachedTaskTypes = (await requestU(TaskTypeListResponse, "api/task-types/list")).toObject();
+  }
+  return cachedTaskTypes;
+}

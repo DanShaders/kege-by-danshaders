@@ -7,14 +7,23 @@ export class RouteNotFoundError extends Error {}
 
 export class Router {
   private static _instance: Router;
-  private public_routes: Map<string, Handler>;
-  private private_routes: Map<string, Handler>;
+  private publicRoutes: Map<string, Handler>;
+  private privateRoutes: Map<string, Handler>;
 
   currentURL: string = "";
+  currentPage: string = "";
+
+  private static hashChangeListener() {
+    Router.instance.redirect(location.hash.substr(1), false, true);
+  }
+
+  registerListener() {
+    window.addEventListener("hashchange", Router.hashChangeListener);
+  }
 
   private constructor() {
-    this.public_routes = new Map();
-    this.private_routes = new Map();
+    this.publicRoutes = new Map();
+    this.privateRoutes = new Map();
   }
 
   static get instance(): Router {
@@ -23,37 +32,45 @@ export class Router {
 
   addRoute(page: string, handler: Handler, isPrivate: boolean = false): void {
     if (isPrivate) {
-      this.private_routes.set(page, handler);
+      this.privateRoutes.set(page, handler);
     } else {
-      this.public_routes.set(page, handler);
+      this.publicRoutes.set(page, handler);
     }
   }
 
   setUrl(url: string): void {
-    location.hash = url;
+    history.replaceState(undefined, "", "#" + url);
+    this.currentURL = url;
+    this.currentPage = url.split("?", 2)[0];
   }
 
-  async goTo(url: string, isPrivate: boolean = true): Promise<void> {
+  async goTo(url: string, isPrivate: boolean = true, historyUpdated = false): Promise<void> {
     toggleLoadingScreen(true);
     const [page, params] = url.split("?", 2);
-    let handler = this.public_routes.get(page);
-    if (handler) {
-      location.hash = url;
+    let handler = this.publicRoutes.get(page);
+
+    if (handler && !historyUpdated) {
+      history.pushState(undefined, "", "#" + url);
     }
     if (isPrivate) {
-      handler ??= this.private_routes.get(page);
+      handler ??= this.privateRoutes.get(page);
     }
     if (handler) {
-      Router.instance.currentURL = url;
+      this.currentURL = url;
+      this.currentPage = page;
       await handler(new URLSearchParams(params));
     } else {
-      throw new RouteNotFoundError(`Route for '${url}' is not found`);
+      if (page === "404") {
+        throw new RouteNotFoundError(`Route for '${url}' is not found`);
+      } else {
+        this.goTo("404?url=" + encodeURIComponent(url));
+      }
     }
   }
 
-  redirect(url: string, isPrivate: boolean = true): never {
+  redirect(url: string, isPrivate: boolean = true, historyUpdated = false): never {
     setTimeout(async () => {
-      await this.goTo(url, isPrivate);
+      await this.goTo(url, isPrivate, historyUpdated);
     }, 0);
     throw new RedirectNotification();
   }

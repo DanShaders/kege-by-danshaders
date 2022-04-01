@@ -1,9 +1,9 @@
 html {
-  line-height: 1.15;
   -webkit-text-size-adjust: 100%;
 
   --modern-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell,
     "Helvetica Neue", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --monospace-font-family: "Consolas", monospace;
 }
 
 body {
@@ -42,8 +42,9 @@ hr {
 }
 
 pre {
-  font-family: monospace, monospace;
+  font-family: var(--monospace-font-family);
   font-size: 1em;
+  margin: 0;
 }
 
 a {
@@ -64,7 +65,7 @@ strong {
 code,
 kbd,
 samp {
-  font-family: monospace, monospace;
+  font-family: var(--monospace-font-family);
   font-size: 1em;
 }
 
@@ -102,7 +103,9 @@ textarea {
   margin: 0;
 }
 
-textarea {
+textarea,
+[type="text"],
+select {
   overflow: auto;
   outline: none;
   border: none;
@@ -110,7 +113,8 @@ textarea {
 }
 
 button,
-a {
+a,
+[type="submit"] {
   cursor: pointer;
   color: inherit;
   outline: none;
@@ -256,7 +260,7 @@ ul.ni {
 }
 
 .monospace {
-  font-family: monospace;
+  font-family: var(--monospace-font-family);
 }
 
 .clickable {
@@ -321,4 +325,35 @@ ul.ni {
 
 .katex {
   font-size: 1.05em !important;
+}
+
+.textarea-line {
+  padding: 6px 10px;
+  width: calc(100% - 20px);
+  min-height: 18px;
+  resize: vertical;
+}
+
+.select-line {
+  padding: 6px 10px;
+  width: calc(100% - 10px);
+  min-height: 18px;
+}
+
+.textarea-20px {
+  padding: 6px 10px;
+  width: 20px;
+  min-height: 18px;
+  resize: vertical;
+}
+
+.textarea-freestanding {
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.svg-inline-icon {
+  width: 20px;
+  height: 20px;
 }

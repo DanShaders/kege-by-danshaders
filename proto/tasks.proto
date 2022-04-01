@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package api;
+
+// Route /tasks/get, /tasks/update
+message Task {
+	int64 id = 1;
+	
+	optional int64 task_type = 2;
+	optional int64 parent = 3;
+	optional string text = 4;
+	optional int32 answer_rows = 5;
+	optional int32 answer_cols = 6;
+	optional bytes answer = 7;
+
+	message Attachment {
+		int64 id = 1;
+
+		optional string filename = 2;
+		optional string mime_type = 3;
+		string hash = 4;
+		bytes contents = 5;
+		optional bool shown_to_user = 6;
+		optional bool deleted = 7;
+	}
+	repeated Attachment attachments = 8;
+}
+
+message UpdateResponse {
+	map<int64, string> attachments_hash = 1;
+}

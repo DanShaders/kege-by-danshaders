@@ -71,6 +71,7 @@ async function init(): Promise<void> {
   }
   headerWrap = document.getElementById("page-header-wrap")!;
   await Router.instance.goTo("#update-header");
+  Router.instance.registerListener();
 }
 
 Router.instance.addRoute("#init", init, true);

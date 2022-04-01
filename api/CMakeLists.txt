@@ -35,6 +35,8 @@ set(
 
 	routes/_basic.cc
 	routes/_wrap.cc
+	routes/task-types.cc
+	routes/tasks.cc
 	routes/user.cc
 )
 
@@ -47,6 +49,8 @@ set(
 set(
 	PROTO_SOURCES
 	../proto/api.proto
+	../proto/task-types.proto
+	../proto/tasks.proto
 	../proto/user.proto
 )
 
@@ -55,7 +59,7 @@ set(
 ExternalProject_Add(
 	CPP_PROTOC_INITIALIZERS
 	GIT_REPOSITORY "https://github.com/DanShaders/cpp-protoc-initializers.git"
-	GIT_TAG "b262c68df15cce43ba9ddf0726311f3d17548de7"
+	GIT_TAG ""
 	CMAKE_ARGS
 		-DCMAKE_BUILD_TYPE=Release
 		-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>

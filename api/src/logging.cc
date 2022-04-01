@@ -26,11 +26,18 @@ void _log(const char *prefix, const char *message, std::size_t message_len, FILE
 
 	{
 		std::lock_guard<std::mutex> guard(log_mutex);
-		time_t rawtime;
-		time(&rawtime);
-		strftime(buffer, MAX_BUFFER - 1, "[%Y-%m-%d %H:%M:%S]", localtime(&rawtime));
-		fprintf(file, "%s [%s] [%s] %.*s\n", buffer, logging_thread_name.c_str(), prefix,
-				int(message_len), message);
+
+		timeval tv;
+		gettimeofday(&tv, nullptr);
+		int millis = int(tv.tv_usec / 1000);
+		if (millis >= 1000) {
+			millis -= 1000;
+			tv.tv_sec++;
+		}
+
+		strftime(buffer, MAX_BUFFER - 1, "%Y-%m-%d %H:%M:%S", localtime(&tv.tv_sec));
+		fprintf(file, "[%s.%03d] [%s] [%s] %.*s\n", buffer, millis, logging_thread_name.c_str(),
+				prefix, int(message_len), message);
 		fflush(file);
 	}
 }

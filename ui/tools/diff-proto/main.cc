@@ -172,7 +172,11 @@ private:
 
 			p.Print(field.vars, "get $field$(): $type$");
 			block(
-				p, [&] { p.Print(field.vars, "return this.$vname$;\n"); }, true);
+				p,
+				[&] {
+					p.Print(field.vars, "return this.$vname$;\n");
+				},
+				true);
 
 			p.Print(field.vars, "set $field$(value: $type$)");
 			block(
@@ -186,8 +190,11 @@ private:
 						p.Print(field.vars, "if (this.ctx.remote.$vname$ === value)");
 					}
 					block(
-						p, [&] { p.Print(field.vars, "delete this.ctx.delta.$field$;\n"); }, false,
-						true);
+						p,
+						[&] {
+							p.Print(field.vars, "delete this.ctx.delta.$field$;\n");
+						},
+						false, true);
 					p.Print("else");
 					block(p, [&] {
 						p.Print(field.vars, "this.ctx.delta.$field$ = value;\n");
@@ -226,18 +233,29 @@ private:
 
 		p.Print(message.vars, "applyDelta(delta: $msg$Delta): $msg$Delta");
 		block(
-			p, [&] { p.Print(message.vars, "return Diffable$msg$.applyDelta(this, delta);\n"); },
+			p,
+			[&] {
+				p.Print(message.vars, "return Diffable$msg$.applyDelta(this, delta);\n");
+			},
 			true);
 
 		// applyDeltaFast
 		p.Print(message.vars,
 				"static applyDeltaFast(obj: $msg$Delta | Diffable$msg$, delta: $msg$Delta): void");
 		block(
-			p, [&] { p.Print("Object.assign(obj, delta);\n"); }, true);
+			p,
+			[&] {
+				p.Print("Object.assign(obj, delta);\n");
+			},
+			true);
 
 		p.Print(message.vars, "applyDeltaFast(delta: $msg$Delta): void");
 		block(
-			p, [&] { p.Print(message.vars, "Object.assign(this, delta);\n"); }, true);
+			p,
+			[&] {
+				p.Print(message.vars, "Object.assign(this, delta);\n");
+			},
+			true);
 
 		// createLocal
 		p.Print(message.vars, "createLocal(cbDeltaChange: () => void): Diffable$msg$");
@@ -265,7 +283,9 @@ private:
 					p.Print(field.vars, "obj.$setter$(this.$field$);\n");
 				} else {
 					p.Print(field.vars, "if (delta.$field$ !== undefined)");
-					block(p, [&] { p.Print(field.vars, "obj.$setter$(delta.$field$);\n"); });
+					block(p, [&] {
+						p.Print(field.vars, "obj.$setter$(delta.$field$);\n");
+					});
 				}
 			}
 			p.Print("return obj;\n");

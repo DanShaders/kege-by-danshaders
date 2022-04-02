@@ -11,6 +11,7 @@ AllowShortBlocksOnASingleLine: Empty
 AllowShortFunctionsOnASingleLine: Empty
 AllowShortLoopsOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: Empty
 SpaceAfterCStyleCast: true
 ColumnLimit: 100
 IndentCaseBlocks: false

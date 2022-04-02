@@ -15,6 +15,10 @@ static coro<void> handle_get(fcgx::request_t *r) {
 
 	auto q = co_await db.exec("SELECT * FROM tasks WHERE id = $1::bigint AND NOT deleted",
 							  r->params["id"]);
+	if (!q.rows()) {
+		utils::ok<api::Task>(r, {});
+		co_return;
+	}
 	auto [id, task_type, parent, task, answer_rows, answer_cols, answer, deleted] =
 		q.expect1<int64_t, int64_t, int64_t, std::string_view, int, int, std::string_view, bool>();
 

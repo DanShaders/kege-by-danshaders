@@ -171,31 +171,35 @@ async function showTaskListPage(params: URLSearchParams): Promise<void> {
         syncText.innerText = "Не все изменения сохранены";
         console.error(e);
 
-        remote.applyDeltaFast(backup);
-        DiffableTask.applyDeltaFast(syncWith, local.ctx!.delta);
+        remote.applyDelta(backup);
+        DiffableTask.applyDelta(syncWith, local.ctx!.delta);
         local.ctx!.delta = syncWith;
       }
     }
     handlerInProgress = false;
   };
 
-  let id = dbId();
   const taskTypes = await getTaskTypes();
 
-  let local: DiffableTask, remote: DiffableTask;
-
+  let id = dbId();
+  let local: DiffableTask,
+    remote: DiffableTask,
+    raw = new Task();
   if (!params.has("id")) {
     params.set("id", id.toString());
     Router.instance.setUrl(Router.instance.currentPage + "?" + params.toString());
+  } else {
+    raw = await requestU(Task, "api/tasks/get?id=" + params.get("id"));
+  }
+  if (raw.getId()) {
+    remote = new DiffableTask(raw);
+    local = remote.createLocal(cbDeltaChange);
+  } else {
     remote = new DiffableTask(new Task().setId(id));
     local = remote.createLocal(() => {});
     local.answerRows = 1;
     local.answerCols = 1;
     local.ctx!.cbDeltaChange = cbDeltaChange;
-  } else {
-    const raw = await requestU(Task, "api/tasks/get?id=" + params.get("id"));
-    remote = new DiffableTask(raw);
-    local = remote.createLocal(cbDeltaChange);
   }
 
   const page = new TaskEditPage(Object.assign(local, { taskTypes: taskTypes }), null);

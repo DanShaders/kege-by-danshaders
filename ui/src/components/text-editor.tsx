@@ -509,7 +509,7 @@ function previewToCode(data: string) {
 //   ON_SHOW[currentLayout]();
 // }
 
-export class TextEditorComponent extends Component<{text: string}> {
+export class TextEditorComponent extends Component<{ text: string }> {
   private quill: Quill;
   private quillWrap: HTMLDivElement;
   private previewContainer: HTMLDivElement;
@@ -518,7 +518,7 @@ export class TextEditorComponent extends Component<{text: string}> {
   private domVersions = [0, 0, 0];
   private textHtml = ["", "", ""];
 
-  constructor(settings: {text: string}, parent: Component<unknown> | null, children?: jsx.Fragment[]) {
+  constructor(settings: { text: string }, parent: Component<unknown> | null, children?: jsx.Fragment[]) {
     super(settings, parent, children);
 
     this.quillWrap = document.createElement("div");
@@ -535,7 +535,7 @@ export class TextEditorComponent extends Component<{text: string}> {
     });
     this.quillWrap.children[0].addEventListener("focusout", () => {
       this.onTabSwitch(-1, EditorTabs.QUILL);
-    })
+    });
     this.quill = new Quill(this.quillWrap.children[0], {
       modules: {
         syntax: false,
@@ -588,7 +588,7 @@ export class TextEditorComponent extends Component<{text: string}> {
         },
         history: {
           userOnly: true,
-        }
+        },
       },
       placeholder: "",
       theme: "snow",

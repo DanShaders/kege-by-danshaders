@@ -387,7 +387,7 @@ coro<request_t *> fcgx::from_raw(FCGX_Request *raw) {
 		std::move(raw_body),
 
 		{},
-		"application/json;charset=utf-8",
+		"application/x-protobuf",
 		std::ostream(rbuf)
 	};
 	// clang-format on

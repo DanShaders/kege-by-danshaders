@@ -1,13 +1,12 @@
-import structuredClone from "@ungap/structured-clone";
-
 import { Component } from "components/component";
 import { requireAuth } from "pages/common";
 import { Task } from "proto/tasks_pb";
+import { TaskDelta, DiffableTask } from "proto/tasks_pb_diff";
 import { TaskTypeListResponse } from "proto/task-types_pb";
 import { getTaskTypes } from "admin";
 import { dbId } from "utils/common";
 import { Router } from "utils/router";
-import { requestU } from "utils/requests";
+import { requestU, EmptyPayload } from "utils/requests";
 import { toggleLoadingScreen } from "utils/common";
 import { ButtonIcon } from "components/button-icon";
 import { FileSelect } from "components/file-select";
@@ -24,55 +23,17 @@ type TaskSettings = {
   answerRows: number;
   answerCols: number;
   answer: Uint8Array;
-  readonly taskTypes: TaskTypeListResponse.AsObject;
+  taskTypes: TaskTypeListResponse.AsObject;
 };
-
-type TaskDelta = {
-  taskType?: number;
-  parent?: number;
-  text?: string;
-  answerRows?: number;
-  answerCols?: number;
-  answer?: Uint8Array;
-}
-
-type Context = {
-  local: TaskSettings;
-  remote: TaskSettings;
-  delta: TaskDelta;
-}
 
 type AnswerSettings = {
   answerRows: number;
   answerCols: number;
   answer: Uint8Array;
-}
+};
 
-function applyDelta(obj: TaskSettings | TaskDelta, delta: TaskDelta) {
-  Object.assign(obj, delta);
-}
-
-function recordHistoryOf(ctx: Context, changeCb: () => void) {
-  for (let [key, value] of Object.entries(ctx.local)) {
-    Object.defineProperty(ctx.local, key, {
-      enumerable: true,
-      get: () => {
-        return value;
-      },
-      set: (new_value: any) => {
-        value = new_value;
-        if ((ctx.remote as any)[key] === new_value) {
-          delete (ctx.delta as any)[key];
-        } else {
-          (ctx.delta as any)[key] = new_value;
-          changeCb();
-        }
-      }
-    });
-  }
-}
-
-const textDecoder = new TextDecoder(), textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder(),
+  textEncoder = new TextEncoder();
 
 class AnswerTable extends Component<AnswerSettings> {
   parsedAnswer?: string[][];
@@ -110,7 +71,7 @@ class AnswerTable extends Component<AnswerSettings> {
             <tbody>{rows}</tbody>
           </table>
         </div>
-        <ButtonIcon settings={{ title: "Изменить размер", icon: "icon-grid-resize", margins: [0, 0, 0, 5] }} />       
+        <ButtonIcon settings={{ title: "Изменить размер", icon: "icon-grid-resize", margins: [0, 0, 0, 5] }} />
       </div>
     ).asElement() as HTMLDivElement;
   }
@@ -148,7 +109,9 @@ class TaskEditPage extends Component<TaskSettings> {
             <div class="group-15-wrap-border focusable">
               <select ref class="select-line">
                 {this.settings.taskTypes.typeList.map((elem) => (
-                  <option value={elem.id} selectedIf={elem.id === this.settings.taskType}>{elem.fullName}</option>
+                  <option value={elem.id} selectedIf={elem.id === this.settings.taskType}>
+                    {elem.fullName}
+                  </option>
                 ))}
               </select>
             </div>
@@ -172,9 +135,9 @@ class TaskEditPage extends Component<TaskSettings> {
         </div>
       </div>
     ).asElement(elems) as HTMLDivElement;
-    
+
     const [select] = elems as [HTMLSelectElement];
-    
+
     select.addEventListener("change", () => {
       this.settings.taskType = parseInt(select.value, 10);
     });
@@ -185,49 +148,57 @@ class TaskEditPage extends Component<TaskSettings> {
 async function showTaskListPage(params: URLSearchParams): Promise<void> {
   requireAuth(1);
 
+  let handlerInProgress = false,
+    updateWhileSave = false;
+  const cbDeltaChange = async () => {
+    updateWhileSave = true;
+    if (handlerInProgress) {
+      return;
+    }
+    handlerInProgress = true;
+    while (updateWhileSave) {
+      updateWhileSave = false;
+      syncText.innerText = "Сохранение...";
+
+      let syncWith = local.ctx!.delta;
+      let backup = remote.applyDelta(syncWith);
+      local.ctx!.delta = {};
+
+      try {
+        await requestU(EmptyPayload, "api/tasks/update", local.serializeDelta(syncWith));
+        syncText.innerText = "";
+      } catch (e) {
+        syncText.innerText = "Не все изменения сохранены";
+        console.error(e);
+
+        remote.applyDeltaFast(backup);
+        DiffableTask.applyDeltaFast(syncWith, local.ctx!.delta);
+        local.ctx!.delta = syncWith;
+      }
+    }
+    handlerInProgress = false;
+  };
+
   let id = dbId();
   const taskTypes = await getTaskTypes();
 
-  let localVersion: TaskSettings, remoteVersion: TaskSettings, delta: TaskDelta;
-  
+  let local: DiffableTask, remote: DiffableTask;
+
   if (!params.has("id")) {
     params.set("id", id.toString());
     Router.instance.setUrl(Router.instance.currentPage + "?" + params.toString());
-    localVersion = {
-      id: id,
-      taskType: taskTypes.typeList[0].id,
-      parent: 0,
-      text: "",
-      answerRows: 0,
-      answerCols: 0,
-      answer: new Uint8Array(),
-      taskTypes: taskTypes,
-    };
-    remoteVersion = structuredClone(localVersion);
-    remoteVersion.taskType = 0;
-    delta = {taskType: taskTypes.typeList[0].id, answerRows: 1, answerCols: 1};
+    remote = new DiffableTask(new Task().setId(id));
+    local = remote.createLocal(() => {});
+    local.answerRows = 1;
+    local.answerCols = 1;
+    local.ctx!.cbDeltaChange = cbDeltaChange;
   } else {
-    const raw = (await requestU(Task, "api/tasks/get?id=" + params.get("id")));
-    localVersion = {
-      id: raw.getId(),
-      taskType: raw.getTaskType(),
-      parent: raw.getParent(),
-      text: raw.getText(),
-      answerRows: raw.getAnswerRows(),
-      answerCols: raw.getAnswerCols(),
-      answer: raw.getAnswer_asU8(),
-      taskTypes: taskTypes,
-    };
-    remoteVersion = structuredClone(localVersion);
-    delta = {};
+    const raw = await requestU(Task, "api/tasks/get?id=" + params.get("id"));
+    remote = new DiffableTask(raw);
+    local = remote.createLocal(cbDeltaChange);
   }
-  const ctx: Context = {
-    local: localVersion,
-    remote: remoteVersion,
-    delta: delta
-  };
 
-  const page = new TaskEditPage(localVersion, null);
+  const page = new TaskEditPage(Object.assign(local, { taskTypes: taskTypes }), null);
   const redirectBack = (): never => Router.instance.redirect(params.get("back") ?? "");
   const [syncText] = (
     <>
@@ -240,7 +211,7 @@ async function showTaskListPage(params: URLSearchParams): Promise<void> {
       </div>
 
       {page.elem}
-       {/*<div class="group-15-wrap-no group-15-not-first">
+      {/*<div class="group-15-wrap-no group-15-not-first">
             Размер:&nbsp;
             <input type="text" class="textarea-20px textarea-freestanding focusable" />
             &nbsp;&times;&nbsp;
@@ -290,39 +261,6 @@ async function showTaskListPage(params: URLSearchParams): Promise<void> {
       </div>
     </>
   ).replaceContentsOf("main");
-
-  let handlerInProgress = false, updateWhileSave = false;
-  recordHistoryOf(ctx, async () => {
-    updateWhileSave = true;
-    if (handlerInProgress) {
-      return;
-    }
-    handlerInProgress = true;
-    while (updateWhileSave) {
-      updateWhileSave = false;
-      syncText.innerText = "Сохранение...";
-      
-      let sync = ctx.delta;
-      let backup = structuredClone(ctx.remote); // todo: backward delta
-      applyDelta(ctx.remote, ctx.delta);
-      ctx.delta = {};
-
-      try {
-        console.log("todo", sync);
-        await new Promise(r => setTimeout(r, 2000));
-        throw 1;
-        syncText.innerText = "";
-      } catch (e) {
-        syncText.innerText = "Не все изменения сохранены";
-        console.error(e);
-      
-        applyDelta(sync, ctx.delta);
-        ctx.delta = sync;
-        ctx.remote = backup;
-      }
-    }
-    handlerInProgress = false;
-  });
 
   toggleLoadingScreen(false);
 }

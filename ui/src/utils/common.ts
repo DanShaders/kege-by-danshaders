@@ -136,3 +136,25 @@ export function uniqueId(): string {
 export function dbId(): number {
   return Math.round(new Date().getTime() * 1000 + Math.random() * 1_000_000);
 }
+
+export function areBuffersEqual(a: ArrayBuffer, b: ArrayBuffer): boolean {
+  if (a.byteLength !== b.byteLength) {
+    return false;
+  }
+  const iters = Math.floor(a.byteLength / 4);
+  const a32 = new Uint32Array(a, 0, iters * 4);
+  const b32 = new Uint32Array(b, 0, iters * 4);
+  const a8 = new Uint8Array(a, iters * 4);
+  const b8 = new Uint8Array(b, iters * 4);
+  for (let i = 0; i < iters; ++i) {
+    if (a32[i] !== b32[i]) {
+      return false;
+    }
+  }
+  for (let i = 0; i < a8.length; ++i) {
+    if (a8[i] !== b8[i]) {
+      return false;
+    }
+  }
+  return true;
+}

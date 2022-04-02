@@ -6,12 +6,13 @@
   "license": "MIT",
   "scripts": {
     "build": "node tools/build.js dev",
+    "build-diff-proto": "cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=tools/diff-proto/ -S tools/diff-proto -B tools/diff-proto/build && ninja -C tools/diff-proto/build install",
     "watch": "node tools/build.js watch",
     "build-prod": "node tools/build.js prod",
     "prettify": "prettier --write .",
-    "lint": "shopt -s globstar && GLOBIGNORE='src/proto/*' && eslint src/**/*.ts tools/**/*",
-    "lint-fix": "shopt -s globstar && GLOBIGNORE='src/proto/*' && eslint --fix src/**/*.ts tools/**/*",
-    "gen-proto": "mkdir -p src/proto && protoc --plugin=\"protoc-gen-ts=./node_modules/.bin/protoc-gen-ts\" --js_out=\"import_style=commonjs,binary:./src/proto\" --ts_out=\"./src/proto\" -I ../proto `find ../proto -type f -printf \"%f \"`"
+    "lint": "shopt -s globstar && GLOBIGNORE='src/proto/*' && eslint src/**/*.ts tools/build.js",
+    "lint-fix": "shopt -s globstar && GLOBIGNORE='src/proto/*' && eslint --fix src/**/*.ts tools/build.js",
+    "gen-proto": "mkdir -p src/proto && protoc --plugin=\"protoc-gen-ts=./node_modules/.bin/protoc-gen-ts\" --plugin=\"protoc-gen-diff=./tools/diff-proto/bin/diff-proto\" --js_out=\"import_style=commonjs,binary:./src/proto\" --ts_out=\"./src/proto\" --diff_out=\"./src/proto\" -I ../proto `find ../proto -type f -printf \"%f \"`"
   },
   "devDependencies": {
     "@types/google-protobuf": "^3.15.5",

@@ -1,5 +1,3 @@
-const fs = require("fs/promises");
-
 const PROD = "prod";
 const WATCH = "watch";
 

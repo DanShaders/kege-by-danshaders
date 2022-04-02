@@ -13,11 +13,11 @@ export class Router {
   currentURL: string = "";
   currentPage: string = "";
 
-  private static hashChangeListener() {
+  private static hashChangeListener(): void {
     Router.instance.redirect(location.hash.substr(1), false, true);
   }
 
-  registerListener() {
+  registerListener(): void {
     window.addEventListener("hashchange", Router.hashChangeListener);
   }
 

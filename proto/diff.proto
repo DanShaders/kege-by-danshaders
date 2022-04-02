@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package api;
+import "google/protobuf/descriptor.proto";
+
+enum _DiffFieldType {
+	NONE = 0;
+	ID = 1;
+	SET = 2;
+	ARRAY = 3;
+}
+
+extend google.protobuf.FieldOptions {
+	optional _DiffFieldType type = 37701;
+}
+
+extend google.protobuf.MessageOptions {
+	optional bool diffable = 37702;
+}
+
+extend google.protobuf.FileOptions {
+	optional bool gen_diff = 37700;
+}

@@ -49,6 +49,7 @@ set(
 set(
 	PROTO_SOURCES
 	../proto/api.proto
+	../proto/diff.proto
 	../proto/task-types.proto
 	../proto/tasks.proto
 	../proto/user.proto

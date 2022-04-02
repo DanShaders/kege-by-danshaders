@@ -121,6 +121,19 @@ void block(io::Printer &p, const T &func, bool newLine = false, bool skipNewLine
 	}
 }
 
+template <typename T1, typename T2>
+void ifelse(io::Printer &p, const T1 &then, const T2 &otherwise) {
+	p.Print(" {\n");
+	p.Indent();
+	then();
+	p.Outdent();
+	p.Print("} else {\n");
+	p.Indent();
+	otherwise();
+	p.Outdent();
+	p.Print("}\n");
+}
+
 class Generator : public compiler::CodeGenerator {
 private:
 	void GenerateDiffType(const Msg &message, io::Printer &p) const {
@@ -189,17 +202,15 @@ private:
 					} else {
 						p.Print(field.vars, "if (this.ctx.remote.$vname$ === value)");
 					}
-					block(
+					ifelse(
 						p,
 						[&] {
 							p.Print(field.vars, "delete this.ctx.delta.$field$;\n");
 						},
-						false, true);
-					p.Print("else");
-					block(p, [&] {
-						p.Print(field.vars, "this.ctx.delta.$field$ = value;\n");
-						p.Print("this.ctx.cbDeltaChange();\n");
-					});
+						[&] {
+							p.Print(field.vars, "this.ctx.delta.$field$ = value;\n");
+							p.Print("this.ctx.cbDeltaChange();\n");
+						});
 				},
 				true);
 		}
@@ -220,10 +231,18 @@ private:
 						continue;
 					}
 
-					p.Print(field.vars, "if (delta.$field$ !== undefined)");
+					p.Print(field.vars, "if (delta.hasOwnProperty(\"$field$\"))");
 					block(p, [&] {
 						p.Print(field.vars, "backwardDelta.$field$ = obj.$field$;\n");
-						p.Print(field.vars, "obj.$field$ = delta.$field$;\n");
+						p.Print(field.vars, "if (delta.$field$ === undefined)");
+						ifelse(
+							p,
+							[&] {
+								p.Print(field.vars, "delete obj.$field$;\n");
+							},
+							[&] {
+								p.Print(field.vars, "obj.$field$ = delta.$field$;\n");
+							});
 					});
 				}
 
@@ -236,24 +255,6 @@ private:
 			p,
 			[&] {
 				p.Print(message.vars, "return Diffable$msg$.applyDelta(this, delta);\n");
-			},
-			true);
-
-		// applyDeltaFast
-		p.Print(message.vars,
-				"static applyDeltaFast(obj: $msg$Delta | Diffable$msg$, delta: $msg$Delta): void");
-		block(
-			p,
-			[&] {
-				p.Print("Object.assign(obj, delta);\n");
-			},
-			true);
-
-		p.Print(message.vars, "applyDeltaFast(delta: $msg$Delta): void");
-		block(
-			p,
-			[&] {
-				p.Print(message.vars, "Object.assign(this, delta);\n");
 			},
 			true);
 
@@ -282,8 +283,9 @@ private:
 				if (field.diff_type == ID) {
 					p.Print(field.vars, "obj.$setter$(this.$field$);\n");
 				} else {
-					p.Print(field.vars, "if (delta.$field$ !== undefined)");
+					p.Print(field.vars, "if (delta.hasOwnProperty(\"$field$\"))");
 					block(p, [&] {
+						p.Print(field.vars, "assert(delta.$field$ !== undefined);\n");
 						p.Print(field.vars, "obj.$setter$(delta.$field$);\n");
 					});
 				}
@@ -336,6 +338,7 @@ public:
 		p.Print("/* eslint-disable */\n");
 		p.Print("import * as defs from \"./$name$_pb\";\n", "name",
 				compiler::StripProto(file->name()));
+		p.Print("import { assert } from \"utils/assert\";\n");
 		p.Print("import { areBuffersEqual } from \"utils/common\";\n");
 		p.Print("\n");
 		for (int i = 0; i < file->message_type_count(); ++i) {

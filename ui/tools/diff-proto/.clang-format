@@ -1,9 +1,8 @@
 BasedOnStyle: Google
-IndentWidth: 4
+IndentWidth: 2
 
-TabWidth: 4
-UseTab: ForContinuationAndIndentation
-AccessModifierOffset: -4
+TabWidth: 2
+AccessModifierOffset: -2
 NamespaceIndentation: Inner
 DerivePointerAlignment: false
 PointerAlignment: Right

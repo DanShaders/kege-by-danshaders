@@ -3,13 +3,11 @@ syntax = "proto3";
 package api;
 import "diff.proto";
 
-option (gen_diff) = true;
-
 // Route /tasks/get, /tasks/update
 message Task {
 	option (diffable) = true;
 
-	int64 id = 1 [(type) = ID];
+	int64 id = 1;
 
 	optional int64 task_type = 2;
 	optional int64 parent = 3;
@@ -19,7 +17,7 @@ message Task {
 	optional bytes answer = 7;
 
 	// message Attachment {
-	// 	int64 id = 1 [(type) = ID];
+	// 	int64 id = 1;
 
 	// 	optional string filename = 2;
 	// 	optional string mime_type = 3;
@@ -28,7 +26,7 @@ message Task {
 	// 	optional bool shown_to_user = 6;
 	// 	optional bool deleted = 7;
 	// }
-	// repeated Attachment attachments = 8 [(type) = SET];
+	// repeated Attachment attachments = 8;
 }
 
 message UpdateResponse {

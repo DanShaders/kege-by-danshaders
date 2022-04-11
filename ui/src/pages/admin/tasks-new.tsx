@@ -6,6 +6,7 @@ import { TaskTypeListResponse } from "proto/task-types_pb";
 import { getTaskTypes } from "admin";
 import { dbId } from "utils/common";
 import { Router } from "utils/router";
+import { SyncController } from "utils/sync-controller";
 import { requestU, EmptyPayload } from "utils/requests";
 import { toggleLoadingScreen } from "utils/common";
 import { ButtonIcon } from "components/button-icon";
@@ -148,61 +149,31 @@ class TaskEditPage extends Component<TaskSettings> {
 async function showTaskListPage(params: URLSearchParams): Promise<void> {
   requireAuth(1);
 
-  let handlerInProgress = false,
-    updateWhileSave = false;
-  const cbDeltaChange = async () => {
-    updateWhileSave = true;
-    if (handlerInProgress) {
-      return;
-    }
-    handlerInProgress = true;
-    while (updateWhileSave) {
-      updateWhileSave = false;
-      syncText.innerText = "Сохранение...";
-
-      let syncWith = local.ctx!.delta;
-      let backup = remote.applyDelta(syncWith);
-      local.ctx!.delta = {};
-
-      try {
-        await requestU(EmptyPayload, "api/tasks/update", local.serializeDelta(syncWith));
-        syncText.innerText = "";
-      } catch (e) {
-        syncText.innerText = "Не все изменения сохранены";
-        console.error(e);
-
-        remote.applyDelta(backup);
-        DiffableTask.applyDelta(syncWith, local.ctx!.delta);
-        local.ctx!.delta = syncWith;
-      }
-    }
-    handlerInProgress = false;
-  };
-
-  const taskTypes = await getTaskTypes();
-
-  let id = dbId();
-  let local: DiffableTask,
-    remote: DiffableTask,
-    raw = new Task();
+  let raw = new Task();
   if (!params.has("id")) {
-    params.set("id", id.toString());
+    params.set("id", dbId().toString());
     Router.instance.setUrl(Router.instance.currentPage + "?" + params.toString());
   } else {
     raw = await requestU(Task, "api/tasks/get?id=" + params.get("id"));
   }
-  if (raw.getId()) {
-    remote = new DiffableTask(raw);
-    local = remote.createLocal(cbDeltaChange);
-  } else {
-    remote = new DiffableTask(new Task().setId(id));
-    local = remote.createLocal(() => {});
-    local.answerRows = 1;
-    local.answerCols = 1;
-    local.ctx!.cbDeltaChange = cbDeltaChange;
-  }
 
-  const page = new TaskEditPage(Object.assign(local, { taskTypes: taskTypes }), null);
+  const id = parseInt(params.get("id")!);
+  raw.setId(id);
+
+  const statusElem = document.createElement("span");
+  const syncController = new SyncController({
+    statusElem: statusElem,
+    remote: new DiffableTask(raw),
+    saveURL: "api/tasks/update"
+  });
+
+  const settings = syncController.getLocal();
+  settings.answerRows ||= 1;
+  settings.answerCols ||= 1;
+  syncController.supressSave = false;
+
+  const page = new TaskEditPage(Object.assign(settings, { taskTypes: await getTaskTypes() }), null);
+
   const redirectBack = (): never => Router.instance.redirect(params.get("back") ?? "");
   const [syncText] = (
     <>

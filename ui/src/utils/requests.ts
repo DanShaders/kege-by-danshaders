@@ -4,7 +4,7 @@ interface BinaryDeserializable<T> {
   deserializeBinary(bytes: Uint8Array): T;
 }
 
-interface BinarySerializable {
+export interface BinarySerializable {
   serializeBinary(): Uint8Array;
 }
 

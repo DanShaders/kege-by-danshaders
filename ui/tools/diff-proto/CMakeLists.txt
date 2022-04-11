@@ -5,21 +5,33 @@ project(diff-proto VERSION 0.0.0)
 include(FindProtobuf)
 find_package(Protobuf REQUIRED)
 
-set(CMAKE_CXX_STANDARD 17)
+include(FindPkgConfig)
+pkg_check_modules(FMT REQUIRED fmt)
+
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(
 	CXX_SOURCES
-	main.cc
+	src/main.cc
+	src/fields-id.cc
+	src/fields-scalar.cc
+	src/options.cc
 )
 
 set(EXE_NAME diff-proto)
 
 add_executable(${EXE_NAME} ${CXX_SOURCES})
 
+target_precompile_headers(
+	${EXE_NAME} PRIVATE
+	src/stdafx.h
+)
+
 target_include_directories(
 	${EXE_NAME} PRIVATE
 	${Protobuf_INCLUDE_DIRS}
+	${FMT_INCLUDE_DIRS}
 )
 
 target_compile_options(
@@ -32,6 +44,7 @@ target_link_libraries(
 	${EXE_NAME} PRIVATE
 	${Protobuf_PROTOC_LIBRARIES}
 	${Protobuf_LIBRARIES}
+	${FMT_LIBRARIES}
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL Release)

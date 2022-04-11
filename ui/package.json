@@ -6,7 +6,7 @@
   "license": "MIT",
   "scripts": {
     "build": "node tools/build.js dev",
-    "build-diff-proto": "cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=tools/diff-proto/ -S tools/diff-proto -B tools/diff-proto/build && ninja -C tools/diff-proto/build install",
+    "build-diff-proto": "cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=tools/diff-proto/ -S tools/diff-proto -B $(realpath -L $(pwd)/../../diff-proto) && ninja -j4 -C $(realpath -L $(pwd)/../../diff-proto) install",
     "watch": "node tools/build.js watch",
     "build-prod": "node tools/build.js prod",
     "prettify": "prettier --write .",

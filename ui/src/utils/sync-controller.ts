@@ -36,14 +36,14 @@ export class SyncController<Diffable extends IDiffable<Diffable, unknown, Binary
         break;
       }
 
-      const [syncObj, rollbackDelta] = syncResult;
+      const [syncObj, commitDelta] = syncResult;
       try {
         await requestU(EmptyPayload, this.params.saveURL, syncObj);
         this.params.statusElem.innerText = "";
       } catch (e) {
         this.params.statusElem.innerText = "Не все изменения сохранены";
         console.error(e);
-        this.local.rollback(rollbackDelta);
+        this.local.commit(commitDelta);
       }
     }
     this.handlerInProgress = false;

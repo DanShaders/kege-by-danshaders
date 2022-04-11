@@ -22,8 +22,7 @@ public:
   virtual void generate_constructor_assignment() {}
   virtual void generate_getter_setter() {}
   virtual void generate_mount() {}
-  virtual void generate_prepend_delta() {}
-  virtual void generate_apply_delta() {}
+  virtual void generate_commit() {}
   virtual void generate_serialize() {}
 };
 
@@ -35,8 +34,7 @@ public:
   void generate_class_field() override;
   void generate_constructor_assignment() override;
   void generate_getter_setter() override;
-  void generate_prepend_delta() override;
-  void generate_apply_delta() override;
+  void generate_commit() override;
   void generate_serialize() override;
 };
 

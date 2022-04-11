@@ -53,31 +53,24 @@ void ScalarFieldCodeGenerator::generate_getter_setter() {
   });
 }
 
-void ScalarFieldCodeGenerator::generate_prepend_delta() {
+void ScalarFieldCodeGenerator::generate_commit() {
   print(
-      "if (delta.$name$ !== undefined) {\n"
-      "  if (ctx.delta.$name$ === undefined) {\n"
-      "    ctx.delta.$name$ = delta.$name$;\n"
+      "if (commitDelta.$name$ !== undefined) {\n"
+      "  remote.$fname$ = commitDelta.$name$;\n"
+      "  if (delta.$name$ === undefined) {\n"
       "    ++this.fields;\n"
-      "  } else if (");
+      "    delta.$name$ = this.$fname$;\n"
+      "  } else {\n");
   if (field->type() == FieldDescriptor::TYPE_BYTES) {
-    print("areBuffersEqual(ctx.delta.$name$, delta.$name$)");
+    println("    if (areBuffersEqual(this.$fname$, remote.$fname$)) {");
   } else {
-    print("ctx.delta.$name$ === delta.$name$");
+    println("    if (this.$fname$ === remote.$fname$) {");
   }
   print(
-      ") {\n"
-      "    delete ctx.delta.$name$;\n"
-      "    --this.fields;\n"
+      "      --this.fields;\n"
+      "      delete delta.$name$;\n"
+      "    }\n"
       "  }\n"
-      "}\n");
-}
-
-void ScalarFieldCodeGenerator::generate_apply_delta() {
-  print(
-      "if (delta.$name$ !== undefined) {\n"
-      "  rollback.$name$ = this.$fname$;\n"
-      "  this.$fname$ = delta.$name$;\n"
       "}\n");
 }
 
@@ -85,6 +78,5 @@ void ScalarFieldCodeGenerator::generate_serialize() {
   print(
       "if (delta.$name$ !== undefined) {\n"
       "  obj.$setter$(delta.$name$);\n"
-      "  delete delta.$name$;\n"
       "}\n");
 }

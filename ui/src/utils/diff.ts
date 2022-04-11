@@ -9,10 +9,10 @@ export interface IContext<Diffable, Delta> {
 }
 
 export interface IDiffable<Diffable, Delta, Transport> {
+  commit(commitDelta: Delta): void;
   createLocal(onDeltaChange: DeltaChangeCallback): Diffable;
   mount(ctx: IContext<Diffable, Delta>): void;
-  rollback(rollbackDelta: Delta): void;
-  synchronize(): [syncObj: Transport, rollbackDelta: Delta] | undefined;
+  synchronize(): [syncObj: Transport, commitDelta: Delta] | undefined;
 }
 
 export function areBuffersEqual(a: ArrayBuffer, b: ArrayBuffer): boolean {

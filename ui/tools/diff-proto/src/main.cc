@@ -96,44 +96,23 @@ public:
     });
   }
 
-  void generate_rollback() {
-    print(
-        "rollback(rollbackDelta: $msg$Delta): void {\n"
-        "  nonNull(this.ctx);\n"
-        "  this.prependDelta(rollbackDelta);\n"
-        "  this.ctx!.remote.applyDelta(rollbackDelta);\n"
-        "}\n\n");
-  }
-
   void generate_synchronize() {
     print(
-        "synchronize(): [$transport$, $msg$Delta] | undefined {\n"
+        "synchronize(): [syncObj: $transport$, commitDelta: $msg$Delta] | undefined {\n"
         "  if (!this.fields) { return undefined; }\n"
         "  nonNull(this.ctx);\n"
-        "  const rollback = this.ctx!.remote.applyDelta(this.ctx!.delta);\n"
-        "  const obj = this.serialize();\n"
-        "  return [obj, rollback];\n"
+        "  return [this.serialize(), structuredClone(this.ctx!.delta)];\n"
         "}\n\n");
   }
 
-  void generate_prepend_delta() {
-    print("prependDelta(delta: $msg$Delta): void");
+  void generate_commit() {
+    print("commit(commitDelta: $msg$Delta): void");
     blockln([&] {
-      println("const ctx = this.ctx!;");
+      println("const remote = this.ctx!.remote;");
+      println("const delta = this.ctx!.delta;");
       for (const auto &field : fields) {
-        field->generate_prepend_delta();
+        field->generate_commit();
       }
-    });
-  }
-
-  void generate_apply_delta() {
-    print("applyDelta(delta: $msg$Delta): $msg$Delta");
-    blockln([&] {
-      println("const rollback: $msg$Delta = {};");
-      for (const auto &field : fields) {
-        field->generate_apply_delta();
-      }
-      println("return rollback;");
     });
   }
 
@@ -142,7 +121,6 @@ public:
     block([&] {
       print(
           "const delta = this.ctx!.delta;\n"
-          "this.fields = 0;\n"
           "const obj = new $transport$();\n");
       for (const auto &field : fields) {
         field->generate_serialize();
@@ -161,10 +139,8 @@ public:
       generate_getters_setters();
       generate_local_creation();
       generate_mount();
-      generate_rollback();
+      generate_commit();
       generate_synchronize();
-      generate_prepend_delta();
-      generate_apply_delta();
       generate_serialize();
     });
   }
@@ -181,6 +157,7 @@ public:
 void FileContext::generate_header() const {
   p->Print(
       "/* eslint-disable */\n"
+      "import structuredClone from \"@ungap/structured-clone\";\n"
       "import * as defs from \"./$name$_pb\";\n"
       "import { assert, nonNull } from \"utils/assert\";\n"
       "import {\n"

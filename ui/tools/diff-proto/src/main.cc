@@ -9,6 +9,7 @@ class MessageCodeGenerator : public FileContextHolder {
 private:
   const Descriptor *msg;
   std::vector<std::unique_ptr<FieldCodeGenerator>> fields;
+  bool has_nonscalars = false;
 
 public:
   MessageCodeGenerator(const FileContext &c_, const Descriptor *msg_)
@@ -23,7 +24,8 @@ public:
       } else if (field->type() != FieldDescriptor::TYPE_MESSAGE) {
         fields.push_back(std::make_unique<ScalarFieldCodeGenerator>(c, field));
       } else {
-        assert(0);
+        fields.push_back(std::make_unique<SetFieldCodeGenerator>(c, field));
+        has_nonscalars = true;
       }
     });
   }
@@ -56,8 +58,11 @@ public:
         "\n"
         "private fields: number = 0;\n"
         "private ctx?: $msg$DiffContext;\n"
-        "private msg?: $transport$;\n"
-        "\n");
+        "private msg?: $transport$;\n");
+    if (has_nonscalars) {
+      println("private supressPropagation = false;");
+    }
+    println("");
   }
 
   void generate_constructor() {
@@ -108,11 +113,24 @@ public:
   void generate_commit() {
     print("commit(commitDelta: $msg$Delta): void");
     blockln([&] {
-      println("const remote = this.ctx!.remote;");
-      println("const delta = this.ctx!.delta;");
+      print(
+          "const remote = this.ctx!.remote, delta = this.ctx!.delta;\n"
+          "let saveFields = this.fields;\n");
+      if (has_nonscalars) {
+        println("this.supressPropagation = true;");
+      }
+
       for (const auto &field : fields) {
         field->generate_commit();
       }
+
+      if (has_nonscalars) {
+        println("this.supressPropagation = false;");
+      }
+      print(
+          "if (this.fields !== saveFields) {\n"
+          "  this.ctx!.onDeltaChange(this.fields, this.fields - saveFields);\n"
+          "}\n");
     });
   }
 
@@ -162,6 +180,7 @@ void FileContext::generate_header() const {
       "import { assert, nonNull } from \"utils/assert\";\n"
       "import {\n"
       "  DeltaChangeCallback,\n"
+      "  DiffableSet,\n"
       "  IContext,\n"
       "  IDiffable,\n"
       "  areBuffersEqual,\n"

@@ -1,4 +1,4 @@
-import { assert, nonNull } from "./assert";
+import { nonNull } from "./assert";
 
 export type DeltaChangeCallback = (fields: number, fieldsDelta: number) => void;
 
@@ -9,10 +9,84 @@ export interface IContext<Diffable, Delta> {
 }
 
 export interface IDiffable<Diffable, Delta, Transport> {
+  get id(): number;
+
   commit(commitDelta: Delta): void;
   createLocal(onDeltaChange: DeltaChangeCallback): Diffable;
   mount(ctx: IContext<Diffable, Delta>): void;
+  serialize(): Transport;
   synchronize(): [syncObj: Transport, commitDelta: Delta] | undefined;
+}
+
+type SetDelta<Delta> = Map<number, Delta>;
+type SetContext<Set> = Set extends DiffableSet<any, infer Delta, any> ? IContext<Set, SetDelta<Delta>> : never;
+
+export class DiffableSet<Diffable extends IDiffable<Diffable, Delta, Transport>, Delta, Transport> {
+  private factory: (msg: Transport) => Diffable;
+  private elements: Map<number, Diffable>;
+  private ctx?: SetContext<this>;
+  private fields = 0;
+  private supressPropagation = false;
+
+  constructor(msgs: Iterable<Transport>, factory: (msg: Transport) => Diffable) {
+    this.factory = factory;
+    this.elements = new Map();
+    for (const msg of msgs) {
+      const element = factory(msg);
+      this.elements.set(element.id, element);
+    }
+  }
+
+  get(id: number): Diffable | undefined {
+    return this.elements.get(id);
+  }
+
+  private mountSingle(id: number, elem: Diffable): void {
+    const delta = {} as Delta;
+    const ctx = nonNull(this.ctx);
+    elem.mount({
+      remote: nonNull(ctx.remote.elements.get(id)!),
+      delta: delta,
+      onDeltaChange: (fields: number, fieldsDelta: number): void => {
+        if (!fields && fieldsDelta < 0) {
+          ctx.delta.delete(id);
+          --this.fields;
+          this.supressPropagation || ctx.onDeltaChange(this.fields, -1);
+        } else if (fields === fieldsDelta) {
+          ctx.delta.set(id, delta);
+          ++this.fields;
+          this.supressPropagation || ctx.onDeltaChange(this.fields, 1);
+        } else {
+          this.supressPropagation || ctx.onDeltaChange(this.fields, 0);
+        }
+      },
+    });
+  }
+
+  mount(ctx: SetContext<this>): void {
+    this.ctx = ctx;
+    for (const [id, elem] of this.elements) {
+      this.mountSingle(id, elem);
+    }
+  }
+
+  commit(commitDelta: SetDelta<Delta>): void {
+    const saveFields = this.fields;
+    this.supressPropagation = true;
+    for (const [id, delta] of commitDelta) {
+      this.elements.get(id)!.commit(delta);
+    }
+    this.supressPropagation = false;
+    if (this.fields !== saveFields) {
+      this.ctx!.onDeltaChange(this.fields, this.fields - saveFields);
+    }
+  }
+
+  serialize(adder: (msg: Transport) => void): void {
+    for (const id of this.ctx!.delta.keys()) {
+      adder(this.elements.get(id)!.serialize());
+    }
+  }
 }
 
 export function areBuffersEqual(a: ArrayBuffer, b: ArrayBuffer): boolean {

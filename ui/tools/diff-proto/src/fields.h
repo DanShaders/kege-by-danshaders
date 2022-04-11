@@ -46,3 +46,15 @@ public:
   void generate_constructor_assignment() override;
   void generate_serialize() override;
 };
+
+class SetFieldCodeGenerator : public FieldCodeGenerator {
+public:
+  SetFieldCodeGenerator(const FileContext &c_, const FieldDescriptor *field_);
+
+  void generate_delta_entry() override;
+  void generate_class_field() override;
+  void generate_constructor_assignment() override;
+  void generate_mount() override;
+  void generate_commit() override;
+  void generate_serialize() override;
+};

@@ -13,9 +13,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(
 	CXX_SOURCES
-	src/main.cc
 	src/fields-id.cc
 	src/fields-scalar.cc
+	src/fields-set.cc
+	src/main.cc
 	src/options.cc
 )
 

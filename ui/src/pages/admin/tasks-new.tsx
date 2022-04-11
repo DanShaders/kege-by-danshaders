@@ -164,7 +164,7 @@ async function showTaskListPage(params: URLSearchParams): Promise<void> {
   const syncController = new SyncController({
     statusElem: statusElem,
     remote: new DiffableTask(raw),
-    saveURL: "api/tasks/update"
+    saveURL: "api/tasks/update",
   });
 
   const settings = syncController.getLocal();

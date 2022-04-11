@@ -93,7 +93,6 @@ endforeach()
 add_library(KEGE_BASE INTERFACE)
 
 add_dependencies(KEGE_BASE CPP_PROTOC_INITIALIZERS)
-pkg_check_modules(LUA_JIT REQUIRED luajit)
 pkg_check_modules(CURL REQUIRED libcurl)
 pkg_check_modules(FCGI REQUIRED fcgi)
 pkg_check_modules(NLOHMANN_JSON REQUIRED nlohmann_json)
@@ -108,7 +107,6 @@ target_include_directories(
 	"${CMAKE_CURRENT_BINARY_DIR}"
 	"${PROJECT_SOURCE_DIR}/include"
 	
-	${LUA_JIT_INCLUDE_DIRS}
 	${CURL_INCLUDE_DIRS}
 	${FCGI_INCLUDE_DIRS}
 	${NLOHMANN_JSON_INCLUDE_DIRS}
@@ -128,7 +126,6 @@ target_compile_options(
 
 target_link_libraries(
 	KEGE_BASE INTERFACE
-	${LUA_JIT_LIBRARIES}
 	${CURL_LIBRARIES}
 	${FCGI_LIBRARIES}
 	${NLOHMANN_JSON_LIBRARIES}
@@ -170,10 +167,6 @@ endif()
 
 
 # ==== Additional compiler options ====
-# We want to expose some of the symbols, so that we can use them in Lua via FFI
-set(CMAKE_CXX_FLAGS "-fvisibility=hidden")
-set(CMAKE_EXE_LINKER_FLAGS "-export-dynamic")
-
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -Og -g -fno-omit-frame-pointer -fsanitize=address,undefined -DKEGE_SANITIZE_ADDRESS")
 set(CMAKE_CXX_FLAGS_DEBUGL "${CMAKE_CXX_FLAGS} -Og -g -fno-omit-frame-pointer")
 set(CMAKE_CXX_FLAGS_THREAD "${CMAKE_CXX_FLAGS} -Og -g -fno-omit-frame-pointer -fsanitize=thread -DKEGE_SANITIZE_THREAD")

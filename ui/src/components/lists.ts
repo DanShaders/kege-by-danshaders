@@ -23,7 +23,7 @@ export abstract class EnumerableComponent<T, U, Enumerator extends Component<unk
     this.isLast = isLast;
   }
 
-  onPositionUpdate(i: number, isFirst: boolean, isLast: boolean) {
+  onPositionUpdate(i: number, isFirst: boolean, isLast: boolean): void {
     this.i = i;
     this.isFirst = isFirst;
     this.isLast = isLast;
@@ -136,9 +136,9 @@ export function listProviderOf(tag: string, classList: string[] = []): ListProvi
 }
 
 export function factoryOf<T, U, Set extends Component<unknown>>(
-  obj: new (s: T & U, p: Set, i: number, f: boolean, l: boolean) => EnumerableComponent<T, U, Set>
+  Obj: new (s: T & U, p: Set, i: number, f: boolean, l: boolean) => EnumerableComponent<T, U, Set>
 ): ComponentFactory<T, U, Set> {
   return (s, p, i, f, l) => {
-    return new obj(s, p, i, f, l);
+    return new Obj(s, p, i, f, l);
   };
 }

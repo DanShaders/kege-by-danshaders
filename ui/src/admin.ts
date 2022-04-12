@@ -2,7 +2,7 @@ import { requestU } from "./utils/requests";
 import { TaskTypeListResponse } from "./proto/task-types_pb";
 
 import "./pages/admin/tasks";
-import "./pages/admin/tasks-new";
+import "./pages/admin/tasks-edit";
 
 export const headerSettings = {
   highlightedId: "",

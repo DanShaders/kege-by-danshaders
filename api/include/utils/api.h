@@ -12,7 +12,7 @@ struct empty_payload {
 	empty_payload() {}
 	empty_payload(initializable_type) {}
 
-	void SerializeToString(const std::string *) {}
+	void SerializeToString(const std::string *) const {}
 };
 
 template <typename T>

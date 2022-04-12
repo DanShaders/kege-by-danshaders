@@ -10,16 +10,49 @@ using namespace pq;
 #include "logging.h"
 
 /* ==== async::pq::connection ==== */
+coro<void> connection::rollback_and_return(raw_connection conn, connection_pool *pool) {
+	co_await pq::detail::exec(conn.get(), "ROLLBACK", 0, nullptr, nullptr, nullptr);
+	pool->return_connection(conn);
+}
+
 connection::connection(raw_connection conn_, connection_pool *pool_) : conn(conn_), pool(pool_) {}
 
 connection::~connection() {
 	if (conn) {
-		pool->return_connection(conn);
+		if (!has_active_transaction) {
+			pool->return_connection(conn);
+		} else {
+			async::schedule_detached(connection::rollback_and_return(conn, pool));
+		}
 	}
 }
 
 PGconn *connection::get_raw_connection() const noexcept {
 	return conn.get();
+}
+
+coro<void> connection::transaction() {
+	if (has_active_transaction) {
+		throw db_error("tried to nest db transactions");
+	}
+	co_await exec("BEGIN");
+	has_active_transaction = true;
+}
+
+coro<void> connection::commit() {
+	if (!has_active_transaction) {
+		throw db_error("nothing to commit");
+	}
+	co_await exec("COMMIT");
+	has_active_transaction = false;
+}
+
+coro<void> connection::rollback() {
+	if (!has_active_transaction) {
+		throw db_error("nothing to rollback");
+	}
+	co_await exec("ROLLBACK");
+	has_active_transaction = false;
 }
 
 /* ==== async::pq::connection_pool::impl ==== */
@@ -220,12 +253,8 @@ double pq_recv_double(char const *data, int len) {
 }
 
 std::vector<std::pair<Oid, void *>> pq::detail::pq_decoder::map = {
-	{16, (void *) pq_recv_bool},
-	{17, (void *) pq_recv_text},
-	{20, (void *) pq_recv_int64},
-	{23, (void *) pq_recv_int32},
-	{25, (void *) pq_recv_text},
-	{701, (void *) pq_recv_double},
+	{16, (void *) pq_recv_bool},   {17, (void *) pq_recv_text}, {20, (void *) pq_recv_int64},
+	{23, (void *) pq_recv_int32},  {25, (void *) pq_recv_text}, {701, (void *) pq_recv_double},
 	{1042, (void *) pq_recv_text},
 };
 

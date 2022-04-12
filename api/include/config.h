@@ -21,6 +21,7 @@ struct db_info_t {
 struct config_t {
 	std::size_t request_workers;
 	std::string api_root;
+	std::string files_dir;
 	std::filesystem::path root;
 	hl_socket_address fastcgi;
 	db_info_t db;

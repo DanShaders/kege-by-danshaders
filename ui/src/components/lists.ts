@@ -96,8 +96,8 @@ export class SetComponent<T extends IDiffableOf<T>, U> extends Component<Diffabl
   }
 
   createElement(): HTMLElement {
-    for (const [i, compSettings] of this.settings.entries()) {
-      this.provider.push(this.comps[i].elem);
+    for (const comp of this.comps) {
+      this.provider.push(comp.elem);
     }
     return this.provider.elem;
   }

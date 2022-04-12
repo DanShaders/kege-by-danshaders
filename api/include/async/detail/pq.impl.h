@@ -25,7 +25,8 @@ inline U iterable_typed_result<T...>::iterator<Is...>::get_cell_value() {
 		return {};
 	}
 	if constexpr (detail::is_optional(U{})) {
-		return {detail::get_raw_cell_value<typename U::value_type>(res->res.get(), res->oids, int(i), int(j))};
+		return {detail::get_raw_cell_value<typename U::value_type>(res->res.get(), res->oids,
+																   int(i), int(j))};
 	} else {
 		return detail::get_raw_cell_value<U>(res->res.get(), res->oids, int(i), int(j));
 	}
@@ -68,19 +69,20 @@ template <typename... Params>
 inline detail::params_lowerer<Params...>::params_lowerer(Params &&...params)
 	: params_lowerer(std::index_sequence_for<Params...>{}, std::forward<Params>(params)...) {}
 
-template<typename T>
+template <typename T>
 inline T detail::get_raw_cell_value(PGresult *res, unsigned *oids, int i, int j) {
 	if constexpr (std::same_as<T, std::string>) {
 		return std::string(get_raw_cell_value<std::string_view>(res, oids, i, j));
 	}
 
-	using func = T(*)(char const *, int);
+	using func = T (*)(char const *, int);
 
 	unsigned oid = oids[j];
 	std::pair key{oid, (void *) nullptr};
 	auto it = std::ranges::lower_bound(detail::pq_decoder::map, key);
 	if (it == detail::pq_decoder::map.end() || it->first != oid) {
-		throw pq::db_error("unknown oid " + std::to_string(oid) + " at column " + std::to_string(j));
+		throw pq::db_error("unknown oid " + std::to_string(oid) + " at column " +
+						   std::to_string(j));
 	}
 
 	return ((func) it->second)(PQgetvalue(res, i, j), PQgetlength(res, i, j));

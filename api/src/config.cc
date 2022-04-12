@@ -20,6 +20,7 @@ void config::from_json(const json &j, hl_socket_address &obj) {
 
 void config::from_json(const json &j, config_t &obj) {
 	j.at("workers").get_to(obj.request_workers);
+	j.at("files_dir").get_to(obj.files_dir);
 	j.at("api_root").get_to(obj.api_root);
 	j.at("fastcgi").get_to(obj.fastcgi);
 	j.at("db").get_to(obj.db);

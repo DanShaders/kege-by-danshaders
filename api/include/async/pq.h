@@ -25,12 +25,19 @@ namespace pq {
 	private:
 		raw_connection conn;
 		connection_pool *pool;
+		bool has_active_transaction = false;
+
+		static coro<void> rollback_and_return(raw_connection conn, connection_pool *pool);
 
 	public:
 		connection(raw_connection conn_, connection_pool *pool_);
 		~connection();
 
 		PGconn *get_raw_connection() const noexcept;
+
+		coro<void> transaction();
+		coro<void> commit();
+		coro<void> rollback();
 
 		template <typename... Params>
 		coro<result> exec(const char *command, Params &&...params) const;
@@ -167,11 +174,15 @@ namespace pq {
 		};
 
 		template <typename T>
-		constexpr bool is_optional(T const&) { return false; }
+		constexpr bool is_optional(T const &) {
+			return false;
+		}
 		template <typename T>
-		constexpr bool is_optional(std::optional<T> const&) { return true; }
+		constexpr bool is_optional(std::optional<T> const &) {
+			return true;
+		}
 
-		template<typename T>
+		template <typename T>
 		T get_raw_cell_value(PGresult *res, unsigned *oids, int i, int j);
 
 		coro<result> exec(PGconn *conn, const char *command, int size, const char *values[],

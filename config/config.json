@@ -1,6 +1,7 @@
 {
 	"workers": 3,
 	"api_root": "/api",
+	"files_dir": "../files",
 
 	"fastcgi": {
 		"use_unix_sockets": true,

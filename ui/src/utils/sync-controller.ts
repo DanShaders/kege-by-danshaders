@@ -29,21 +29,22 @@ export class SyncController<Diffable extends IDiffable<Diffable, unknown, Binary
     this.handlerInProgress = true;
     while (this.updateWhileSave) {
       this.updateWhileSave = false;
-      this.params.statusElem.innerText = "Сохранение...";
 
       const syncResult = this.local.synchronize();
       if (syncResult === undefined) {
+        this.params.statusElem.innerText = "";
         break;
       }
 
+      this.params.statusElem.innerText = "Сохранение...";
       const [syncObj, commitDelta] = syncResult;
       try {
         await requestU(EmptyPayload, this.params.saveURL, syncObj);
+        this.local.commit(commitDelta);
         this.params.statusElem.innerText = "";
       } catch (e) {
         this.params.statusElem.innerText = "Не все изменения сохранены";
         console.error(e);
-        this.local.commit(commitDelta);
       }
     }
     this.handlerInProgress = false;

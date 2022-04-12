@@ -39,8 +39,10 @@ void ScalarFieldCodeGenerator::generate_getter_setter() {
       println("if (this.ctx.remote.$fname$ === value) {");
     }
     print(
-        "  delete this.ctx.delta.$name$;\n"
-        "  this.ctx.onDeltaChange(--this.fields, -1);\n"
+        "  if (this.ctx.delta.$name$ !== undefined) {\n"
+        "    delete this.ctx.delta.$name$;\n"
+        "    this.ctx.onDeltaChange(--this.fields, -1);\n"
+        "  }\n"
         "} else {\n"
         "  if (this.ctx.delta.$name$ === undefined) {\n"
         "    this.ctx.delta.$name$ = value;\n"

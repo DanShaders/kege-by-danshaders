@@ -16,6 +16,7 @@ set(
 	src/fields-id.cc
 	src/fields-scalar.cc
 	src/fields-set.cc
+	src/fields-unwired.cc
 	src/main.cc
 	src/options.cc
 )

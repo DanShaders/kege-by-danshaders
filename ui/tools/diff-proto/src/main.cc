@@ -22,7 +22,11 @@ public:
       if (field->name() == "id") {
         fields.push_back(std::make_unique<IDFieldCodeGenerator>(c, field));
       } else if (field->type() != FieldDescriptor::TYPE_MESSAGE) {
-        fields.push_back(std::make_unique<ScalarFieldCodeGenerator>(c, field));
+        if (field->containing_oneof()) {
+          fields.push_back(std::make_unique<ScalarFieldCodeGenerator>(c, field));
+        } else {
+          fields.push_back(std::make_unique<UnwiredFieldCodeGenerator>(c, field));
+        }
       } else {
         fields.push_back(std::make_unique<SetFieldCodeGenerator>(c, field));
         has_nonscalars = true;
@@ -32,7 +36,7 @@ public:
 
   void begin_scope() {
     if (vars["scope"].size()) {
-      println("namespace $scope$ {");
+      println("export namespace $scope$ {");
       indent();
     }
   }
@@ -68,7 +72,7 @@ public:
   void generate_constructor() {
     print("constructor(msg: $transport$)");
     blockln([&] {
-      println("this.msg = msg;");
+      println("this.msg = msg.clone();");
       for (const auto &field : fields) {
         field->generate_constructor_assignment();
       }
@@ -84,10 +88,18 @@ public:
   void generate_local_creation() {
     print(
         "createLocal(onDeltaChange: DeltaChangeCallback): Diffable$msg$ {\n"
-        "  const local = new Diffable$msg$(nonNull(this.msg));\n"
-        "  this.msg = undefined;\n"
+        "  const local = this.clone();\n"
         "  local.mount({ remote: this, delta: {}, onDeltaChange: onDeltaChange });\n"
         "  return local;\n"
+        "}\n\n");
+  }
+
+  void generate_clone() {
+    print(
+        "clone(): Diffable$msg$ {\n"
+        "  const result = new Diffable$msg$(nonNull(this.msg));\n"
+        "  this.msg = undefined;\n"
+        "  return result;\n"
         "}\n\n");
   }
 
@@ -107,7 +119,7 @@ public:
         "  if (!this.fields) { return undefined; }\n"
         "  nonNull(this.ctx);\n"
         "  return [this.serialize(), structuredClone(this.ctx!.delta)];\n"
-        "}\n\n");
+        "}\n");
   }
 
   void generate_commit() {
@@ -136,7 +148,7 @@ public:
 
   void generate_serialize() {
     print("serialize(): $transport$");
-    block([&] {
+    blockln([&] {
       print(
           "const delta = this.ctx!.delta;\n"
           "const obj = new $transport$();\n");
@@ -155,11 +167,12 @@ public:
       generate_class_fields();
       generate_constructor();
       generate_getters_setters();
+      generate_clone();
+      generate_commit();
       generate_local_creation();
       generate_mount();
-      generate_commit();
-      generate_synchronize();
       generate_serialize();
+      generate_synchronize();
     });
   }
 
@@ -250,7 +263,7 @@ private:
         add_error(field, ERR_ONEOF_DISALLOWED);
       } else if (field->type() == FieldDescriptor::TYPE_GROUP) {
         add_error(field, ERR_GROUP_DISALLOWED);
-      } else if (field->is_repeated() && !field->message_type()) {
+      } else if (!field->is_repeated() != !field->message_type()) {
         add_error(field, ERR_REPEATED_SCALARS_DISALLOWED);
       }
     });

@@ -16,7 +16,7 @@ export declare namespace JSX {
 }
 /* eslint-enable no-unused-vars */
 
-type Attributes = { [key: string]: string | boolean };
+type Attributes = { [key: string]: string | boolean | ((e: Event) => void) };
 
 const XML_NS_XHTML = "http://www.w3.org/1999/xhtml";
 const XML_NS_SVG = "http://www.w3.org/2000/svg";
@@ -79,7 +79,9 @@ export class Fragment {
           [namespace, propName] = prop.split(":", 2);
           namespace = XML_NS_PREFIXES.get(namespace) ?? null;
         }
-        if ((typeof value === "boolean" || value === undefined) && propName.endsWith("If")) {
+        if (propName.startsWith("on") && value instanceof Function) {
+          place.addEventListener(propName.substr(2), value);
+        } else if (propName.endsWith("If")) {
           if (value) {
             place.setAttributeNS(namespace, propName.substr(0, propName.length - 2), "");
           }

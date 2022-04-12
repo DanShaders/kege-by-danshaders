@@ -32,14 +32,23 @@ export class FileSelectComponent extends Component<Settings> {
     this.inputElem.addEventListener("change", () => {
       this.onChange();
     });
-    elem.addEventListener("click", () => this.inputElem!.click());
+    elem.addEventListener("click", () => {
+      this.elem.classList.remove("file-input-focus");
+      this.inputElem!.click();
+    });
     return elem;
   }
 
   onChange() {
     let filename = "";
+    let totalSize = 0;
     for (const file of this.inputElem!.files ?? []) {
       filename += ", " + file.name;
+      totalSize += file.size;
+    }
+    if (totalSize >= 20 << 20) {
+      alert("Максимальный размер файла \u2014 20Мб");
+      window.requestAnimationFrame(() => this.clear());
     }
     filename = filename.substr(2);
     if (filename === "") {
@@ -51,6 +60,15 @@ export class FileSelectComponent extends Component<Settings> {
 
   getFiles(): FileList | null {
     return this.inputElem!.files;
+  }
+
+  clear() {
+    this.inputElem!.value = "";
+    this.onChange();
+  }
+
+  forceFocus(): void {
+    this.elem.classList.add("file-input-focus");
   }
 }
 

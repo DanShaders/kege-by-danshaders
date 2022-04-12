@@ -21,14 +21,9 @@ message Task {
 
 		optional string filename = 2;
 		optional string mime_type = 3;
-		string hash = 4;
 		bytes contents = 5;
 		optional bool shown_to_user = 6;
 		optional bool deleted = 7;
 	}
 	repeated Attachment attachments = 8;
-}
-
-message UpdateResponse {
-	map<int64, string> attachments_hash = 1;
 }

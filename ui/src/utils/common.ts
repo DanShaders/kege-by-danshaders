@@ -6,7 +6,8 @@ let loadingScreenShown: boolean = false;
 let loadingScreenElem: HTMLDivElement | null = null;
 
 let handlerInProgress = false;
-export const toggleLoadingScreen = (shown: boolean = true): void => {
+
+export function toggleLoadingScreen(shown: boolean = true): void {
   if (shown !== loadingScreenShown) {
     if (!loadingScreenElem) {
       loadingScreenElem = document.createElement("div");
@@ -20,7 +21,7 @@ export const toggleLoadingScreen = (shown: boolean = true): void => {
     }
     loadingScreenShown = shown;
   }
-};
+}
 
 type Callback = (event: Event) => void;
 type NullableCallback = Callback | null | undefined;

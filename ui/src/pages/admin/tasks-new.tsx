@@ -1,7 +1,8 @@
 import { Component } from "components/component";
+import { SetEntry, SetComponent, listProviderOf, factoryOf } from "components/lists";
 import { requireAuth } from "pages/common";
 import { Task } from "proto/tasks_pb";
-import { TaskDelta, DiffableTask } from "proto/tasks_pb_diff";
+import * as diff from "proto/tasks_pb_diff";
 import { TaskTypeListResponse } from "proto/task-types_pb";
 import { getTaskTypes } from "admin";
 import { dbId } from "utils/common";
@@ -10,27 +11,26 @@ import { SyncController } from "utils/sync-controller";
 import { requestU, EmptyPayload } from "utils/requests";
 import { toggleLoadingScreen } from "utils/common";
 import { ButtonIcon } from "components/button-icon";
-import { FileSelect } from "components/file-select";
+import { FileSelectComponent, FileSelect } from "components/file-select";
 import { Checkbox } from "components/checkbox";
 import { TextEditor } from "components/text-editor";
 
 import * as jsx from "jsx";
 
-type TaskSettings = {
-  id: number;
-  taskType: number;
-  parent: number;
-  text: string;
-  answerRows: number;
-  answerCols: number;
-  answer: Uint8Array;
-  taskTypes: TaskTypeListResponse.AsObject;
-};
-
 type AnswerSettings = {
   answerRows: number;
   answerCols: number;
   answer: Uint8Array;
+};
+
+type PageSettings = diff.DiffableTask & {
+  taskTypes: TaskTypeListResponse.AsObject;
+};
+
+type AttachmentSettings = {
+  isBlob: boolean;
+  realLink: string;
+  fakeLink: string;
 };
 
 const textDecoder = new TextDecoder(),
@@ -54,7 +54,7 @@ class AnswerTable extends Component<AnswerSettings> {
         answerPos = Math.min(answer.length, h + 1);
 
         const cell = (
-          <input ref type="text" class="textarea-line" value={this.parsedAnswer[i][j]} />
+          <input type="text" class="textarea-line" value={this.parsedAnswer[i][j]} />
         ).asElement() as HTMLInputElement;
         row.appendChild((<td class="column-200px">{cell}</td>).asElement());
         cell.addEventListener("change", () => {
@@ -96,11 +96,75 @@ class AnswerTable extends Component<AnswerSettings> {
   }
 }
 
-class TaskEditPage extends Component<TaskSettings> {
+class Attachment extends SetEntry<diff.Task.DiffableAttachment, AttachmentSettings> {
   createElement(): HTMLElement {
-    let elems: Element[] = [];
+    return (
+      <tr>
+        <td>{this.settings.filename}</td>
+        <td>
+          <ButtonIcon settings={{ title: "Открыть", icon: "icon-open", onClick: this.open.bind(this) }} />
+          <ButtonIcon
+            settings={{ title: "Удалить", icon: "icon-delete", hoverColor: "red", onClick: this.delete.bind(this) }}
+          />
+        </td>
+        <td class="clickable">{this.settings.fakeLink}</td>
+      </tr>
+    ).asElement() as HTMLElement;
+  }
+
+  open() {
+    window.open(this.settings.realLink);
+  }
+
+  delete() {
+    delete this.settings.contents;
+    if (this.settings.isBlob) {
+      URL.revokeObjectURL(this.settings.realLink);
+    }
+    this.settings.deleted = true;
+    this.parent.pop(this.i);
+  }
+}
+
+class Page extends Component<PageSettings> {
+  createElement(): HTMLElement {
+    const elems: any[] = [];
 
     const answerTable = new AnswerTable(this.settings, this);
+    let linkCnt = 1;
+    const attachmentsSet = new SetComponent<diff.Task.DiffableAttachment, AttachmentSettings>(
+      this.settings.attachments,
+      this,
+      listProviderOf("tbody"),
+      factoryOf(Attachment),
+      (obj) =>
+        Object.assign(obj, {
+          isBlob: false,
+          realLink: "api/tasks/attachment?id=" + obj.id,
+          fakeLink: `f://${linkCnt++}`,
+        })
+    );
+
+    const uploadFile = async () => {
+      const files = fileInput.getFiles() ?? [];
+      if (files.length === 0) {
+        fileInput.forceFocus();
+        return;
+      }
+      const file = files[0];
+      const contents = new Uint8Array(await file.arrayBuffer());
+      const links = {
+        isBlob: true,
+        realLink: URL.createObjectURL(file),
+        fakeLink: `f://${linkCnt++}`,
+      };
+      attachmentsSet.push(new diff.Task.DiffableAttachment(new Task.Attachment().setId(dbId())), links, (local) => {
+        local.filename = filenameInput.value || file.name;
+        local.contents = contents;
+        local.mimeType = file.type;
+      });
+      fileInput.clear();
+    };
 
     const elem = (
       <div>
@@ -134,10 +198,44 @@ class TaskEditPage extends Component<TaskSettings> {
             <div class="group-15-wrap-no">{answerTable.elem}</div>
           </div>
         </div>
+
+        <hr />
+
+        <div class="group-15-row">
+          <label class="group-15-label group-15-left">Файлы</label>
+          <div class="group-15-right">
+            <div class="group-15-wrap-border">
+              <table class="table-first-col-left">
+                <thead>
+                  <tr>
+                    <td class="column-norm">Описание</td>
+                    <td class="column-min"></td>
+                    <td class="column-min">Ссылка</td>
+                  </tr>
+                </thead>
+                {attachmentsSet.elem}
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="group-15-row">
+          <label class="group-15-label group-15-left">Загрузить</label>
+          <div class="group-15-right">
+            <div class="group-15-wrap-border focusable">
+              <textarea ref class="textarea-line" rows="1" placeholder="Название файла" />
+            </div>
+            <div class="group-15-wrap-no group-15-not-first">
+              <FileSelect ref settings={{ required: true }} />
+              <button class="button-green" style="margin-left: 5px;" onclick={uploadFile}>
+                Загрузить
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     ).asElement(elems) as HTMLDivElement;
 
-    const [select] = elems as [HTMLSelectElement];
+    const [select, filenameInput, fileInput] = elems as [HTMLSelectElement, HTMLTextAreaElement, FileSelectComponent];
 
     select.addEventListener("change", () => {
       this.settings.taskType = parseInt(select.value, 10);
@@ -163,7 +261,7 @@ async function showTaskListPage(params: URLSearchParams): Promise<void> {
   const statusElem = document.createElement("span");
   const syncController = new SyncController({
     statusElem: statusElem,
-    remote: new DiffableTask(raw),
+    remote: new diff.DiffableTask(raw),
     saveURL: "api/tasks/update",
   });
 
@@ -172,7 +270,7 @@ async function showTaskListPage(params: URLSearchParams): Promise<void> {
   settings.answerCols ||= 1;
   syncController.supressSave = false;
 
-  const page = new TaskEditPage(Object.assign(settings, { taskTypes: await getTaskTypes() }), null);
+  const page = new Page(Object.assign(settings, { taskTypes: await getTaskTypes() }), null);
 
   const redirectBack = (): never => Router.instance.redirect(params.get("back") ?? "");
   const [syncText] = (
@@ -182,58 +280,12 @@ async function showTaskListPage(params: URLSearchParams): Promise<void> {
           <ButtonIcon settings={{ title: "Назад", icon: "icon-back", margins: [5, 10, 0, 0], onClick: redirectBack }} />
           Редактирование задания
         </h1>
-        <span ref class="flex-align-center"></span>
+        <span ref class="flex-align-center">
+          {statusElem}
+        </span>
       </div>
 
       {page.elem}
-      {/*<div class="group-15-wrap-no group-15-not-first">
-            Размер:&nbsp;
-            <input type="text" class="textarea-20px textarea-freestanding focusable" />
-            &nbsp;&times;&nbsp;
-            <input type="text" class="textarea-20px textarea-freestanding focusable" />
-          </div>*/}
-      <hr />
-
-      <div class="group-15-row">
-        <label class="group-15-label group-15-left">Файлы</label>
-        <div class="group-15-right">
-          <div class="group-15-wrap-border">
-            <table class="table-first-col-left">
-              <thead>
-                <tr>
-                  <td class="column-norm">Описание</td>
-                  <td class="column-min"></td>
-                  <td class="column-min">Ссылка</td>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>123</td>
-                  <td>
-                    <ButtonIcon settings={{ title: "Открыть", icon: "icon-open" }} />
-                    <ButtonIcon settings={{ title: "Удалить", icon: "icon-delete", hoverColor: "red" }} />
-                  </td>
-                  <td class="clickable">f://fcdeba98</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      <div class="group-15-row">
-        <label class="group-15-label group-15-left">Загрузить</label>
-        <div class="group-15-right">
-          <div class="group-15-wrap-border focusable">
-            <textarea class="textarea-line" rows="1" placeholder="Название файла" />
-          </div>
-          <div class="group-15-wrap-no group-15-not-first">
-            <FileSelect settings={{ required: true }} />
-            <button class="button-green" style="margin-left: 5px;">
-              Загрузить
-            </button>
-          </div>
-        </div>
-      </div>
     </>
   ).replaceContentsOf("main");
 

@@ -11,6 +11,7 @@ export interface IContext<Diffable, Delta> {
 export interface IDiffable<Diffable, Delta, Transport> {
   get id(): number;
 
+  clone(): Diffable;
   commit(commitDelta: Delta): void;
   createLocal(onDeltaChange: DeltaChangeCallback): Diffable;
   mount(ctx: IContext<Diffable, Delta>): void;
@@ -37,8 +38,31 @@ export class DiffableSet<Diffable extends IDiffable<Diffable, Delta, Transport>,
     }
   }
 
+  get length(): number {
+    return this.elements.size;
+  }
+
   get(id: number): Diffable | undefined {
     return this.elements.get(id);
+  }
+
+  entries(): IterableIterator<[number, Diffable]> {
+    return this.elements.entries();
+  }
+
+  add(local: Diffable, remote: Diffable, initializeLocal: (local: Diffable) => void): void {
+    const saveFields = this.fields;
+    this.supressPropagation = true;
+
+    this.ctx!.remote.elements.set(remote.id, remote);
+    this.elements.set(local.id, local);
+    this.mountSingle(local.id, local);
+    initializeLocal(local);
+
+    this.supressPropagation = false;
+    if (this.fields !== saveFields) {
+      this.ctx!.onDeltaChange(this.fields, this.fields - saveFields);
+    }
   }
 
   private mountSingle(id: number, elem: Diffable): void {
@@ -88,6 +112,9 @@ export class DiffableSet<Diffable extends IDiffable<Diffable, Delta, Transport>,
     }
   }
 }
+
+export type IDiffableOf<T> = IDiffable<T, any, any>;
+export type DiffableSetOf<T extends IDiffableOf<T>> = DiffableSet<T, any, any>;
 
 export function areBuffersEqual(a: ArrayBuffer, b: ArrayBuffer): boolean {
   if (a.byteLength !== b.byteLength) {

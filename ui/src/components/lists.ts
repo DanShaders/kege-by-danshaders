@@ -1,4 +1,5 @@
 import { Component } from "./component";
+import { IDiffableOf, DiffableSetOf } from "utils/diff";
 
 export interface ListProvider {
   elem: HTMLElement;
@@ -9,13 +10,20 @@ export interface ListProvider {
   pop(i: number): void;
 }
 
-export abstract class EnumerableComponent<T> extends Component<T> {
+export abstract class EnumerableComponent<T, U, Enumerator extends Component<unknown>> extends Component<T & U> {
   i: number;
   isFirst: boolean;
   isLast: boolean;
+  declare parent: Enumerator;
 
-  constructor(settings: T, parent: Component<any> | null, i: number, isFirst: boolean, isLast: boolean) {
+  constructor(settings: T & U, parent: Enumerator, i: number, isFirst: boolean, isLast: boolean) {
     super(settings, parent);
+    this.i = i;
+    this.isFirst = isFirst;
+    this.isLast = isLast;
+  }
+
+  onPositionUpdate(i: number, isFirst: boolean, isLast: boolean) {
     this.i = i;
     this.isFirst = isFirst;
     this.isLast = isLast;
@@ -45,8 +53,11 @@ export class BasicListProvider implements ListProvider {
       return;
     }
     const bc = this.elem.children;
-    if (bc.length > this.length + this.offset) this.elem.insertBefore(elem, bc[this.length + this.offset]);
-    else this.elem.appendChild(elem);
+    if (bc.length > this.length + this.offset) {
+      this.elem.insertBefore(elem, bc[this.length + this.offset]);
+    } else {
+      this.elem.appendChild(elem);
+    }
     ++this.length;
   }
 
@@ -56,119 +67,78 @@ export class BasicListProvider implements ListProvider {
   }
 }
 
-export class TableColumnListProvider extends BasicListProvider {
-  columnIndex: number;
-  columnLengths: number[];
+export type ComponentFactory<T, U, Set extends Component<unknown>> = (
+  s: T & U,
+  p: Set,
+  i: number,
+  f: boolean,
+  l: boolean
+) => EnumerableComponent<T, U, Set>;
 
-  constructor(columnIndex: number, columnLengths: number[], offset: number, elem: HTMLElement) {
-    super(offset, () => elem);
-    this.columnIndex = columnIndex;
-    this.columnLengths = columnLengths;
-  }
-
-  getContainer(i: number): HTMLElement {
-    return super.get(i).children[this.columnIndex] as HTMLElement;
-  }
-
-  override get(i: number): HTMLElement {
-    return this.getContainer(i).children[0] as HTMLElement;
-  }
-
-  override push(elem: HTMLElement, belongs: boolean = true): void {
-    if (Math.max(...this.columnLengths) === this.columnLengths[this.columnIndex]) {
-      const newRow = document.createElement("tr");
-      for (let i = 0; i < this.columnLengths.length; ++i) newRow.appendChild(document.createElement("td"));
-      this.elem.appendChild(newRow);
-    }
-    ++this.columnLengths[this.columnIndex];
-    if (belongs) {
-      ++this.length;
-      const i = this.length - 1;
-      for (let j = this.columnLengths[this.columnIndex] - 1; j > i; --j)
-        this.getContainer(j).appendChild(this.get(j - 1));
-      this.getContainer(i).appendChild(elem);
-    } else {
-      this.getContainer(this.columnLengths[this.columnIndex] - 1).appendChild(elem);
-    }
-  }
-
-  override pop(i: number): void {
-    this.getContainer(i).removeChild(this.get(i));
-    for (let j = i; j < this.columnLengths[this.columnIndex] - 1; ++j)
-      this.getContainer(j).appendChild(this.get(j + 1));
-    --this.length;
-    --this.columnLengths[this.columnIndex];
-    if (Math.max(...this.columnLengths) === this.columnLengths[this.columnIndex])
-      this.elem.removeChild(super.get(this.columnLengths[this.columnIndex]));
-  }
-}
-
-export type ComponentFactory<T> = (s: T, p: Component<T[]>, i: number, f: boolean, l: boolean) => Component<T>;
-
-export class ListComponent<T> extends Component<T[]> {
-  listProvider: ListProvider;
-  compFactory: ComponentFactory<T>;
-  comps: Component<T>[];
+export class SetComponent<T extends IDiffableOf<T>, U> extends Component<DiffableSetOf<T>> {
+  protected provider;
+  protected factory;
+  protected comps;
 
   constructor(
-    settings: T[],
-    parent: Component<any> | null,
-    listProvider: ListProvider,
-    compFactory: ComponentFactory<T>
+    settings: DiffableSetOf<T>,
+    parent: Component<unknown> | null,
+    provider: ListProvider,
+    factory: ComponentFactory<T, U, SetComponent<T, U>>,
+    settingsMap: (obj: T) => T & U
   ) {
     super(settings, parent);
-    this.listProvider = listProvider;
-    this.compFactory = compFactory;
-    this.comps = Array(settings.length);
+    this.provider = provider;
+    this.factory = factory;
+    this.comps = Array.from(this.settings.entries()).map(([id, obj], index) =>
+      factory(settingsMap(obj), this, index, index === 0, index + 1 === this.settings.length)
+    );
   }
 
   createElement(): HTMLElement {
     for (const [i, compSettings] of this.settings.entries()) {
-      this.comps[i] = this.compFactory(compSettings, this, i, i === 0, i === this.settings.length - 1);
-      this.listProvider.push(this.comps[i].elem);
+      this.provider.push(this.comps[i].elem);
     }
-    return this.listProvider.elem;
+    return this.provider.elem;
   }
 
-  swap(i: number, j: number): void {
-    [this.settings[i], this.settings[j]] = [this.settings[j], this.settings[i]];
-    this.rerender(i);
-    this.rerender(j);
-    this.onChange();
-  }
+  push(remote: T, additional: U, initializeLocal: (local: T) => void): void {
+    const local = remote.clone();
+    this.settings.add(local, remote, initializeLocal);
 
-  push(current: T): void {
-    const i = this.settings.length;
-    this.settings.push(current);
-    this.comps.push(this.compFactory(current, this, i, i === 0, true));
-    if (i > 0) this.rerender(i - 1);
-    this.listProvider.push(this.comps[i].elem);
-    this.onLengthChange();
-    this.onChange();
+    const i = this.comps.length;
+    this.comps.push(this.factory(Object.assign(local, additional), this, i, i === 0, true));
+    if (i) {
+      this.comps[i - 1].onPositionUpdate(i - 1, i - 1 === 0, false);
+    }
+    this.provider.push(this.comps[i].elem);
   }
 
   pop(i: number): void {
-    this.settings.splice(i, 1);
+    this.provider.pop(i);
     this.comps.splice(i, 1);
-    this.listProvider.pop(i);
-    for (let j = Math.max(0, i - 1); j < this.settings.length; ++j) this.rerender(j);
-    this.onLengthChange();
-    this.onChange();
+    for (let j = Math.max(0, i - 1); j < this.comps.length; ++j) {
+      this.comps[j].onPositionUpdate(j, j === 0, j + 1 === this.comps.length);
+    }
   }
-
-  rerender(i: number): void {
-    this.comps[i] = this.compFactory(this.settings[i], this, i, i === 0, i === this.settings.length - 1);
-    this.listProvider.get(i).replaceWith(this.comps[i].elem);
-  }
-
-  onLengthChange(): void {}
-  onChange(): void {}
 }
+
+export abstract class SetEntry<T extends IDiffableOf<T>, U> extends EnumerableComponent<T, U, SetComponent<T, U>> {}
 
 export function listProviderOf(tag: string, classList: string[] = []): ListProvider {
   return new BasicListProvider(0, () => {
     const x = document.createElement(tag);
-    if (classList.length) x.classList.add(...classList);
+    if (classList.length) {
+      x.classList.add(...classList);
+    }
     return x;
   });
+}
+
+export function factoryOf<T, U, Set extends Component<unknown>>(
+  obj: new (s: T & U, p: Set, i: number, f: boolean, l: boolean) => EnumerableComponent<T, U, Set>
+): ComponentFactory<T, U, Set> {
+  return (s, p, i, f, l) => {
+    return new obj(s, p, i, f, l);
+  };
 }

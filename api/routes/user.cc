@@ -1,6 +1,5 @@
 #include "stdafx.h"
 
-#include "KEGE.h"
 #include "async/coro.h"
 #include "async/pq.h"
 #include "routes.h"

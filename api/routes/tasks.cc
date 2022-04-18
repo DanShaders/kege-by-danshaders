@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "config.h"
 
-#include "KEGE.h"
 #include "async/coro.h"
 #include "async/pq.h"
 #include "routes.h"
@@ -149,7 +148,7 @@ static coro<void> handle_update(fcgx::request_t *r) {
 }
 
 static coro<void> handle_attachment(fcgx::request_t *r) {
-	const int BUFFER_SIZE = 4096;
+	const int BUFFER_SIZE = 8192;
 	char buffer[BUFFER_SIZE];
 
 	std::string filename, hash, mime_type;

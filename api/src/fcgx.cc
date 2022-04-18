@@ -65,12 +65,8 @@ void request_t::finish() {
 		fix_meta();
 	out.rdbuf()->sputn(0, 0);
 	FCGX_FFlush(raw->out);
-#if defined(KEGE_FCGI_USE_ASYNC) && KEGE_FCGI_USE_ASYNC
-	async::libev_event_loop::local->fcgx_schedule_close(raw);
-#else
 	FCGX_Finish_r(raw);
 	delete raw;
-#endif
 	delete _rsb;
 	delete this;
 }
@@ -92,82 +88,39 @@ bool is_mime_type(const std::string_view &mime, const std::string_view &to_test)
 }
 
 #if defined(KEGE_FCGI_USE_ASYNC) && KEGE_FCGI_USE_ASYNC
-bool fcgx_setnonblocking(FCGX_Request *req, bool nonblocking = true) {
+void fcgx_setnonblocking(FCGX_Request *req, socket_storage &storage, bool nonblocking = true) {
 	int fd = req->ipcFd;
 
+	// TODO: No exception safety in fcgx::from_raw, so cannot use utils::ensure here.
 	int flags = fcntl(fd, F_GETFL);
-	if (flags == -1)
-		return false;
-
-	if (nonblocking)
-		flags |= O_NONBLOCK;
-	else
-		flags &= ~O_NONBLOCK;
-	if (fcntl(fd, F_SETFL, flags) == -1)
-		return false;
-	return true;
-}
-
-bool fcgx_setstorage(socket_storage *&storage, FCGX_Request *req, bool nonblocking = true) {
-	if (!nonblocking && !storage)
-		return true;
+	assert(flags != -1);
 	if (nonblocking) {
-		storage = new socket_storage{};
-		storage->fd = req->ipcFd;
-		storage->flags = EV_READ;
-		storage->loop = &*async::event_loop::local;
-		async::libev_event_loop::local->socket_add(storage);
+		flags |= O_NONBLOCK;
 	} else {
-		async::libev_event_loop::local->socket_del(storage);
+		flags &= ~O_NONBLOCK;
 	}
-	return true;
-}
+	assert(fcntl(fd, F_SETFL, flags) != -1);
 
-int fcgx_try_async_read(FCGX_Stream *stream, char *str, int n, int &already) {
-	if (already == n || stream->isClosed)
-		return already;
-
-	int ret = FCGX_GetStr(str + already, n - already, stream);
-	already += ret;
-	if (stream->isClosed && stream->FCGI_errno &&
-		(stream->FCGI_errno == EAGAIN || stream->FCGI_errno == EWOULDBLOCK)) {
-		stream->FCGI_errno = 0;
-		stream->isClosed = false;
-		errno = EAGAIN;
-		return -1;
+	if (nonblocking) {
+		storage.fd = fd;
+		async::libev_event_loop::get()->socket_add(&storage);
+	} else {
+		async::libev_event_loop::get()->socket_del(&storage);
 	}
-	return already;
 }
 
-coro<int> fcgx_async_read_str(char *str, int n, FCGX_Stream *stream, socket_storage *&storage,
-							  int &tmp, FCGX_Request *req) {
-	if (storage)
-		storage->initial_lock.store(true);
-	int ret = FCGX_GetStr(str, n, stream);
-	if (!(stream->isClosed && stream->FCGI_errno &&
-		  (stream->FCGI_errno == EAGAIN || stream->FCGI_errno == EWOULDBLOCK))) {
-		co_return ret;
+coro<int> fcgx_async_read_str(char *str, int n, FCGX_Stream *stream, socket_storage &storage) {
+	while (true) {
+		int ret = FCGX_GetStr(str, n, stream);
+		if (stream->FCGI_errno == EAGAIN && stream->FCGI_errno == EWOULDBLOCK) {
+			stream->isClosed = false;
+			stream->FCGI_errno = 0;
+		}
+		if (ret || stream->isClosed) {
+			co_return ret;
+		}
+		co_await async::socket_performer<true>{&storage};
 	}
-	stream->isClosed = false;
-	stream->FCGI_errno = 0;
-	tmp = ret;
-	if (!storage)
-		fcgx_setstorage(storage, req, true);
-	co_return co_await async::eagain_performer{
-		storage, 0, fcgx_try_async_read, std::move(stream), std::move(str), std::move(n), tmp};
-}
-#else
-bool fcgx_setnonblocking(FCGX_Request *, bool = true) {
-	return true;
-}
-
-bool fcgx_setstorage(socket_storage *&, FCGX_Request *, bool = true) {
-	return true;
-}
-
-coro<int> fcgx_async_read_str(char *str, int n, FCGX_Stream *stream, socket_storage *&, int &,
-							  FCGX_Request *) {
-	co_return FCGX_GetStr(str, n, stream);
 }
 #endif
 }  // namespace
@@ -273,22 +226,26 @@ coro<request_t *> fcgx::from_raw(FCGX_Request *raw) {
 		co_return 0;
 	}
 
-	const int FCGX_CHUNK_SIZE = 4096;
-	char chunk[FCGX_CHUNK_SIZE];
-	std::size_t clen;
-
 	body_type_t body_type = BODY_UNINITIALIZED;
 	json body;
 	std::string data, raw_body;
 
-	socket_storage *storage = 0;
-	int tmp;
-
 	char *mime_type = FCGX_GetParam("HTTP_CONTENT_TYPE", raw->envp);
 
-	fcgx_setnonblocking(raw);
-#define READ_CHUNK \
-	(clen = co_await fcgx_async_read_str(chunk, FCGX_CHUNK_SIZE, raw->in, storage, tmp, raw))
+	const int FCGX_CHUNK_SIZE = 8192;
+	char chunk[FCGX_CHUNK_SIZE];
+	std::size_t clen;
+
+#if defined(KEGE_FCGI_USE_ASYNC) && KEGE_FCGI_USE_ASYNC
+#	define READ_CHUNK \
+		(clen = co_await fcgx_async_read_str(chunk, FCGX_CHUNK_SIZE, raw->in, storage))
+
+	socket_storage storage;
+	fcgx_setnonblocking(raw, storage);
+
+#else
+#	define READ_CHUNK (clen = FCGX_GetStr(chunk, FCGX_CHUNK_SIZE, raw->in))
+#endif
 
 	try {
 		if (mime_type && is_mime_type(mime_type, "application/x-www-form-urlencoded")) {
@@ -297,7 +254,7 @@ coro<request_t *> fcgx::from_raw(FCGX_Request *raw) {
 			bool on_key = true;
 			std::string key, value;
 			while (READ_CHUNK) {
-				for (char c : std::string_view(chunk, chunk + clen)) {
+				for (char c : std::string_view(chunk, clen)) {
 					if (c == '&') {
 						body[utils::url_decode(key)] = utils::url_decode(value);
 						key = "";
@@ -316,7 +273,7 @@ coro<request_t *> fcgx::from_raw(FCGX_Request *raw) {
 		} else if (mime_type && is_mime_type(mime_type, "application/json")) {
 			/* Body is a JSON object */
 			while (READ_CHUNK)
-				data += std::string_view(chunk, chunk + clen);
+				data += std::string_view(chunk, clen);
 
 			try {
 				body = json::parse(data);
@@ -335,7 +292,7 @@ coro<request_t *> fcgx::from_raw(FCGX_Request *raw) {
 		if (body_type == BODY_UNINITIALIZED) {
 			/* Body is plaintext */
 			while (READ_CHUNK)
-				data += std::string_view(chunk, chunk + clen);
+				data += std::string_view(chunk, clen);
 			body.clear();
 			raw_body = data;
 			body_type = BODY_PLAIN_TEXT;
@@ -346,9 +303,9 @@ coro<request_t *> fcgx::from_raw(FCGX_Request *raw) {
 	}
 
 #undef READ_CHUNK
-
-	fcgx_setnonblocking(raw, false);
-	fcgx_setstorage(storage, raw, false);
+#if defined(KEGE_FCGI_USE_ASYNC) && KEGE_FCGI_USE_ASYNC
+	fcgx_setnonblocking(raw, storage, false);
+#endif
 
 	fcgx_streambuf *fbuf = new fcgx_streambuf(raw->out);
 	request_streambuf *rbuf = new request_streambuf(fbuf);

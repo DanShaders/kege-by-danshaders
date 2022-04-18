@@ -5,7 +5,7 @@
 
 // If this is on, the FastCGI server will read client request bodies asynchronously. This is usually
 // not needed because of proxy server request buffering; for example, nginx turns it on by default.
-// Note: async implementation is considerably slower (cpu time, ~2 times) than the sync one.
+// Note: async implementation is considerably slower (cpu time, ~1.5 times) than the sync one.
 #define KEGE_FCGI_USE_ASYNC 0
 
 inline const int FCGI_QUEUE_SIZE = 1000;

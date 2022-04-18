@@ -23,7 +23,7 @@ void sleep::await_resume() {}
 
 /* ==== async::libev_event_loop::impl ==== */
 struct data_t {
-	enum { NEW_TIMEOUT, NEW_SOCKET, DEL_SOCKET, CLOSE_FCGX, CLOSE_SOCKET } type;
+	enum { NEW_TIMEOUT, NEW_SOCKET, DEL_SOCKET, CLOSE_SOCKET } type;
 
 	union {
 		double vdouble;
@@ -91,12 +91,6 @@ struct libev_event_loop::impl {
 				auto event = (ev_with_arg<ev_io> *) storage->event;
 				ev_io_stop(loop, &event->w);
 				delete event;
-				break;
-			}
-
-			case data_t::CLOSE_FCGX: {
-				FCGX_Finish_r((FCGX_Request *) data.ext.vptr);
-				delete (FCGX_Request *) data.ext.vptr;
 				break;
 			}
 
@@ -241,10 +235,6 @@ void libev_event_loop::bind_to_thread() {
 
 void libev_event_loop::schedule_timer_resume(sleep *obj) {
 	pimpl->process_event({data_t::NEW_TIMEOUT, {.vptr = obj}});
-}
-
-void libev_event_loop::schedule_fcgx_close(void *req) {
-	pimpl->process_event({.type = data_t::CLOSE_FCGX, .ext = {.vptr = req}});
 }
 
 void libev_event_loop::socket_add(socket_storage *storage) {

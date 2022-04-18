@@ -56,7 +56,6 @@ public:
 	void bind_to_thread() override;
 
 	void schedule_timer_resume(sleep *obj);
-	void schedule_fcgx_close(void *req);
 
 	void socket_add(socket_storage *storage);
 	void socket_del(socket_storage *storage);

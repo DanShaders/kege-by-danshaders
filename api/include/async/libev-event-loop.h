@@ -26,14 +26,9 @@ public:
 };
 
 struct socket_storage {
-	bool (*sock_func)(void *, bool);
-	void *sock_this;
-	void *ptr;
-
-	event_loop_work work;
-
-	void *event;
-	int fd, flags;
+	event_loop_work read_work, write_work;
+	void *event = nullptr;
+	int fd = -1;
 };
 
 class libev_event_loop : public event_loop {
@@ -62,10 +57,8 @@ public:
 
 	void schedule_timer_resume(sleep *obj);
 	void schedule_fcgx_close(void *req);
-	void schedule_socket_close(int fd);
 
 	void socket_add(socket_storage *storage);
-	void socket_mod(socket_storage *storage);
 	void socket_del(socket_storage *storage);
 };
 

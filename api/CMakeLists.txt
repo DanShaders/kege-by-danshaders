@@ -23,6 +23,7 @@ set(
 	src/async/libev-event-loop.cc
 	src/async/mutex.cc
 	src/async/pq.cc
+	src/async/socket.cc
 	src/async/stackful.cc
 	src/config.cc
 	src/fcgx.cc

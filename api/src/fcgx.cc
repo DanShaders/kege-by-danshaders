@@ -170,25 +170,6 @@ coro<int> fcgx_async_read_str(char *str, int n, FCGX_Stream *stream, socket_stor
 	co_return FCGX_GetStr(str, n, stream);
 }
 #endif
-
-void ensure(bool cond, const std::string &msg, int err = errno) {
-	if (cond) {
-		throw std::system_error(err, std::system_category(), msg);
-	}
-}
-
-class scope_guard {
-private:
-	std::function<void()> runnable;
-
-public:
-	template <typename T>
-	scope_guard(const T &func) : runnable(func) {}
-
-	~scope_guard() {
-		runnable();
-	}
-};
 }  // namespace
 
 /* ==== fcgx::server::impl ==== */
@@ -205,20 +186,20 @@ struct server::impl {
 		req = new FCGX_Request;
 		if (addr.use_unix_sockets) {
 			fd = FCGX_OpenSocket(addr.path.c_str(), queue_size);
-			ensure(fd < 0, "socket creation failed");
+			utils::ensure(fd < 0, "socket creation failed");
 			if (addr.perms != -1) {
-				ensure(chmod(addr.path.c_str(), addr.perms),
-					   "changing socket file permissions failed");
+				utils::ensure(chmod(addr.path.c_str(), addr.perms),
+							  "changing socket file permissions failed");
 			}
-			ensure(fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK) == -1,
-				   "making socket non blocking failed");
+			utils::ensure(fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK) == -1,
+						  "making socket non blocking failed");
 		} else {
 			std::string port_str = std::to_string(addr.port);
 			std::string sock_id = addr.path + ":" + port_str;
 			addrinfo *result;
-			ensure(getaddrinfo(addr.path.c_str(), port_str.c_str(), 0, &result),
-				   "getaddrinfo for " + sock_id + " failed");
-			scope_guard result_guard([&] { freeaddrinfo(result); });
+			utils::ensure(getaddrinfo(addr.path.c_str(), port_str.c_str(), 0, &result),
+						  "getaddrinfo for " + sock_id + " failed");
+			utils::scope_guard result_guard([&] { freeaddrinfo(result); });
 
 			for (addrinfo *it = result; it; it = it->ai_next) {
 				fd = socket(it->ai_family, it->ai_socktype | SOCK_NONBLOCK, it->ai_protocol);
@@ -226,13 +207,13 @@ struct server::impl {
 					continue;
 				}
 				int optval = 1;
-				ensure(setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval)),
-					   "setting SO_REUSEPORT on FCGX socket failed");
-				ensure(bind(fd, it->ai_addr, it->ai_addrlen), "binding socket failed");
+				utils::ensure(setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval)),
+							  "setting SO_REUSEPORT on FCGX socket failed");
+				utils::ensure(bind(fd, it->ai_addr, it->ai_addrlen), "binding socket failed");
 				break;
 			}
-			ensure(fd < 0, "out of options to bind socket to " + sock_id);
-			ensure(listen(fd, queue_size), "listen failed");
+			utils::ensure(fd < 0, "out of options to bind socket to " + sock_id);
+			utils::ensure(listen(fd, queue_size), "listen failed");
 		}
 	}
 

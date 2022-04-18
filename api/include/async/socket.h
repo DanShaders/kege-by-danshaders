@@ -10,90 +10,59 @@
 #include "libev-event-loop.h"
 
 namespace async {
-// class socket;
-// template <typename, typename...>
-// class eagain_performer;
+class socket;
+template <bool is_awaiting_read>
+struct socket_performer;
 
-// class socket {
-// private:
-// 	int fd;
-// 	socket_storage *storage;
+class socket {
+	ONLY_DEFAULT_MOVABLE_CLASS(socket)
 
-// 	void init();
-// 	void uninit();
+private:
+	std::unique_ptr<socket_storage> storage;
 
-// public:
-// 	socket();
-// 	explicit socket(int);
-// 	socket(int, int, int);
-// 	socket(socket &) = delete;
-// 	socket(socket &&);
-// 	~socket();
+	explicit socket(int fd);
+	void init(int fd);
 
-// 	socket &operator=(socket &&);
+public:
+	socket() {}
 
-// #define DEFINE_SOCKET_FUNCTION(gname, mname, opt)                                             \
-// 	template <typename... Args>                                                               \
-// 	inline eagain_performer<decltype(gname), int, Args...> mname(                             \
-// 		Args &&...args) requires std::invocable<decltype(gname), int, Args...> {              \
-// 		using return_t = std::invoke_result_t<decltype(gname), int, Args...>;                 \
-//                                                                                               \
-// 		return_t res = gname(fd, std::forward<Args>(args)...);                                \
-//                                                                                               \
-// 		bool needs_repeat = false;                                                            \
-// 		if constexpr (opt == 2)                                                               \
-// 			needs_repeat = (errno == EINPROGRESS);                                            \
-// 		else                                                                                  \
-// 			needs_repeat = (errno == EAGAIN || errno == EWOULDBLOCK);                         \
-// 		if (res != -1)                                                                        \
-// 			needs_repeat = false;                                                             \
-//                                                                                               \
-// 		if (needs_repeat)                                                                     \
-// 			return {storage, opt, gname, std::forward<int>(fd), std::forward<Args>(args)...}; \
-// 		return eagain_performer<decltype(gname), int, Args...>{res == -1 ? -errno : res};     \
-// 	}
+	socket(int domain, int type, int protocol);
+	~socket();
 
-// 	DEFINE_SOCKET_FUNCTION(::accept, accept, 0)
-// 	DEFINE_SOCKET_FUNCTION(::connect, connect, 2)
-// 	DEFINE_SOCKET_FUNCTION(::read, read, 0)
-// 	DEFINE_SOCKET_FUNCTION(::recv, recv, 0)
-// 	DEFINE_SOCKET_FUNCTION(::recvfrom, recvfrom, 0)
-// 	DEFINE_SOCKET_FUNCTION(::recvmsg, recvmsg, 0)
-// 	DEFINE_SOCKET_FUNCTION(::send, send, 1)
-// 	DEFINE_SOCKET_FUNCTION(::sendmsg, sendmsg, 1)
-// 	DEFINE_SOCKET_FUNCTION(::sendto, sendto, 1)
-// 	DEFINE_SOCKET_FUNCTION(::write, write, 1)
+	static coro<async::socket> connect(std::string_view node, std::string_view service,
+									   const addrinfo &hints = {.ai_socktype = SOCK_STREAM});
 
-// #undef DEFINE_SOCKET_FUNCTION
+	coro<std::pair<socket, sockaddr>> accept();
+	void bind(const sockaddr *addr, socklen_t addrlen);
+	coro<void> connect(const sockaddr *addr, socklen_t addrlen);
+	void listen(int backlog);
 
-// 	coro<void> read_exactly(char *, std::size_t);
-// 	coro<void> write_all(const char *, std::size_t);
-// };
+	coro<ssize_t> read(char *buf, std::size_t size);
+	coro<void> read_exactly(char *buf, std::size_t size);
 
-// template <typename Func, typename... Args>
-// class eagain_performer {
-// private:
-// 	using return_t = std::invoke_result_t<Func, Args...>;
+	coro<ssize_t> write(std::string_view buf);
+	coro<void> write_all(std::string_view buf);
 
-// 	socket_storage *storage;
-// 	int flags;
-// 	Func *func;
-// 	std::optional<std::tuple<Args...>> args;
-// 	std::optional<return_t> ret;
+	void close();
+};
 
-// 	template <int... Is>
-// 	auto invoke2(detail::index<Is...>) -> return_t;
-// 	bool invoke();
+template <bool is_awaiting_read>
+struct socket_performer {
+	socket_storage *storage = nullptr;
 
-// public:
-// 	explicit eagain_performer(return_t res);
-// 	eagain_performer(socket_storage *storage, int flags, Func *, Args &&...);
+	bool await_ready() {
+		return false;
+	}
 
-// 	bool await_ready();
-// 	auto await_resume() -> return_t;
-// 	template <typename T>
-// 	void await_suspend(std::coroutine_handle<T> &);
-// };
+	void await_resume() {}
 
-// #include "detail/socket.impl.h"
+	template <typename T>
+	void await_suspend(std::coroutine_handle<T> &h) {
+		if constexpr (is_awaiting_read) {
+			storage->read_work = event_loop_work(&h);
+		} else {
+			storage->write_work = event_loop_work(&h);
+		}
+	}
+};
 }  // namespace async

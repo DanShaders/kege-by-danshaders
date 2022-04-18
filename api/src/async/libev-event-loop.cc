@@ -23,7 +23,7 @@ void sleep::await_resume() {}
 
 /* ==== async::libev_event_loop::impl ==== */
 struct data_t {
-	enum { NEW_TIMEOUT, NEW_SOCKET, MOD_SOCKET, DEL_SOCKET, CLOSE_FCGX, CLOSE_SOCKET } type;
+	enum { NEW_TIMEOUT, NEW_SOCKET, DEL_SOCKET, CLOSE_FCGX, CLOSE_SOCKET } type;
 
 	union {
 		double vdouble;
@@ -57,10 +57,13 @@ struct libev_event_loop::impl {
 		delete w;
 	}
 
-	static void socket_cb(ev_loop_t *, ev_io *w, int) {
+	static void socket_cb(ev_loop_t *, ev_io *w, int revents) {
 		auto storage = (socket_storage *) ((ev_with_arg<ev_io> *) w)->arg;
-		if (storage->sock_func(storage->sock_this, true)) {
-			storage->work.do_work();
+		if (revents & EV_READ) {
+			storage->read_work.do_work();
+		}
+		if (revents & EV_WRITE) {
+			storage->write_work.do_work();
 		}
 	}
 
@@ -78,15 +81,7 @@ struct libev_event_loop::impl {
 				auto storage = (socket_storage *) data.ext.vptr;
 				auto io_event = new ev_with_arg<ev_io>{{}, storage};
 				storage->event = io_event;
-				ev_io_init(&io_event->w, socket_cb, storage->fd, storage->flags);
-				ev_io_start(loop, &io_event->w);
-				break;
-			}
-			case data_t::MOD_SOCKET: {
-				auto storage = (socket_storage *) data.ext.vptr;
-				auto io_event = (ev_with_arg<ev_io> *) storage->event;
-				ev_io_stop(loop, &io_event->w);
-				ev_io_init(&io_event->w, socket_cb, storage->fd, storage->flags);
+				ev_io_init(&io_event->w, socket_cb, storage->fd, EV_READ | EV_WRITE);
 				ev_io_start(loop, &io_event->w);
 				break;
 			}
@@ -96,7 +91,6 @@ struct libev_event_loop::impl {
 				auto event = (ev_with_arg<ev_io> *) storage->event;
 				ev_io_stop(loop, &event->w);
 				delete event;
-				delete storage;
 				break;
 			}
 
@@ -253,16 +247,8 @@ void libev_event_loop::schedule_fcgx_close(void *req) {
 	pimpl->process_event({.type = data_t::CLOSE_FCGX, .ext = {.vptr = req}});
 }
 
-void libev_event_loop::schedule_socket_close(int fd) {
-	pimpl->process_event({.type = data_t::CLOSE_SOCKET, .ext = {.vint = fd}});
-}
-
 void libev_event_loop::socket_add(socket_storage *storage) {
 	pimpl->process_event({.type = data_t::NEW_SOCKET, .ext = {.vptr = storage}});
-}
-
-void libev_event_loop::socket_mod(socket_storage *storage) {
-	pimpl->process_event({.type = data_t::MOD_SOCKET, .ext = {.vptr = storage}});
 }
 
 void libev_event_loop::socket_del(socket_storage *storage) {

@@ -33,15 +33,18 @@ event_loop_work::event_loop_work(void (*func)(void *), void *arg) {
 }
 
 void event_loop_work::do_work() {
+	auto current = std::move(payload);
+	payload = std::monostate{};
+
 	try {
-		switch (payload.index()) {
+		switch (current.index()) {
 			case 1: {
-				event_loop::local->handle_exception(std::get<throw_exception>(payload).exc);
+				event_loop::local->handle_exception(std::get<throw_exception>(current).exc);
 				break;
 			}
 
 			case 2: {
-				const auto &c = std::get<resume_coroutine>(payload);
+				const auto &c = std::get<resume_coroutine>(current);
 				if (!c.done_func(c.handle)) {
 					c.resume_func(c.handle);
 				}
@@ -49,12 +52,12 @@ void event_loop_work::do_work() {
 			}
 
 			case 3: {
-				std::get<run_function>(payload).func();
+				std::get<run_function>(current).func();
 				break;
 			}
 
 			case 4: {
-				const auto &c = std::get<run_plain_function>(payload);
+				const auto &c = std::get<run_plain_function>(current);
 				c.func(c.arg);
 				break;
 			}
@@ -64,7 +67,6 @@ void event_loop_work::do_work() {
 				break;
 		}
 	} catch (...) { event_loop::local->handle_exception(std::current_exception()); }
-	payload = std::monostate{};
 }
 
 bool event_loop_work::has_work() const {

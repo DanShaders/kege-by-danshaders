@@ -3,7 +3,15 @@ using namespace utils;
 
 void utils::err(fcgx::request_t *r, api::ErrorCode code) {
 	err_nothrow(r, code);
+#if KEGE_LOG_DEBUG_ENABLED
+	if (code == api::ACCESS_DENIED) {
+		throw access_denied_error(r->request_uri);
+	} else {
+		throw expected_error(r->request_uri + ", code=" + std::to_string(code));
+	}
+#else
 	throw expected_error();
+#endif
 }
 
 void utils::err_nothrow(fcgx::request_t *r, api::ErrorCode code) {

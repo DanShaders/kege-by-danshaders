@@ -1,8 +1,6 @@
 #include "async/event-loop.h"
 using namespace async;
 
-#include <cxxabi.h>
-
 #include "logging.h"
 
 /* ==== async::completion_token ==== */
@@ -77,16 +75,6 @@ bool event_loop_work::has_work() const {
 thread_local std::shared_ptr<event_loop> event_loop::local;
 
 /* ==== async::detail ==== */
-void detail::log_top_level_exception(const std::string &what) {
-	using namespace std::literals;
-
-	int status = 0;
-	char *buff = __cxxabiv1::__cxa_demangle(__cxxabiv1::__cxa_current_exception_type()->name(), 0,
-											0, &status);
-	logging::info("Uncaught exception (in top-level async function): thrown instance of '"s + buff +
-				  "'");
-	if (what.size()) {
-		std::cout << "  what():  " << what << std::endl;
-	}
-	std::free(buff);
+void detail::log_top_level_exception(const std::exception_ptr &e) {
+	on_unhandled_exception_cb(e);
 }

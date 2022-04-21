@@ -60,8 +60,13 @@ inline bool coro<T>::await_ready() {
 template <typename T>
 inline T coro<T>::await_resume() {
 	assert(promise->handle.done());
-	if (promise->exc.has_value())
-		std::rethrow_exception(promise->exc.value());
+	if (promise->exc) {
+		const auto &value = *promise->exc;
+		if (promise->suspends_parent) {
+			stacktrace::async_update_stacktrace(value);
+		}
+		std::rethrow_exception(value);
+	}
 	assert(promise->handle.done());
 	if constexpr (!std::is_same_v<T, void>)
 		return std::move(promise->ret_val.value());
@@ -70,6 +75,7 @@ inline T coro<T>::await_resume() {
 template <typename T>
 template <typename U>
 inline void coro<T>::await_suspend(std::coroutine_handle<U> &h) {
+	promise->suspends_parent = true;
 	promise->parent = std::move(event_loop_work(&h));
 }
 

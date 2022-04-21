@@ -10,6 +10,13 @@ include(FindProtobuf)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+if (CMAKE_BUILD_TYPE STREQUAL Release)
+	set(KEGE_EXCEPTION_STACKTRACE 0)
+	set(KEGE_LOG_DEBUG_ENABLED 0)
+else()
+	set(KEGE_EXCEPTION_STACKTRACE 1)
+	set(KEGE_LOG_DEBUG_ENABLED 1)
+endif()
 configure_file(include/KEGE.in.h KEGE.h)
 
 
@@ -30,6 +37,8 @@ set(
 	src/logging.cc
 	src/routes.cc
 	src/routes/session.cc
+	src/stacktrace.cc
+	src/stacktrace-specific.cc
 	src/utils/api.cc
 	src/utils/common.cc
 	src/utils/crypto.cc
@@ -57,11 +66,30 @@ set(
 )
 
 
+# ==== Target libbacktrace ====
+if (KEGE_EXCEPTION_STACKTRACE)
+	ExternalProject_Add(
+		LIBBACKTRACE
+		GIT_REPOSITORY "https://github.com/ianlancetaylor/libbacktrace.git"
+		GIT_TAG "4d2dd0b172f2c9192f83ba93425f868f2a13c553"
+		CONFIGURE_COMMAND
+			<SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
+		UPDATE_COMMAND ""
+	)
+	ExternalProject_Get_property(LIBBACKTRACE INSTALL_DIR)
+	set(BACKTRACE_INCLUDE_DIRS "${INSTALL_DIR}/include")
+	set(BACKTRACE_LIBRARIES "${INSTALL_DIR}/lib/libbacktrace.a")
+else()
+	set(BACKTRACE_INCLUDE_DIRS "")
+	set(BACKTRACE_LIBRARIES "")
+endif()
+
+
 # ==== Target cpp-protoc-initializers ====
 ExternalProject_Add(
 	CPP_PROTOC_INITIALIZERS
 	GIT_REPOSITORY "https://github.com/DanShaders/cpp-protoc-initializers.git"
-	GIT_TAG ""
+	GIT_TAG "6400cd88a27f78a7ed6b8d2efbc155a6d7be4600"
 	CMAKE_ARGS
 		-DCMAKE_BUILD_TYPE=Release
 		-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
@@ -93,7 +121,7 @@ endforeach()
 # ==== Target KEGE_BASE ====
 add_library(KEGE_BASE INTERFACE)
 
-add_dependencies(KEGE_BASE CPP_PROTOC_INITIALIZERS)
+add_dependencies(KEGE_BASE CPP_PROTOC_INITIALIZERS LIBBACKTRACE)
 pkg_check_modules(CURL REQUIRED libcurl)
 pkg_check_modules(FCGI REQUIRED fcgi)
 pkg_check_modules(NLOHMANN_JSON REQUIRED nlohmann_json)
@@ -108,6 +136,7 @@ target_include_directories(
 	"${CMAKE_CURRENT_BINARY_DIR}"
 	"${PROJECT_SOURCE_DIR}/include"
 	
+	${BACKTRACE_INCLUDE_DIRS}
 	${CURL_INCLUDE_DIRS}
 	${FCGI_INCLUDE_DIRS}
 	${NLOHMANN_JSON_INCLUDE_DIRS}
@@ -127,6 +156,7 @@ target_compile_options(
 
 target_link_libraries(
 	KEGE_BASE INTERFACE
+	${BACKTRACE_LIBRARIES}
 	${CURL_LIBRARIES}
 	${FCGI_LIBRARIES}
 	${NLOHMANN_JSON_LIBRARIES}

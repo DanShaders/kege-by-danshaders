@@ -13,15 +13,17 @@ coro<void> perform_request(fcgx::request_t *r) noexcept {
 			utils::err(r, api::INTERNAL_ERROR);
 		else
 			co_await func(r);
+#if KEGE_LOG_DEBUG_ENABLED
+	} catch (const utils::access_denied_error &) {
 	} catch (const utils::expected_error &) {
-	} catch (const async::pq::db_error &e) {
+		async::detail::log_top_level_exception(std::current_exception());
+#else
+	} catch (const utils::expected_error &) {
+#endif
+	} catch (...) {
 		if (!r->is_meta_fixed) {
 			utils::err_nothrow(r, api::INTERNAL_ERROR);
 		}
-		if (KEGE_LOG_DEBUG_ENABLED) {
-			async::detail::log_top_level_exception(e.what());
-		}
-	} catch (const std::exception &e) {
-		async::detail::log_top_level_exception(e.what());
-	} catch (...) { async::detail::log_top_level_exception(); }
+		async::detail::log_top_level_exception(std::current_exception());
+	}
 }

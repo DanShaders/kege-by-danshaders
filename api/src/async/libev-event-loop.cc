@@ -213,9 +213,7 @@ void libev_event_loop::schedule_work(event_loop_work &&work) {
 void libev_event_loop::handle_exception(const std::exception_ptr &exc) {
 	try {
 		std::rethrow_exception(exc);
-	} catch (const std::exception &e) { detail::log_top_level_exception(e.what()); } catch (...) {
-		detail::log_top_level_exception();
-	}
+	} catch (...) { detail::log_top_level_exception(std::current_exception()); }
 	pimpl->success_flag = false;
 }
 

@@ -14,15 +14,20 @@ void logging::set_thread_name(const std::string_view &name) {
 	logging_thread_name = name;
 }
 
-void _log(const char *prefix, const char *message, std::size_t message_len, FILE *file) {
-	const int MAX_BUFFER = 25;
-	char buffer[MAX_BUFFER];
-
+const std::string &logging::get_thread_name() {
 	if (logging_thread_name.empty()) {
 		std::ostringstream out;
-		out << "ID~" << std::this_thread::get_id();
+		out << "T" << std::this_thread::get_id();
 		logging_thread_name = out.str();
 	}
+	return logging_thread_name;
+}
+
+void _log(const char *prefix, const char *message, std::size_t message_len, FILE *file) {
+	logging::get_thread_name();
+
+	const int MAX_BUFFER = 25;
+	char buffer[MAX_BUFFER];
 
 	{
 		std::lock_guard<std::mutex> guard(log_mutex);
@@ -36,8 +41,17 @@ void _log(const char *prefix, const char *message, std::size_t message_len, FILE
 		}
 
 		strftime(buffer, MAX_BUFFER - 1, "%Y-%m-%d %H:%M:%S", localtime(&tv.tv_sec));
-		fprintf(file, "[%s.%03d] [%s] [%s] %.*s\n", buffer, millis, logging_thread_name.c_str(),
-				prefix, int(message_len), message);
+		auto line_start = message;
+		auto message_end = message + message_len;
+		while (true) {
+			auto line_end = std::find(line_start, message_end, '\n');
+			fprintf(file, "[%s.%03d] [%s] [%s] %.*s\n", buffer, millis, logging_thread_name.c_str(),
+					prefix, int(line_end - line_start), line_start);
+			if (line_end == message_end || line_end + 1 == message_end) {
+				break;
+			}
+			line_start = line_end + 1;
+		}
 		fflush(file);
 	}
 }
@@ -58,7 +72,7 @@ void logging::admin(const std::string_view &message) {
 	_log("admin", message.data(), message.size(), ADMIN_FILE);
 }
 
-#ifdef KEGE_LOG_DEBUG_ENABLED
+#if KEGE_LOG_DEBUG_ENABLED
 void logging::debug(const std::string_view &message) {
 	_log("debug", message.data(), message.size(), INFO_FILE);
 }

@@ -4,6 +4,11 @@
 
 #include "event-loop.h"
 
+namespace stacktrace {
+// src/stacktrace.cc
+void async_update_stacktrace(const std::exception_ptr &ptr);
+}  // namespace stacktrace
+
 namespace async {
 template <typename>
 class coro;
@@ -14,8 +19,9 @@ namespace detail {
 		std::optional<std::exception_ptr> exc;
 		std::optional<event_loop_work> parent;
 
-		bool is_top_level = false;
-		bool destroy_on_done = false;
+		bool is_top_level : 1 = false;
+		bool destroy_on_done : 1 = false;
+		bool suspends_parent : 1 = false;
 
 		std::suspend_never initial_suspend() noexcept;
 		void final_suspend_inner(void *handle, void (*func)(void *)) noexcept;

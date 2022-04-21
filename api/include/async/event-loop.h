@@ -91,7 +91,9 @@ public:
 };
 
 namespace detail {
-	void log_top_level_exception(const std::string & = "");
+	inline std::function<void(const std::exception_ptr &)> on_unhandled_exception_cb;
+
+	void log_top_level_exception(const std::exception_ptr &e);
 }  // namespace detail
 
 #include "detail/event-loop.impl.h"

@@ -10,12 +10,14 @@
 #include "async/pq.h"
 #include "logging.h"
 #include "routes.h"
+#include "stacktrace.h"
 
+// routes/_wrap.cc
 coro<void> perform_request(fcgx::request_t *) noexcept;
 
-namespace {
-bool should_exit = 0;
+inline std::atomic_bool should_exit = false;
 
+namespace {
 void interrupt_handler(int, siginfo_t *, void *) noexcept {
 	const char *KILLING_APP_STR = "\nKilling application...\n";
 	const char *STOPPING_APP_STR = "\nGracefully stopping... (Press Ctrl+C again to force)\n";
@@ -26,7 +28,7 @@ void interrupt_handler(int, siginfo_t *, void *) noexcept {
 		std::terminate();
 	} else {
 		write(0, STOPPING_APP_STR, strlen(STOPPING_APP_STR));
-		should_exit = 1;
+		should_exit = true;
 		errno = saved_errno;
 	}
 }
@@ -58,6 +60,10 @@ signed main() {
 			  << "Compiled at " __DATE__ " " __TIME__ " with GCC " __VERSION__ << std::endl
 			  << std::endl;
 
+	async::detail::on_unhandled_exception_cb = stacktrace::log_unhandled_exception;
+	std::set_terminate(stacktrace::terminate_handler);
+
+	stacktrace::init();
 	logging::init();
 	logging::set_thread_name("main");
 	{

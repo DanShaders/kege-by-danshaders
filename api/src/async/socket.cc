@@ -50,7 +50,15 @@ coro<async::socket> socket::connect(std::string_view node, std::string_view serv
 
 #define WOULDBLOCK (errno == EAGAIN || errno == EWOULDBLOCK)
 
+inline void storage_listen_to(std::unique_ptr<socket_storage> &storage, socket_event_type mask) {
+	if ((storage->event_mask & mask) != mask) {
+		storage->event_mask = mask;
+		libev_event_loop::get()->socket_mod(storage.get());
+	}
+}
+
 coro<std::pair<async::socket, sockaddr>> socket::accept() {
+	storage_listen_to(storage, READABLE);
 	while (1) {
 		sockaddr naddr{};
 		socklen_t addrlen = sizeof(sockaddr);
@@ -59,7 +67,7 @@ coro<std::pair<async::socket, sockaddr>> socket::accept() {
 			co_return {socket{nfd}, naddr};
 		}
 		utils::ensure(!WOULDBLOCK, "accept failed");
-		co_await socket_performer<true>{storage.get()};
+		co_await socket_performer{READABLE, storage.get()};
 	}
 }
 
@@ -68,12 +76,14 @@ void socket::bind(const sockaddr *addr, socklen_t addrlen) {
 }
 
 coro<void> socket::connect(const sockaddr *addr, socklen_t addrlen) {
+	storage_listen_to(storage, WRITABLE);
 	int result = ::connect(storage->fd, addr, addrlen);
 	if (result != -1) {
 		co_return;
 	}
 	utils::ensure(errno != EINPROGRESS, "connect failed");
-	co_await socket_performer<false>{storage.get()};
+	co_await socket_performer{WRITABLE, storage.get()};
+	storage_listen_to(storage, READABLE);
 
 	int optval = 0;
 	unsigned int optlen = 4;
@@ -88,13 +98,14 @@ void socket::listen(int backlog) {
 }
 
 coro<ssize_t> socket::read(char *buf, std::size_t size) {
+	storage_listen_to(storage, READABLE);
 	while (1) {
 		ssize_t cnt = ::read(storage->fd, buf, size);
 		if (cnt != -1) {
 			co_return cnt;
 		}
 		utils::ensure(!WOULDBLOCK, "read failed");
-		co_await socket_performer<true>{storage.get()};
+		co_await socket_performer{READABLE, storage.get()};
 	}
 }
 
@@ -111,25 +122,33 @@ coro<void> socket::read_exactly(char *buf, std::size_t size) {
 }
 
 coro<ssize_t> socket::write(std::string_view buf) {
+	storage_listen_to(storage, WRITABLE);
 	while (1) {
 		ssize_t cnt = ::write(storage->fd, buf.data(), buf.size());
 		if (cnt != -1) {
 			co_return cnt;
 		}
 		utils::ensure(!WOULDBLOCK, "write failed");
-		co_await socket_performer<false>{storage.get()};
+		co_await socket_performer{WRITABLE, storage.get()};
 	}
+	storage_listen_to(storage, READABLE);
 }
 
 coro<void> socket::write_all(std::string_view buf) {
+	storage_listen_to(storage, WRITABLE);
 	while (buf.size()) {
-		std::size_t curr = co_await write(buf);
-		if (curr) {
-			buf = buf.substr(curr);
-		} else {
+		ssize_t curr = ::write(storage->fd, buf.data(), buf.size());
+		if (curr == -1) {
+			utils::ensure(!WOULDBLOCK, "write failed");
+			continue;
+		} else if (curr == 0) {
 			throw std::runtime_error("no bytes were written to socket");
+		} else {
+			buf = buf.substr(curr);
 		}
+		co_await socket_performer{WRITABLE, storage.get()};
 	}
+	storage_listen_to(storage, READABLE);
 }
 
 void socket::close() {

@@ -25,3 +25,11 @@ public:                              \
 #define ONLY_DEFAULT_COPIABLE_CLASS(name) \
 	IMMOVABLE_CLASS(name)                 \
 	DEFAULT_COPIABLE_CLASS(name)
+
+#define DEFAULT_BEHAVIOR_CLASS(name) \
+	DEFAULT_COPIABLE_CLASS(name)     \
+	DEFAULT_MOVABLE_CLASS(name)
+
+#define FIXED_CLASS(name) \
+	IMMOVABLE_CLASS(name) \
+	UNCOPIABLE_CLASS(name)

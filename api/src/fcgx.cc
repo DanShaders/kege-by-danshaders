@@ -103,6 +103,7 @@ void fcgx_setnonblocking(FCGX_Request *req, socket_storage &storage, bool nonblo
 
 	if (nonblocking) {
 		storage.fd = fd;
+		storage.event_mask = async::READABLE;
 		async::libev_event_loop::get()->socket_add(&storage);
 	} else {
 		async::libev_event_loop::get()->socket_del(&storage);
@@ -119,7 +120,7 @@ coro<int> fcgx_async_read_str(char *str, int n, FCGX_Stream *stream, socket_stor
 		if (ret || stream->isClosed) {
 			co_return ret;
 		}
-		co_await async::socket_performer<true>{&storage};
+		co_await async::socket_performer{async::READABLE, &storage};
 	}
 }
 #endif

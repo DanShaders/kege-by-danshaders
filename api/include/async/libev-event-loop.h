@@ -25,12 +25,6 @@ public:
 	void await_suspend(std::coroutine_handle<T> &h);
 };
 
-struct socket_storage {
-	event_loop_work read_work, write_work;
-	void *event = nullptr;
-	int fd = -1;
-};
-
 class libev_event_loop : public event_loop {
 private:
 	struct impl;
@@ -59,6 +53,7 @@ public:
 
 	void socket_add(socket_storage *storage);
 	void socket_del(socket_storage *storage);
+	void socket_mod(socket_storage *storage);
 };
 
 namespace detail {

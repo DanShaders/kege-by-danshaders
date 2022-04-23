@@ -61,6 +61,15 @@ public:
 	event_loop_work &operator=(event_loop_work &&) = default;
 };
 
+enum socket_event_type : char { SOCK_NONE = 0, READABLE = 1, WRITABLE = 2, SOCK_ALL = 3 };
+
+struct socket_storage {
+	event_loop_work work;
+	void *event = nullptr;
+	int fd = -1;
+	socket_event_type event_mask = SOCK_NONE, last_event = SOCK_NONE;
+};
+
 class event_loop : public std::enable_shared_from_this<event_loop> {
 public:
 	static thread_local std::shared_ptr<event_loop> local;

@@ -23,7 +23,7 @@ void sleep::await_resume() {}
 
 /* ==== async::libev_event_loop::impl ==== */
 struct data_t {
-	enum { NEW_TIMEOUT, NEW_SOCKET, DEL_SOCKET, CLOSE_SOCKET } type;
+	enum { NEW_TIMEOUT, NEW_SOCKET, DEL_SOCKET, MOD_SOCKET } type;
 
 	union {
 		double vdouble;
@@ -59,11 +59,9 @@ struct libev_event_loop::impl {
 
 	static void socket_cb(ev_loop_t *, ev_io *w, int revents) {
 		auto storage = (socket_storage *) ((ev_with_arg<ev_io> *) w)->arg;
-		if (revents & EV_READ) {
-			storage->read_work.do_work();
-		}
-		if (revents & EV_WRITE) {
-			storage->write_work.do_work();
+		if (storage->event_mask & revents) {
+			storage->last_event = (socket_event_type) revents;
+			storage->work.do_work();
 		}
 	}
 
@@ -81,7 +79,7 @@ struct libev_event_loop::impl {
 				auto storage = (socket_storage *) data.ext.vptr;
 				auto io_event = new ev_with_arg<ev_io>{{}, storage};
 				storage->event = io_event;
-				ev_io_init(&io_event->w, socket_cb, storage->fd, EV_READ | EV_WRITE);
+				ev_io_init(&io_event->w, socket_cb, storage->fd, storage->event_mask);
 				ev_io_start(loop, &io_event->w);
 				break;
 			}
@@ -94,8 +92,12 @@ struct libev_event_loop::impl {
 				break;
 			}
 
-			case data_t::CLOSE_SOCKET: {
-				close(data.ext.vint);
+			case data_t::MOD_SOCKET: {
+				auto storage = (socket_storage *) data.ext.vptr;
+				auto io_event = (ev_with_arg<ev_io> *) storage->event;
+				ev_io_stop(loop, &io_event->w);
+				ev_io_init(&io_event->w, socket_cb, storage->fd, storage->event_mask);
+				ev_io_start(loop, &io_event->w);
 				break;
 			}
 		}
@@ -138,7 +140,7 @@ struct libev_event_loop::impl {
 
 		if (p->queue.empty() && p->until_complete && !event_loop::local->alive_coroutines) {
 			ev_break(loop, EVBREAK_ALL);
-			for (auto source : sources) {
+			for (auto source : p->sources) {
 				source->on_stop();
 			}
 		}
@@ -242,4 +244,8 @@ void libev_event_loop::socket_add(socket_storage *storage) {
 
 void libev_event_loop::socket_del(socket_storage *storage) {
 	pimpl->process_event({.type = data_t::DEL_SOCKET, .ext = {.vptr = storage}});
+}
+
+void libev_event_loop::socket_mod(socket_storage *storage) {
+	pimpl->process_event({.type = data_t::MOD_SOCKET, .ext = {.vptr = storage}});
 }

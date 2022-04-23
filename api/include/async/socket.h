@@ -11,7 +11,6 @@
 
 namespace async {
 class socket;
-template <bool is_awaiting_read>
 struct socket_performer;
 
 class socket {
@@ -46,23 +45,22 @@ public:
 	void close();
 };
 
-template <bool is_awaiting_read>
 struct socket_performer {
+	socket_event_type type = SOCK_NONE;
 	socket_storage *storage = nullptr;
 
 	bool await_ready() {
 		return false;
 	}
 
-	void await_resume() {}
+	socket_event_type await_resume() {
+		return storage->last_event;
+	}
 
 	template <typename T>
 	void await_suspend(std::coroutine_handle<T> &h) {
-		if constexpr (is_awaiting_read) {
-			storage->read_work = event_loop_work(&h);
-		} else {
-			storage->write_work = event_loop_work(&h);
-		}
+		storage->event_mask = type;
+		storage->work = event_loop_work(&h);
 	}
 };
 }  // namespace async

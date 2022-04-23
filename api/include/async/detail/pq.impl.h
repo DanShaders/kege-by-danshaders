@@ -2,8 +2,8 @@
 template <typename... Params>
 inline coro<result> connection::exec(const char *command, Params &&...params) const {
 	detail::params_lowerer<Params...> lowered{std::forward<Params>(params)...};
-	return detail::exec(get_raw_connection(), command, sizeof...(Params), lowered.values,
-						lowered.lengths, lowered.formats);
+	return detail::exec(*conn, command, sizeof...(Params), lowered.values, lowered.lengths,
+						lowered.formats);
 }
 
 /* ==== async::pq::result ==== */

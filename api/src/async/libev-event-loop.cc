@@ -138,6 +138,9 @@ struct libev_event_loop::impl {
 
 		if (p->queue.empty() && p->until_complete && !event_loop::local->alive_coroutines) {
 			ev_break(loop, EVBREAK_ALL);
+			for (auto source : sources) {
+				source->on_stop();
+			}
 		}
 	}
 
@@ -172,8 +175,6 @@ struct libev_event_loop::impl {
 	}
 
 	~impl() {
-		for (auto source : sources)
-			source->on_stop();
 		ev_async_stop(loop, &stop_notifier.w);
 		ev_async_stop(loop, &work_notifier.w);
 		ev_loop_destroy(loop);

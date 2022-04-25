@@ -21,6 +21,11 @@ bool sleep::await_ready() {
 
 void sleep::await_resume() {}
 
+void sleep::await_suspend(std::coroutine_handle<> h) {
+	work = event_loop_work(h);
+	libev_event_loop::get()->schedule_timer_resume(this);
+}
+
 /* ==== async::libev_event_loop::impl ==== */
 struct data_t {
 	enum { NEW_TIMEOUT, NEW_SOCKET, DEL_SOCKET, MOD_SOCKET } type;
@@ -39,10 +44,6 @@ struct libev_event_loop::impl {
 	ev_loop_t *loop;
 
 	ev_with_arg<ev_async> stop_notifier;
-
-	ev_with_arg<ev_async> work_notifier;
-	std::shared_ptr<std::atomic_flag> ts_work_token;
-	event_loop_work ts_work;
 
 	ev_with_arg<ev_prepare> worker;
 
@@ -122,14 +123,6 @@ struct libev_event_loop::impl {
 		p->until_complete = true;
 	}
 
-	static void work_notifier_cb(ev_loop_t *, ev_async *w, int) {
-		auto p = (impl *) ((ev_with_arg<ev_async> *) w)->arg;
-
-		p->ts_work.do_work();
-		p->ts_work_token->test_and_set();
-		p->ts_work_token->notify_all();
-	}
-
 	static void worker_cb(ev_loop_t *loop, ev_prepare *w, int) {
 		auto p = (impl *) ((ev_with_arg<ev_prepare> *) w)->arg;
 
@@ -150,14 +143,6 @@ struct libev_event_loop::impl {
 		ev_async_send(loop, &stop_notifier.w);
 	}
 
-	completion_token schedule_work_ts(event_loop_work &&work) {
-		completion_token(ts_work_token).wait();
-		ts_work_token = std::make_shared<std::atomic_flag>();
-		ts_work = std::move(work);
-		ev_async_send(loop, &work_notifier.w);
-		return {ts_work_token};
-	}
-
 	impl() {
 		loop = ev_loop_new(0);
 		if (!loop)
@@ -167,10 +152,6 @@ struct libev_event_loop::impl {
 		stop_notifier.arg = this;
 		ev_async_start(loop, &stop_notifier.w);
 
-		ev_async_init(&work_notifier.w, work_notifier_cb);
-		work_notifier.arg = this;
-		ev_async_start(loop, &work_notifier.w);
-
 		ev_prepare_init(&worker.w, worker_cb);
 		worker.arg = this;
 		ev_prepare_start(loop, &worker.w);
@@ -178,7 +159,6 @@ struct libev_event_loop::impl {
 
 	~impl() {
 		ev_async_stop(loop, &stop_notifier.w);
-		ev_async_stop(loop, &work_notifier.w);
 		ev_loop_destroy(loop);
 	}
 };
@@ -218,10 +198,6 @@ void libev_event_loop::handle_exception(const std::exception_ptr &exc) {
 		std::rethrow_exception(exc);
 	} catch (...) { detail::log_top_level_exception(std::current_exception()); }
 	pimpl->success_flag = false;
-}
-
-completion_token libev_event_loop::schedule_work_ts(event_loop_work &&work) {
-	return pimpl->schedule_work_ts(std::move(work));
 }
 
 void libev_event_loop::register_source(std::shared_ptr<event_source> source) {

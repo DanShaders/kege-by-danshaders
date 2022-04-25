@@ -94,9 +94,8 @@ inline stackful<Func, Args...>::return_t stackful<Func, Args...>::await_resume()
 }
 
 template <typename Func, typename... Args>
-template <typename T>
-inline void stackful<Func, Args...>::await_suspend(std::coroutine_handle<T> &h) {
-	resume_work = event_loop_work(&h);
+inline void stackful<Func, Args...>::await_suspend(std::coroutine_handle<> h) {
+	resume_work = event_loop_work(h);
 }
 
 /* ==== async ==== */

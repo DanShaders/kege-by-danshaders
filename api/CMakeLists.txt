@@ -149,7 +149,6 @@ target_include_directories(
 target_compile_options(
 	KEGE_BASE INTERFACE
 	-Wall -Wextra -Wshadow -Wconversion -masm=intel
-	-Wno-pmf-conversions
 	-Wno-missing-field-initializers # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=82283
 	-fdiagnostics-color=always # https://github.com/ninja-build/ninja/issues/174
 )

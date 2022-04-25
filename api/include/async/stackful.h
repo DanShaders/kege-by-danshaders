@@ -45,8 +45,7 @@ public:
 
 	bool await_ready();
 	return_t await_resume();
-	template <typename T>
-	void await_suspend(std::coroutine_handle<T> &);
+	void await_suspend(std::coroutine_handle<> h);
 };
 
 template <typename Awaitable>

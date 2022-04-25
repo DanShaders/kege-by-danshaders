@@ -2,7 +2,6 @@
 
 #include "KEGE.h"
 #include "async/coro.h"
-#include "async/curl.h"
 #include "routes.h"
 #include "utils/api.h"
 using async::coro;

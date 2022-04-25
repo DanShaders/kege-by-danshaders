@@ -30,13 +30,11 @@ public:
 		std::shared_ptr<state_t> state;
 
 		locker(std::shared_ptr<state_t> state_);
-		void await_suspend(event_loop_work &&work);
 
 	public:
 		bool await_ready() noexcept;
 		void await_resume();
-		template <typename T>
-		void await_suspend(std::coroutine_handle<T> &h) noexcept;
+		void await_suspend(std::coroutine_handle<> h) noexcept;
 	};
 
 	mutex();
@@ -52,6 +50,4 @@ public:
 	lock_guard(const mutex &m);
 	~lock_guard();
 };
-
-#include "detail/mutex.impl.h"
 }  // namespace async

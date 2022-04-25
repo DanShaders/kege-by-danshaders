@@ -21,8 +21,7 @@ public:
 
 	bool await_ready();
 	void await_resume();
-	template <typename T>
-	void await_suspend(std::coroutine_handle<T> &h);
+	void await_suspend(std::coroutine_handle<> h);
 };
 
 class libev_event_loop : public event_loop {
@@ -43,8 +42,6 @@ public:
 	void schedule_work(event_loop_work &&work) override;
 	void handle_exception(const std::exception_ptr &exc) override;
 
-	completion_token schedule_work_ts(event_loop_work &&work) override;
-
 	void register_source(std::shared_ptr<event_source> source) override;
 
 	void bind_to_thread() override;
@@ -63,6 +60,4 @@ namespace detail {
 		U arg;
 	};
 }  // namespace detail
-
-#include "detail/libev-event-loop.impl.h"
 }  // namespace async

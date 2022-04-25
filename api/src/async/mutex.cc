@@ -29,10 +29,6 @@ struct mutex::state_t {
 /* ==== async::mutex::locker ==== */
 mutex::locker::locker(std::shared_ptr<state_t> state_) : state(state_) {}
 
-void mutex::locker::await_suspend(event_loop_work &&work) {
-	state->queue_end = state->queue.insert_after(state->queue_end, std::move(work));
-}
-
 bool mutex::locker::await_ready() noexcept {
 	return state->status != state->LOCKED;
 }
@@ -43,6 +39,10 @@ void mutex::locker::await_resume() {
 	} else {
 		state->status = state->LOCKED;
 	}
+}
+
+void mutex::locker::await_suspend(std::coroutine_handle<> h) noexcept {
+	state->queue_end = state->queue.insert_after(state->queue_end, event_loop_work(h));
 }
 
 /* ==== async::mutex ==== */

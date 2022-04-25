@@ -57,10 +57,6 @@ struct socket_performer {
 		return storage->last_event;
 	}
 
-	template <typename T>
-	void await_suspend(std::coroutine_handle<T> &h) {
-		storage->event_mask = type;
-		storage->work = event_loop_work(&h);
-	}
+	void await_suspend(std::coroutine_handle<> h);
 };
 }  // namespace async

@@ -24,7 +24,7 @@ namespace detail {
 		bool suspends_parent : 1 = false;
 
 		std::suspend_never initial_suspend() noexcept;
-		void final_suspend_inner(void *handle, void (*func)(void *)) noexcept;
+		void final_suspend_inner(std::coroutine_handle<> h) noexcept;
 		void unhandled_exception();
 	};
 }  // namespace detail
@@ -69,16 +69,18 @@ public:
 
 	bool await_ready();
 	T await_resume();
-	template <typename U>
-	void await_suspend(std::coroutine_handle<U> &);
+	void await_suspend(std::coroutine_handle<> h);
 };
 
 class suspend_t {
 public:
-	bool await_ready() noexcept;
-	void await_resume() noexcept;
-	template <typename T>
-	void await_suspend(std::coroutine_handle<T> &h) noexcept;
+	bool await_ready() noexcept {
+		return false;
+	}
+
+	void await_resume() noexcept {}
+
+	void await_suspend(std::coroutine_handle<> h) noexcept;
 } inline suspend;
 
 template <typename... U>

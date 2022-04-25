@@ -25,7 +25,10 @@ public:
 	void reset();
 
 	template <typename T>
-	CURLcode set_opt(CURLoption, T);
+	CURLcode set_opt(CURLoption opt, T value) {
+		return curl_easy_setopt(get_handle(), opt, value);
+	}
+
 	CURLcode set_url(const std::string &url);
 	CURL *get_handle() const;
 
@@ -63,9 +66,7 @@ public:
 
 	bool await_ready();
 	curl_result await_resume();
-	template <typename T>
-	void await_suspend(std::coroutine_handle<T> &) noexcept;
-	void await_suspend(event_loop_work &&work) noexcept;
+	void await_suspend(std::coroutine_handle<> h) noexcept;
 };
 
 class curl_event_source : public event_source {
@@ -82,6 +83,4 @@ public:
 
 	void schedule_perform(std::shared_ptr<curl_storage> storage);
 };
-
-#include "detail/curl.impl.h"
 }  // namespace async

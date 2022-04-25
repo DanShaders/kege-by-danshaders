@@ -7,8 +7,7 @@ inline coro<T> coro<T>::base_promise_type::get_return_object() {
 
 template <typename T>
 inline std::suspend_always coro<T>::base_promise_type::final_suspend() noexcept {
-	auto func = (void (*)(void *))((&handle)->*(&std::coroutine_handle<promise_type>::destroy));
-	final_suspend_inner((void *) &handle, func);
+	final_suspend_inner(handle);
 	return {};
 }
 
@@ -73,16 +72,9 @@ inline T coro<T>::await_resume() {
 }
 
 template <typename T>
-template <typename U>
-inline void coro<T>::await_suspend(std::coroutine_handle<U> &h) {
+inline void coro<T>::await_suspend(std::coroutine_handle<> h) {
 	promise->suspends_parent = true;
-	promise->parent = std::move(event_loop_work(&h));
-}
-
-/* ==== async::suspend_t ==== */
-template <typename T>
-inline void suspend_t::await_suspend(std::coroutine_handle<T> &h) noexcept {
-	event_loop::local->schedule_work(event_loop_work(&h));
+	promise->parent = event_loop_work(h);
 }
 
 /* ==== async::detail ==== */

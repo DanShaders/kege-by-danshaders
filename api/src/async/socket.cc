@@ -156,3 +156,9 @@ void socket::close() {
 	::close(storage->fd);
 	storage = nullptr;
 }
+
+/* ==== async::socket_performer ==== */
+void socket_performer::await_suspend(std::coroutine_handle<> h) {
+	storage->event_mask = type;
+	storage->work = event_loop_work(h);
+}

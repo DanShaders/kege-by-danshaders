@@ -20,8 +20,7 @@ namespace detail {
 		future_base() {}
 
 		bool await_ready() const noexcept;
-		template <typename U>
-		void await_suspend(std::coroutine_handle<U> &h) noexcept;
+		void await_suspend(std::coroutine_handle<> h) noexcept;
 
 		void clear() noexcept;
 		bool is_awaiting() const noexcept;
@@ -34,11 +33,28 @@ private:
 	std::variant<std::exception_ptr, T> result;
 
 public:
-	T await_resume();
+	T await_resume() {
+		status = FULFILLED;
+		if (result.index() == 0) {
+			std::rethrow_exception(get<0>(result));
+		}
+		return get<1>(result);
+	}
 
-	void set_exception(const std::exception_ptr &exc) noexcept;
-	void set_result(const T &t);
-	void set_result(T &&t);
+	void set_exception(const std::exception_ptr &exc) noexcept {
+		result = exc;
+		set_ready();
+	}
+
+	void set_result(const T &t) {
+		result = t;
+		set_ready();
+	}
+
+	void set_result(T &&t) {
+		result = std::move(t);
+		set_ready();
+	}
 };
 
 template <>
@@ -52,6 +68,4 @@ public:
 	void set_exception(const std::exception_ptr &exc) noexcept;
 	void set_result() noexcept;
 };
-
-#include "detail/future.impl.h"
 }  // namespace async

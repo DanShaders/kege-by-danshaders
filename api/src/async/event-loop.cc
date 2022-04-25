@@ -3,72 +3,38 @@ using namespace async;
 
 #include "logging.h"
 
-/* ==== async::completion_token ==== */
-completion_token::completion_token() {}
-completion_token::completion_token(std::shared_ptr<std::atomic_flag> flag_) : flag(flag_) {}
-
-void completion_token::wait() {
-	if (flag) {
-		while (!flag->test()) {
-			flag->wait(false);
-		}
-	}
-}
-
 /* ==== async::event_loop_work ==== */
-event_loop_work::event_loop_work() : payload() {}
+event_loop_work::event_loop_work() {}
 
-event_loop_work::event_loop_work(std::exception_ptr &&exc) {
-	payload = throw_exception{exc};
+event_loop_work::event_loop_work(std::coroutine_handle<> h) {
+	handle = h;
+	type = RESUME;
 }
 
-event_loop_work::event_loop_work(std::function<void()> &&func) {
-	payload = run_function{func};
-}
-
-event_loop_work::event_loop_work(void (*func)(void *), void *arg) {
-	payload = run_plain_function{func, arg};
+event_loop_work event_loop_work::create_destroyer(std::coroutine_handle<> h) {
+	event_loop_work work;
+	work.handle = h;
+	work.type = DESTROY;
+	return work;
 }
 
 void event_loop_work::do_work() {
-	auto current = std::move(payload);
-	payload = std::monostate{};
+	auto saved_type = type;
+	type = NONE;
 
 	try {
-		switch (current.index()) {
-			case 1: {
-				event_loop::local->handle_exception(std::get<throw_exception>(current).exc);
-				break;
+		if (saved_type == RESUME) {
+			if (!handle.done()) {
+				handle.resume();
 			}
-
-			case 2: {
-				const auto &c = std::get<resume_coroutine>(current);
-				if (!c.done_func(c.handle)) {
-					c.resume_func(c.handle);
-				}
-				break;
-			}
-
-			case 3: {
-				std::get<run_function>(current).func();
-				break;
-			}
-
-			case 4: {
-				const auto &c = std::get<run_plain_function>(current);
-				c.func(c.arg);
-				break;
-			}
-
-			case 0:
-			default:
-				break;
+		} else if (saved_type == DESTROY) {
+			handle.destroy();
 		}
 	} catch (...) { event_loop::local->handle_exception(std::current_exception()); }
 }
 
 bool event_loop_work::has_work() const {
-	return payload.index();
+	return type != NONE;
 }
 
 /* ==== async::event_loop ==== */

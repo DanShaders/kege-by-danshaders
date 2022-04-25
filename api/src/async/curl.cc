@@ -146,8 +146,8 @@ curl_result curl_performer::await_resume() {
 	return curl_result{storage};
 }
 
-void curl_performer::await_suspend(event_loop_work &&work) noexcept {
-	storage->work = std::move(work);
+void curl_performer::await_suspend(std::coroutine_handle<> h) noexcept {
+	storage->work = event_loop_work(h);
 	if (storage->state == INITIAL) {
 		storage->on_state_update(ENQUEUED, 0);
 		curl_event_source::local->schedule_perform(storage);

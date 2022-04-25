@@ -16,6 +16,11 @@ bool detail::future_base::await_ready() const noexcept {
 	return status == READY;
 }
 
+void detail::future_base::await_suspend(std::coroutine_handle<> h) noexcept {
+	status = AWAITING;
+	work = event_loop_work(h);
+}
+
 void detail::future_base::clear() noexcept {
 	assert(status != AWAITING);
 	status = CLEAR;

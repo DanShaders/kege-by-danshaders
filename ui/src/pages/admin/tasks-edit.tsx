@@ -140,7 +140,7 @@ class Page extends Component<PageSettings> {
       (obj) =>
         Object.assign(obj, {
           isBlob: false,
-          realLink: "api/tasks/attachment?id=" + obj.id,
+          realLink: "api/attachment?hash=" + obj.hash,
           fakeLink: `f://${linkCnt++}`,
         })
     );

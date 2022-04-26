@@ -1,5 +1,4 @@
 #include "stdafx.h"
-#include "config.h"
 
 #include "async/coro.h"
 #include "async/pq.h"
@@ -37,15 +36,16 @@ static coro<void> handle_get(fcgx::request_t *r) {
 	}};
 
 	auto q2 = co_await db.exec(
-		"SELECT id, filename, mime_type, shown_to_user FROM task_attachments WHERE task_id = "
+		"SELECT id, filename, mime_type, hash, shown_to_user FROM task_attachments WHERE task_id = "
 		"$1::bigint AND NOT coalesce(deleted, false)",
 		r->params["id"]);
-	for (auto [attachment_id, filename, mime_type, shown_to_user] :
-		 q2.iter<int64_t, std::string_view, std::string_view, bool>()) {
+	for (auto [attachment_id, filename, mime_type, hash, shown_to_user] :
+		 q2.iter<int64_t, std::string_view, std::string_view, std::string_view, bool>()) {
 		*msg.add_attachments() = {{
 			.id = attachment_id,
 			.filename = std::string(filename),
 			.mime_type = std::string(mime_type),
+			.hash = std::string(hash),
 			.shown_to_user = shown_to_user,
 		}};
 	}
@@ -147,39 +147,5 @@ static coro<void> handle_update(fcgx::request_t *r) {
 	utils::ok(r, utils::empty_payload{});
 }
 
-static coro<void> handle_attachment(fcgx::request_t *r) {
-	const int BUFFER_SIZE = 8192;
-	char buffer[BUFFER_SIZE];
-
-	std::string filename, hash, mime_type;
-	{
-		auto db = co_await async::pq::connection_pool::local->get_connection();
-		co_await routes::require_auth(db, r, routes::PERM_VIEW_TASKS);
-		tie(filename, hash, mime_type) =
-			(co_await db.exec("SELECT filename, hash, mime_type FROM task_attachments WHERE id = "
-							  "$1::bigint AND NOT coalesce(deleted, false)",
-							  r->params["id"]))
-				.expect1<std::string, std::string, std::string>();
-	}
-
-	if (mime_type.starts_with("image/") || mime_type.starts_with("audio/") ||
-		mime_type.starts_with("video/") || mime_type == "application/pdf") {
-		r->headers.push_back("Content-Disposition: inline");
-	} else {
-		r->headers.push_back("Content-Disposition: attachment; filename*=UTF-8''" +
-							 utils::url_encode(filename));
-	}
-	r->mime_type = mime_type;
-	r->fix_meta();
-
-	std::ifstream in(std::filesystem::path(conf.files_dir) / hash.substr(0, 2) / hash.substr(2),
-					 std::ios::binary);
-	while (in) {
-		std::size_t sz = in.read(buffer, BUFFER_SIZE).gcount();
-		r->out << std::string_view(buffer, buffer + sz);
-	}
-}
-
 ROUTE_REGISTER("/tasks/get", handle_get)
 ROUTE_REGISTER("/tasks/update", handle_update)
-ROUTE_REGISTER("/tasks/attachment", handle_attachment)

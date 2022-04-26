@@ -13,3 +13,4 @@
 #include <vector>
 
 using namespace google::protobuf;
+using std::string;

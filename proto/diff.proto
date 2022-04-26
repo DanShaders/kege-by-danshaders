@@ -6,3 +6,8 @@ import "google/protobuf/descriptor.proto";
 extend google.protobuf.MessageOptions {
 	optional bool diffable = 37700;
 }
+
+extend google.protobuf.FieldOptions {
+	optional bool in = 37701;
+	optional bool out = 37702;
+}

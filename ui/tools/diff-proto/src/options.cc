@@ -1,7 +1,7 @@
 #include "options.h"
 
 struct Options {
-  bool diffable;
+  bool diffable, in, out;
 };
 
 Options get_options(const Message &options) {
@@ -14,6 +14,10 @@ Options get_options(const Message &options) {
 
     if (id == 37700 && type == UnknownField::TYPE_VARINT) {
       res.diffable = field.varint();
+    } else if (id == 37701 && type == UnknownField::TYPE_VARINT) {
+      res.in = field.varint();
+    } else if (id == 37702 && type == UnknownField::TYPE_VARINT) {
+      res.out = field.varint();
     }
   }
   return res;
@@ -21,4 +25,12 @@ Options get_options(const Message &options) {
 
 bool is_diffable(const Descriptor *msg) {
   return get_options(msg->options()).diffable;
+}
+
+bool is_in(const FieldDescriptor *field) {
+  return get_options(field->options()).in;
+}
+
+bool is_out(const FieldDescriptor *field) {
+  return get_options(field->options()).out;
 }

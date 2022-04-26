@@ -45,6 +45,7 @@ set(
 
 	routes/_basic.cc
 	routes/_wrap.cc
+	routes/attachment.cc
 	routes/task-types.cc
 	routes/tasks.cc
 	routes/user.cc
@@ -89,7 +90,7 @@ endif()
 ExternalProject_Add(
 	CPP_PROTOC_INITIALIZERS
 	GIT_REPOSITORY "https://github.com/DanShaders/cpp-protoc-initializers.git"
-	GIT_TAG "6400cd88a27f78a7ed6b8d2efbc155a6d7be4600"
+	GIT_TAG "f20750cd7721c2d3b2b464057ab0015e37faaf2b"
 	CMAKE_ARGS
 		-DCMAKE_BUILD_TYPE=Release
 		-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>

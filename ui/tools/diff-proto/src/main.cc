@@ -24,7 +24,9 @@ public:
       } else if (field->type() != FieldDescriptor::TYPE_MESSAGE) {
         if (field->containing_oneof()) {
           fields.push_back(std::make_unique<ScalarFieldCodeGenerator>(c, field));
-        } else {
+        } else if (is_in(field)) {
+          fields.push_back(std::make_unique<UnwiredInFieldCodeGenerator>(c, field));
+        } else if (is_out(field)) {
           fields.push_back(std::make_unique<UnwiredFieldCodeGenerator>(c, field));
         }
       } else {

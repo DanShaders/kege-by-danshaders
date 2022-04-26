@@ -55,6 +55,14 @@ public:
   void generate_serialize() override;
 };
 
+class UnwiredInFieldCodeGenerator : public FieldCodeGenerator {
+public:
+  UnwiredInFieldCodeGenerator(const FileContext &c_, const FieldDescriptor *field_);
+
+  void generate_class_field() override;
+  void generate_constructor_assignment() override;
+};
+
 class SetFieldCodeGenerator : public FieldCodeGenerator {
 public:
   SetFieldCodeGenerator(const FileContext &c_, const FieldDescriptor *field_);

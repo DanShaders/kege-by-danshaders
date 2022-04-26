@@ -21,9 +21,10 @@ message Task {
 
 		optional string filename = 2;
 		optional string mime_type = 3;
-		bytes contents = 5;
-		optional bool shown_to_user = 6;
-		optional bool deleted = 7;
+		bytes contents = 5 [(out) = true];
+		string hash = 6 [(in) = true];
+		optional bool shown_to_user = 7;
+		optional bool deleted = 8;
 	}
 	repeated Attachment attachments = 8;
 }

@@ -14,6 +14,7 @@ import { ButtonIcon } from "components/button-icon";
 import { FileSelectComponent, FileSelect } from "components/file-select";
 import { Checkbox } from "components/checkbox";
 import { TextEditor } from "components/text-editor";
+import { LengthChangeEvent } from "utils/events";
 
 import * as jsx from "jsx";
 
@@ -201,7 +202,7 @@ class Page extends Component<PageSettings> {
 
         <hr />
 
-        <div class="group-15-row">
+        <div ref class="group-15-row" hiddenIf={!attachmentsSet.length}>
           <label class="group-15-label group-15-left">Файлы</label>
           <div class="group-15-right">
             <div class="group-15-wrap-border">
@@ -235,7 +236,20 @@ class Page extends Component<PageSettings> {
       </div>
     ).asElement(elems) as HTMLDivElement;
 
-    const [select, filenameInput, fileInput] = elems as [HTMLSelectElement, HTMLTextAreaElement, FileSelectComponent];
+    const [select, filesList, filenameInput, fileInput] = elems as [
+      HTMLSelectElement,
+      HTMLDivElement,
+      HTMLTextAreaElement,
+      FileSelectComponent
+    ];
+
+    attachmentsSet.addEventListener("lengthchange", (({ length, delta }: LengthChangeEvent) => {
+      if (!length) {
+        filesList.setAttribute("hidden", "");
+      } else {
+        filesList.removeAttribute("hidden");
+      }
+    }) as EventListener);
 
     select.addEventListener("change", () => {
       this.settings.taskType = parseInt(select.value, 10);

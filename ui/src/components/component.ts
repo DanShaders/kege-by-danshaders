@@ -8,7 +8,7 @@ interface EventSource<A, B> {
 
 type SomeComponent = Component<unknown>;
 
-export abstract class Component<T> {
+export abstract class Component<T> extends EventTarget {
   settings: T;
   parent: Component<unknown> | null;
   unproxiedElem?: HTMLElement;
@@ -16,6 +16,7 @@ export abstract class Component<T> {
   children: Fragment[];
 
   constructor(settings: T, parent: SomeComponent | null, children?: Fragment[]) {
+    super();
     this.settings = settings;
     this.parent = parent;
     this.unproxiedElem = undefined;

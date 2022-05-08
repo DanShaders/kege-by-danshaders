@@ -24,7 +24,8 @@ static coro<void> handle_attachment(fcgx::request_t *r) {
 	}
 
 	if (mime_type.starts_with("image/") || mime_type.starts_with("audio/") ||
-		mime_type.starts_with("video/") || mime_type == "application/pdf") {
+		mime_type.starts_with("video/") || mime_type == "application/pdf" ||
+		mime_type == "text/plain") {
 		r->headers.push_back("Content-Disposition: inline");
 	} else {
 		r->headers.push_back("Content-Disposition: attachment; filename*=UTF-8''" +
@@ -41,4 +42,4 @@ static coro<void> handle_attachment(fcgx::request_t *r) {
 	}
 }
 
-ROUTE_REGISTER("/attachment", handle_attachment)
+ROUTE_REGISTER("/attachment/$hash", handle_attachment)

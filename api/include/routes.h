@@ -8,39 +8,37 @@
 using async::coro;
 
 namespace routes {
+using route_t = coro<void> (*)(fcgx::request_t *);
 class route_storage;
 class route_registrar;
 
 class route_storage {
 private:
-	using func_t = coro<void> (*)(fcgx::request_t *);
-
-	void *storage;
+	struct storage_t;
+	std::unique_ptr<storage_t> s;
 
 	route_storage();
 
 public:
-	~route_storage();
+	static route_storage &instance();
 
-	static route_storage *instance();
-
-	void add_route(const std::string_view &view, func_t func);
-	void apply_root(const std::string_view &root);
-	void set_fallback_route(func_t func);
-	auto route_by_path(const std::string_view &view) -> func_t;
+	void add_route(std::string_view view, route_t route);
+	void build(std::string_view api_root);
+	route_t get_route(fcgx::request_t &r);
+	void set_fallback_route(route_t route);
 };
 
 class route_registrar {
 public:
-	route_registrar(const std::string_view &view, coro<void> (*func)(fcgx::request_t *)) {
-		route_storage::instance()->add_route(view, func);
+	route_registrar(std::string_view view, route_t route) {
+		route_storage::instance().add_route(view, route);
 	}
 };
 
 class route_fallback_registrar {
 public:
-	route_fallback_registrar(coro<void> (*func)(fcgx::request_t *)) {
-		route_storage::instance()->set_fallback_route(func);
+	route_fallback_registrar(route_t route) {
+		route_storage::instance().set_fallback_route(route);
 	}
 };
 

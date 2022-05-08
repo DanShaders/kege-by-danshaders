@@ -147,5 +147,5 @@ static coro<void> handle_update(fcgx::request_t *r) {
 	utils::ok(r, utils::empty_payload{});
 }
 
-ROUTE_REGISTER("/tasks/get", handle_get)
+ROUTE_REGISTER("/tasks/$id", handle_get)
 ROUTE_REGISTER("/tasks/update", handle_update)

@@ -70,7 +70,7 @@ signed main() {
 		char const *kege_root = getenv("KEGE_ROOT");
 		conf = config::find_config(kege_root ? kege_root : ".");
 	}
-	routes::route_storage::instance()->apply_root(conf.api_root);
+	routes::route_storage::instance().build(conf.api_root);
 
 	assert(!FCGX_Init());
 	assert(!curl_global_init(CURL_GLOBAL_DEFAULT));

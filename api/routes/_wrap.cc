@@ -8,7 +8,7 @@ using async::coro;
 
 coro<void> perform_request(fcgx::request_t *r) noexcept {
 	try {
-		auto func = routes::route_storage::instance()->route_by_path(r->request_uri);
+		auto func = routes::route_storage::instance().get_route(*r);
 		if (func == 0)
 			utils::err(r, api::INTERNAL_ERROR);
 		else

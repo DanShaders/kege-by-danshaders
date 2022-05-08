@@ -141,7 +141,7 @@ class Page extends Component<PageSettings> {
       (obj) =>
         Object.assign(obj, {
           isBlob: false,
-          realLink: "api/attachment?hash=" + obj.hash,
+          realLink: "api/attachment/" + obj.hash,
           fakeLink: `f://${linkCnt++}`,
         })
     );
@@ -266,7 +266,7 @@ async function showTaskListPage(params: URLSearchParams): Promise<void> {
     params.set("id", dbId().toString());
     Router.instance.setUrl(Router.instance.currentPage + "?" + params.toString());
   } else {
-    raw = await requestU(Task, "api/tasks/get?id=" + params.get("id"));
+    raw = await requestU(Task, "api/tasks/" + params.get("id"));
   }
 
   const id = parseInt(params.get("id")!);

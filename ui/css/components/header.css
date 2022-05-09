@@ -29,7 +29,7 @@ header {
   padding: 5px 15px;
   z-index: 10000;
 
-  background-color: #232d6a;
+  background-color: var(--bs-dark-blue);
   fill: #d1d1f0;
   color: #d1d1f0;
 }
@@ -130,13 +130,13 @@ header {
 
 .page-header-focused {
   background-color: white;
-  fill: #232d6a;
-  color: #232d6a;
+  fill: var(--bs-dark-blue);
+  color: var(--bs-dark-blue);
 }
 
 .page-header-signin {
   background-color: #ebebfa;
-  color: #232d6a;
+  color: var(--bs-dark-blue);
   border: 1px solid #dbdbdb;
 }
 

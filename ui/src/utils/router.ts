@@ -1,4 +1,4 @@
-import { toggleLoadingScreen } from "../utils/common";
+import { toggleLoadingScreen, LoadingReason } from "../utils/common";
 
 type Handler = (params: URLSearchParams) => Promise<void>;
 
@@ -44,8 +44,13 @@ export class Router {
     this.currentPage = url.split("?", 2)[0];
   }
 
-  async goTo(url: string, isPrivate: boolean = true, historyUpdated = false): Promise<void> {
-    toggleLoadingScreen(true);
+  async goTo(
+    url: string,
+    isPrivate: boolean = true,
+    historyUpdated = false,
+    reason: LoadingReason = "loading"
+  ): Promise<void> {
+    toggleLoadingScreen(true, reason);
     const [page, params] = url.split("?", 2);
     let handler = this.publicRoutes.get(page);
 
@@ -68,9 +73,9 @@ export class Router {
     }
   }
 
-  redirect(url: string, isPrivate: boolean = true, historyUpdated = false): never {
+  redirect(url: string, isPrivate: boolean = true, historyUpdated = false, reason: LoadingReason = "loading"): never {
     setTimeout(async () => {
-      await this.goTo(url, isPrivate, historyUpdated);
+      await this.goTo(url, isPrivate, historyUpdated, reason);
     }, 0);
     throw new RedirectNotification();
   }

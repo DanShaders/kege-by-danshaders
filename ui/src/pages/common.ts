@@ -1,7 +1,8 @@
-import { Router } from "../utils/router";
-import { HeaderComponent, HeaderSettings } from "../components/header";
-import { UserInfo, ErrorCode } from "../proto/api_pb";
-import { request } from "../utils/requests";
+import { Router } from "utils/router";
+import { HeaderComponent, HeaderSettings } from "components/header";
+import { UserInfo, ErrorCode } from "proto/api_pb";
+import { request } from "utils/requests";
+import { toggleLoadingScreen } from "utils/common";
 
 export let userInfo: UserInfo.AsObject | undefined | null;
 
@@ -47,6 +48,7 @@ async function updateHeader(): Promise<void> {
       },
     };
     if (userInfo.perms & 1) {
+      toggleLoadingScreen(true, "loading");
       const adminSpecific = await import("../admin");
       headerSettings = {
         ...headerSettings,

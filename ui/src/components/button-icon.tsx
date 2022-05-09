@@ -12,7 +12,7 @@ type Settings = {
 class ButtonIconComponent extends Component<Settings> {
   createElement(): HTMLElement {
     const button = (
-      <button class="wrapper button-icon" title={this.settings.title}>
+      <button class="button-icon" title={this.settings.title}>
         <svg>
           <use xlink:href={"#" + this.settings.icon}></use>
         </svg>

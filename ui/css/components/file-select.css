@@ -1,0 +1,19 @@
+.file-select {
+  width: auto;
+  vertical-align: middle;
+  border-radius: 0.25rem;
+  outline: none;
+}
+
+.file-select-forced {
+  box-shadow: 0 0 0 0.25rem rgb(13 110 253 / 25%);
+}
+
+.file-select .btn {
+  box-shadow: none !important;
+}
+
+.file-select span {
+  width: 150px;
+  background: white;
+}

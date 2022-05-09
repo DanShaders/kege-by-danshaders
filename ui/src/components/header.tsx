@@ -178,7 +178,9 @@ export class HeaderComponent extends Component<HeaderSettings> {
 					</div>
 					<hr>
 					<button class='page-tooltip-link'>Выйти</button>`;
-        tooltip.children[2].addEventListener("click", goTo("#logout"));
+        tooltip.children[2].addEventListener("click", () => {
+          Router.instance.redirect("#logout", true, false, "executing");
+        });
       });
     }
 

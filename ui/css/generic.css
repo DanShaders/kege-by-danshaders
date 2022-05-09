@@ -2,9 +2,59 @@ html {
   --modern-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell,
     "Helvetica Neue", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --monospace-font-family: "Consolas", monospace;
+  --bs-dark-blue: #232d6a;
 }
 
 body {
   overflow-y: scroll;
   background-color: #faf9f9;
+  margin-bottom: 10px;
+}
+
+main {
+  padding-left: 0.3rem !important;
+  padding-right: 0.3rem !important;
+}
+
+.btn-no-shadow:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.btn-no-shadow:focus-visible {
+  outline: auto;
+}
+
+.fw-600 {
+  font-weight: 600;
+}
+
+.focusable {
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+.focusable:focus,
+.focusable:focus-within {
+  box-shadow: 0 0 0 0.25rem rgb(13 110 253 / 25%);
+}
+
+#loadingScreen {
+  display: flex;
+  flex-direction: column;
+  place-content: center;
+  align-items: center;
+  color: var(--bs-dark-blue);
+  background-color: rgba(0, 0, 0, 0.2);
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20000;
+}
+
+#loadingScreen .spinner-border {
+  align-self: center;
+  width: 5rem;
+  height: 5rem;
 }

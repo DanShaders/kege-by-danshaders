@@ -1,0 +1,29 @@
+.answer-table td {
+  padding: 0;
+  background-color: white;
+}
+
+.answer-table td:not(:last-child) {
+  border-right: 1px solid #dee2e6;
+}
+
+.answer-table input {
+  outline: none !important;
+  border: none;
+}
+
+.answer-table tr:first-child td:first-child {
+  border-top-left-radius: 0.25rem;
+}
+
+.answer-table tr:last-child td:first-child {
+  border-bottom-left-radius: 0.25rem;
+}
+
+.answer-table tr:first-child td:last-child {
+  border-top-right-radius: 0.25rem;
+}
+
+.answer-table tr:last-child td:last-child {
+  border-bottom-right-radius: 0.25rem;
+}

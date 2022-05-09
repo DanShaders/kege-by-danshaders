@@ -4,7 +4,6 @@ import * as jsx from "../utils/jsx";
 type Settings = {
   multiple?: boolean;
   required?: boolean;
-  buttonClass?: string;
 };
 
 export class FileSelectComponent extends Component<Settings> {
@@ -19,21 +18,31 @@ export class FileSelectComponent extends Component<Settings> {
   createElement(): HTMLDivElement {
     let refs: HTMLElement[] = [];
     const elem = (
-      <div class="file-input">
-        <input ref type="file" requiredIf={this.settings.required} multipleIf={this.settings.multiple} />
-        <span ref>{this.getTextForEmpty()}</span>
-        <button ref class={this.settings.buttonClass ?? "button-blue"}>
+      <div class="input-group d-inline-flex file-select focusable" role="button">
+        <span class="input-group-text">
+          <span ref class="text-truncate text-start">
+            {this.getTextForEmpty()}
+          </span>
+        </span>
+        <input ref type="file" requiredIf={this.settings.required} multipleIf={this.settings.multiple} hidden />
+        <button ref type="button" class="btn btn-primary">
           Выбрать
         </button>
       </div>
     ).asElement(refs) as HTMLDivElement;
-    [this.inputElem, this.spanElem, this.buttonElem] = refs as [HTMLInputElement, HTMLSpanElement, HTMLButtonElement];
+    [this.spanElem, this.inputElem, this.buttonElem] = refs as [HTMLSpanElement, HTMLInputElement, HTMLButtonElement];
 
     this.inputElem.addEventListener("change", () => {
       this.onChange();
     });
+
+    elem.addEventListener("mousedown", () => {
+      window.requestAnimationFrame(() => {
+        this.buttonElem!.focus();
+      });
+    });
     elem.addEventListener("click", () => {
-      this.elem.classList.remove("file-input-focus");
+      this.buttonElem!.focus();
       this.inputElem!.click();
     });
     return elem;
@@ -68,7 +77,7 @@ export class FileSelectComponent extends Component<Settings> {
   }
 
   forceFocus(): void {
-    this.elem.classList.add("file-input-focus");
+    this.buttonElem!.focus();
   }
 }
 

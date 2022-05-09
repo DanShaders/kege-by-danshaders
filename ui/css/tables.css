@@ -1,32 +1,33 @@
-main table {
-  border-collapse: collapse;
-  border-style: hidden;
-  border-radius: 4px;
-  width: 100%;
+.table {
   text-align: center;
-  box-shadow: 0 0 0 0px #c5c8ce;
 }
 
-main table td {
-  padding: 12px;
+.table thead {
+  font-weight: 600;
+}
+
+.table td {
   white-space: nowrap;
 }
 
-main table thead {
-  font-weight: bold;
+.table-first-col-left tbody td:nth-child(1) {
+  text-align: left;
 }
 
-main table tr {
-  border-bottom: 1px solid #ddd;
-  transition: background-color 0.1s;
+.table-no-sep > :not(:first-child) {
+  border-top: none;
 }
 
-main table tbody tr:hover {
+.table-external-border tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr {
+  transition: 0.15s background-color ease-in-out;
+}
+
+.table tbody tr:hover {
   background-color: #0000000a;
-}
-
-.table-width-auto {
-  width: auto;
 }
 
 .column-min {
@@ -39,37 +40,4 @@ main table tbody tr:hover {
 
 .column-200px {
   width: 200px;
-}
-
-.table-first-col-left tbody td:nth-child(1) {
-  text-align: left;
-}
-
-.table-bordered {
-  box-shadow: 0 0 0 1px #ddd;
-}
-
-.table-bordered td {
-  border: 1px solid #ddd;
-}
-
-.table-bordered tr:first-child td:first-child {
-  border-top-left-radius: 4px;
-}
-
-.table-bordered tr:first-child td:last-child {
-  border-top-right-radius: 4px;
-}
-
-.table-bordered tr:last-child td:first-child {
-  border-bottom-left-radius: 4px;
-}
-
-.table-bordered tr:last-child td:last-child {
-  border-bottom-right-radius: 4px;
-}
-
-.table-input td {
-  background-color: white;
-  padding: 0;
 }

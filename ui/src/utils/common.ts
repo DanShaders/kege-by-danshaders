@@ -4,22 +4,32 @@ export class ExpectedError extends Error {}
 
 let loadingScreenShown: boolean = false;
 let loadingScreenElem: HTMLDivElement | null = null;
+let loadingScreenText: HTMLSpanElement | null = null;
 
 let handlerInProgress = false;
 
-export function toggleLoadingScreen(shown: boolean = true): void {
+const LOADING_REASONS = {
+  loading: "Загрузка",
+  executing: "Выполняется",
+  login: "Выполняется вход",
+};
+export type LoadingReason = keyof typeof LOADING_REASONS;
+
+export function toggleLoadingScreen(shown: boolean = true, reason: LoadingReason = "loading"): void {
+  if (!loadingScreenElem || !loadingScreenText) {
+    loadingScreenElem = document.getElementById("loadingScreen") as HTMLDivElement;
+    loadingScreenText = document.getElementById("loadingScreenText") as HTMLDivElement;
+  }
   if (shown !== loadingScreenShown) {
-    if (!loadingScreenElem) {
-      loadingScreenElem = document.createElement("div");
-      loadingScreenElem.classList.add("loading-screen");
-      document.body.appendChild(loadingScreenElem);
-    }
     if (!shown) {
-      loadingScreenElem.classList.add("hidden");
+      loadingScreenElem.setAttribute("hidden", "");
     } else {
-      loadingScreenElem.classList.remove("hidden");
+      loadingScreenElem.removeAttribute("hidden");
     }
     loadingScreenShown = shown;
+  }
+  if (shown) {
+    loadingScreenText.innerText = LOADING_REASONS[reason];
   }
 }
 

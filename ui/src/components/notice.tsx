@@ -29,7 +29,7 @@ export class NoticeComponent extends Component<NoticeSettings> {
         <span ref>{this.settings.message}</span>
         <button
           type="button"
-          class="btn-close"
+          class="btn-close btn-no-shadow"
           onclick={() => {
             this.setVisibility(false);
           }}

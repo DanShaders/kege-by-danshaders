@@ -19,7 +19,7 @@ async function showLoginPage(params: URLSearchParams): Promise<void> {
     Router.instance.setUrl("login?" + params.toString());
   }
 
-  const [notice, loginForm, loginField, passwordField] = (
+  const [notice, loginForm, loginField, passwordField, loginSubmit] = (
     <>
       <div id="notice-wrap" class="mt-5">
         <Notice ref settings={noticeSettings}></Notice>
@@ -52,15 +52,23 @@ async function showLoginPage(params: URLSearchParams): Promise<void> {
                 <label for="passwordField">Пароль</label>
               </div>
 
-              <input class="w-100 btn btn-primary btn-floating p-1" id="button-login" type="submit" value="Войти" />
+              <input ref class="w-100 btn btn-primary btn-floating p-1" id="button-login" type="submit" value="Войти" />
             </form>
           </div>
         </div>
       </div>
     </>
-  ).replaceContentsOf("main") as [NoticeComponent, HTMLFormElement, HTMLInputElement, HTMLInputElement];
+  ).replaceContentsOf("main") as [
+    NoticeComponent,
+    HTMLFormElement,
+    HTMLInputElement,
+    HTMLInputElement,
+    HTMLInputElement
+  ];
 
-  setupForm(loginForm, async (): Promise<boolean> => {
+  loginForm.addEventListener("submit", async (): Promise<boolean> => {
+    toggleLoadingScreen(true, "login");
+    loginSubmit.setAttribute("disabled", "");
     const data = new LoginRequest().setUsername(loginField.value).setPassword(passwordField.value);
     const [code, result] = await request(UserInfo, "api/user/login", data);
 
@@ -72,6 +80,8 @@ async function showLoginPage(params: URLSearchParams): Promise<void> {
       }
       notice.setType("error");
       notice.setVisibility(true);
+      loginSubmit.removeAttribute("disabled");
+      toggleLoadingScreen(false);
     } else {
       setGlobalUserInfo(result.toObject());
       await Router.instance.goTo("#update-header");

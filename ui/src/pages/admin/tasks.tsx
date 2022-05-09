@@ -11,13 +11,13 @@ async function showTaskListPage(): Promise<void> {
     Router.instance.redirect("admin/tasks/edit?back=" + encodeURIComponent(Router.instance.currentURL));
   (
     <>
-      <h1 id="page-title" class="flex-space-between">
+      <h2 class="d-flex justify-content-between">
         Задания
         <span>
           <ButtonIcon settings={{ title: "Новое задание", icon: "add", onClick: newTaskHandler }} />
           <ButtonIcon settings={{ title: "Импортировать", icon: "icon-import" }} />
         </span>
-      </h1>
+      </h2>
     </>
   ).replaceContentsOf("main");
   toggleLoadingScreen(false);

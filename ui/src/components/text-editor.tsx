@@ -528,7 +528,7 @@ export class TextEditorComponent extends Component<{ text: string }> {
     this.previewContainer = document.createElement("div");
     this.previewContainer.classList.add("preview-container");
     this.codeContainer = (
-      <textarea id="code-container" class="tab-textarea monospace" style="font-size: 14px;" />
+      <textarea class="code-container monospace" style="font-size: 14px;" />
     ).asElement() as HTMLTextAreaElement;
     this.codeContainer.addEventListener("focusout", () => {
       this.onTabSwitch(-1, EditorTabs.CODE);

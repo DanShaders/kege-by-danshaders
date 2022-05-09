@@ -10,6 +10,7 @@
 
 .tab-wrap .tab-button {
   border: none;
+  background-color: transparent;
   color: #c4c4c4;
   border-bottom: 2px solid transparent;
   padding: 0px 8px 9px;

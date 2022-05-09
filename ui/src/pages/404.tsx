@@ -6,9 +6,9 @@ import * as jsx from "../utils/jsx";
 async function show404(params: URLSearchParams): Promise<void> {
   const [link] = (
     <>
-      <h1 id="page-title">404 Not Found</h1>
+      <h2>404 Not Found</h2>
       <p>
-        Запрошенный URL (<pre style="display: inline;">{params.get("url") ?? ""}</pre>) не найден на сервере.&nbsp;
+        Запрошенный URL (<code>{params.get("url") ?? ""}</code>) не найден на сервере.&nbsp;
         <a href="#" ref>
           Вернуться на главную
         </a>

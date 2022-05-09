@@ -7,53 +7,52 @@ export type NoticeSettings = {
   type: "error" | "info";
 };
 
+const NOTICE_CLASSES = {
+  info: "alert-primary",
+  error: "alert-danger",
+};
+
 export class NoticeComponent extends Component<NoticeSettings> {
   private version: number = 1;
   messageSpan?: HTMLSpanElement;
 
   createElement(): HTMLElement {
-    const elem = document.createElement("div");
-    const [messageSpan, closeButton] = (
-      <>
-        <span>
-          <svg hiddenIf={this.settings.type !== "error"}>
-            <use xlink:href={"#notice-" + this.settings.type}></use>
-          </svg>
-          <span ref>{this.settings.message}</span>
-        </span>
-        <button ref class="wrapper">
-          <svg>
-            <use xlink:href="#close"></use>
-          </svg>
-        </button>
-      </>
-    ).insertInto(elem) as [HTMLSpanElement, HTMLButtonElement];
-    this.messageSpan = messageSpan;
-
-    closeButton.addEventListener("click", () => {
-      this.setVisibility(false);
-    });
-    if (!this.settings.shown) {
-      elem.setAttribute("hidden", "");
-    }
-    elem.classList.add("notice", "notice-" + this.settings.type);
+    const messageSpanRef: Element[] = [];
+    const elem = (
+      <div
+        class={"alert alert-dismissible fade show " + NOTICE_CLASSES[this.settings.type]}
+        hiddenIf={!this.settings.shown}
+      >
+        <svg class="me-sm-3 me-2" width="26" height="26" hiddenIf={this.settings.type !== "error"}>
+          <use xlink:href="#notice-error" />
+        </svg>
+        <span ref>{this.settings.message}</span>
+        <button
+          type="button"
+          class="btn-close"
+          onclick={() => {
+            this.setVisibility(false);
+          }}
+        />
+      </div>
+    ).asElement(messageSpanRef) as HTMLDivElement;
+    this.messageSpan = messageSpanRef[0] as HTMLSpanElement;
     return elem;
   }
 
   private doSetVisibility(elem: HTMLElement, shown: boolean): void {
     ++this.version;
     if (shown) {
-      elem.classList.remove("notice-fade-out");
+      elem.classList.add("show");
       elem.removeAttribute("hidden");
     } else {
-      elem.classList.add("notice-fade-out");
+      elem.classList.remove("show");
       const savedVersion = this.version;
       setTimeout(() => {
         if (savedVersion === this.version) {
           elem.setAttribute("hidden", "");
-          elem.classList.remove("notice-fade-out");
         }
-      }, 300);
+      }, 200);
     }
   }
 

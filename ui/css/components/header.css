@@ -1,3 +1,20 @@
+/*
+  Override bootstrap's defaults instead of fixing styles as
+  I generally don't want to rewrite this legacy piece of shit.
+*/
+header,
+header * {
+  box-sizing: content-box;
+}
+
+header hr {
+  margin: 0.5em 0;
+}
+
+body {
+  padding-top: 50px;
+}
+
 header {
   display: flex;
 
@@ -19,9 +36,12 @@ header {
 
 .page-header-logo {
   display: inline-flex;
-  background-color: transparent;
   border: none;
+  cursor: pointer;
+  width: 73px;
   height: 24px;
+  background: url(static/logo.png) center no-repeat;
+  background-size: 73px 24px;
   padding: 3px;
   border-radius: 4px;
 }
@@ -44,6 +64,8 @@ header {
   margin: 0px 2px;
   border-radius: 4px;
   border: none;
+  background-color: transparent;
+  color: inherit;
   transition: background-color 0.1s, color 0.1s, fill 0.1s;
 }
 
@@ -87,6 +109,7 @@ header {
 }
 
 .page-header-avatar-but {
+  background-color: transparent;
   padding: 0px 6px;
   border: none;
   border-radius: 4px;
@@ -142,7 +165,8 @@ header {
   border: none;
   align-items: center;
   cursor: pointer;
-  width: 100%;
+  width: calc(100% - 24px);
+  background-color: transparent;
   height: 32px;
   text-align: left;
   z-index: 950;

@@ -21,20 +21,41 @@ async function showLoginPage(params: URLSearchParams): Promise<void> {
 
   const [notice, loginForm, loginField, passwordField] = (
     <>
-      <div id="notice-wrap" style="padding-top: 20px;">
+      <div id="notice-wrap" class="mt-5">
         <Notice ref settings={noticeSettings}></Notice>
       </div>
-      <h1 id="page-title">kege-by-danshaders</h1>
-      <div id="login-container">
-        <form ref>
-          <label for="login-field">Логин</label>
-          <input ref required class="focusable" id="login-field" type="text" name="login" spellcheck="false" />
-          <label for="password-field">Пароль</label>
-          <input ref required class="focusable" id="password-field" type="password" name="password" />
-          <button class="button-blue" id="button-login" type="submit" name="button_login" value="1">
-            Войти
-          </button>
-        </form>
+      <div class="row">
+        <div class="col-sm-auto mb-4">
+          <h2 class="mb-0">Станция КЕГЭ</h2>
+          <span class="ms-3" style="color: var(--bs-gray);">
+            ФМЛ №31 г. Челябинска
+          </span>
+        </div>
+        <div class="col-sm justify-self-end">
+          <div id="signin" class="border rounded p-3 ms-auto" style="max-width: 330px;">
+            <form ref>
+              <div class="form-floating">
+                <input
+                  ref
+                  required
+                  class="form-control"
+                  id="loginField"
+                  type="text"
+                  spellcheck="false"
+                  placeholder="&nbsp;"
+                />
+                <label for="loginField">Логин</label>
+              </div>
+
+              <div class="form-floating mb-2">
+                <input ref required class="form-control" id="passwordField" type="password" placeholder="&nbsp;" />
+                <label for="passwordField">Пароль</label>
+              </div>
+
+              <input class="w-100 btn btn-primary btn-floating p-1" id="button-login" type="submit" value="Войти" />
+            </form>
+          </div>
+        </div>
       </div>
     </>
   ).replaceContentsOf("main") as [NoticeComponent, HTMLFormElement, HTMLInputElement, HTMLInputElement];
@@ -47,7 +68,7 @@ async function showLoginPage(params: URLSearchParams): Promise<void> {
       if (code === ErrorCode.INVALID_CREDENTIALS) {
         notice.setMessage("Неверный логин или пароль");
       } else {
-        notice.setMessage(`Ошибка при обращении к API (code: ${code})`);
+        notice.setMessage(`Ошибка при обращении к серверу (${code})`);
       }
       notice.setType("error");
       notice.setVisibility(true);

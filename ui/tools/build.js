@@ -21,6 +21,7 @@ require("esbuild")
       ".woff": "file",
       ".woff2": "file",
       ".ttf": "file",
+      ".png": "file",
     },
   })
   .catch(() => process.exit(1));

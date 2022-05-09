@@ -101,7 +101,6 @@ export class HeaderComponent extends Component<HeaderSettings> {
     const elem = document.createElement("header");
     elem.innerHTML = `
 			<a class='page-header-logo page-header-clickable'>
-				<svg class='page-header-logo-image' width='75.12' height='24'><use xlink:href='#logo-small'></use></svg>
 			</a>
 			<nav class='page-header-links'></nav>
 			<div class='page-header-avatar-wrap'></div>

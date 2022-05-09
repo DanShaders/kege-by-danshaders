@@ -1,3 +1,5 @@
+import { Modal } from "bootstrap";
+
 import { Component } from "components/component";
 import { ButtonIcon } from "components/button-icon";
 
@@ -41,16 +43,85 @@ export class AnswerTable extends Component<AnswerSettings> {
       rows.push(<>{row}</>);
     }
 
-    return (
+    const refs: Element[] = [];
+    const elem = (
       <div class="d-flex align-items-end">
+        <div ref class="modal" tabindex="-1">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Размер ответа</h5>
+                <button
+                  type="button"
+                  class="btn-close btn-no-shadow"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div class="modal-body">
+                <form ref novalidate>
+                  <div class="input-group has-validation mb-2">
+                    <input ref class="form-control" type="number" min="1" max="50" step="1" required />
+                    <span class="input-group-text">&times;</span>
+                    <input ref class="form-control" type="number" min="1" max="50" step="1" required />
+                    <button type="submit" class="btn btn-primary">
+                      Изменить
+                    </button>
+                    <div class="invalid-feedback">Размерность должна быть натуральным числом, не превосходящим 50.</div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="d-inplace-block border rounded focusable">
           <table class="table answer-table table-external-border mb-0">
             <tbody>{rows}</tbody>
           </table>
         </div>
-        <ButtonIcon settings={{ title: "Изменить размер", icon: "icon-grid-resize", margins: [0, 0, 0, 5] }} />
+        <ButtonIcon
+          settings={{
+            title: "Изменить размер",
+            icon: "icon-grid-resize",
+            onClick: () => {
+              rowInput.value = this.settings.answerRows.toString();
+              colInput.value = this.settings.answerCols.toString();
+              dimsModal.show();
+            },
+            margins: [0, 0, 0, 5],
+          }}
+        />
       </div>
-    ).asElement() as HTMLDivElement;
+    ).asElement(refs) as HTMLDivElement;
+
+    const [modal, form, rowInput, colInput] = refs as [
+      HTMLDivElement,
+      HTMLFormElement,
+      HTMLInputElement,
+      HTMLInputElement
+    ];
+
+    const dimsModal = new Modal(modal);
+    modal.addEventListener("shown.bs.modal", () => {
+      rowInput.focus();
+    });
+    modal.addEventListener("hidden.bs.modal", () => {
+      form.classList.remove("was-validated");
+    });
+
+    form.addEventListener("submit", (e) => {
+      if (form.checkValidity()) {
+        this.settings.answerRows = parseInt(rowInput.value, 10);
+        this.settings.answerCols = parseInt(colInput.value, 10);
+        dimsModal.hide();
+        this.rerenderMe();
+      } else {
+        form.classList.add("was-validated");
+      }
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    return elem;
   }
 
   updateComputedAnswer(): void {

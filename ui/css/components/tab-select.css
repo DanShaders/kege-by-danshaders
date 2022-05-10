@@ -3,7 +3,7 @@
 }
 
 .tab-wrap nav {
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--bs-gray-300);
   padding-bottom: 1px;
   margin-bottom: 10px;
 }

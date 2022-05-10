@@ -1,8 +1,11 @@
-import Quill from "quill";
+import Quill, { RangeStatic } from "quill";
+import Delta from "quill-delta";
 import katex from "katex";
 
+import BidirectionalMap from "utils/bidirectional-map";
 import { Component, createComponentFactory } from "./component";
-import { TabSelect } from "./tab-select";
+import { TabSelect, TabSelectSettings } from "./tab-select";
+
 import * as jsx from "../utils/jsx";
 
 enum EditorTabs {
@@ -11,8 +14,21 @@ enum EditorTabs {
   PREVIEW = 2,
 }
 
-type TraverseContext = { color: string[]; size: string[] };
-const defaultContext: TraverseContext = { color: [], size: [] };
+type TraverseContext = {
+  color: string[];
+  size: string[];
+  uploadImage?: (file: File) => number;
+  realMap?: BidirectionalMap<number, string>;
+  fakeMap?: BidirectionalMap<number, string>;
+};
+
+type TextEditorSettings = {
+  text: string;
+  uploadImage: (file: File) => number;
+  realMap: BidirectionalMap<number, string>;
+  fakeMap: BidirectionalMap<number, string>;
+};
+
 type TraverseElement = HTMLElement | Text;
 
 type TraverseInHandler = (elem: HTMLElement, ctx: TraverseContext) => boolean | void;
@@ -37,7 +53,7 @@ const CODE_TO_PREVIEW_RULES: TraverseRules = [
   ["b, i, u, s, sub, sup, pre", useTagWithoutAttributes()],
   ["a", useTagWithAttributes(["href"])],
   ["font", useFontInPreview()],
-  ["img", useImageSanitized()],
+  ["img", useImageInPreview()],
   ["div[align=center], div[align=left], div[align=right], div[align=justify]", useTagWithAttributes(["align"])],
   ["formula", useTagWithoutAttributes()],
 ];
@@ -45,6 +61,7 @@ const CODE_TO_PREVIEW_RULES: TraverseRules = [
 const PREVIEW_TO_CODE_RULES: TraverseRules = [
   [0, useText()],
   ["br", insertNewLine()],
+  ["img", useImageInCode()],
   ["div, pre", useDivInCode()],
   ["*", useTag()],
 ];
@@ -89,7 +106,7 @@ const QUILL_TO_CODE_RULES: TraverseRules = [
   ["strong", wrapInto("b", [])],
   ["em", wrapInto("i", [])],
   ["a", useTagWithAttributes(["href"])],
-  ["img", useTagWithAttributes(["src"])],
+  ["img", useImageInCode()],
   ["div.ql-code-block", wrapInto("pre", [])],
   ["pre", useTagWithoutAttributes()],
   ["p", insertNewLine()],
@@ -175,32 +192,38 @@ function useDivInCode(): TraverseHandler {
   ];
 }
 
-function useImageSanitized(): TraverseHandler {
+function useImageInPreview(): TraverseHandler {
   return [
     () => {},
     (elem, children, ctx): HTMLElement[] => {
-      let src = elem.getAttribute("src");
-      if (src !== null && /^f:\/\/[0-9a-f]{8,8}$/.test(src)) {
-        let res = document.createElement("img");
-        res.setAttribute("src", src);
-        return [res];
+      const src = elem.getAttribute("src") ?? "";
+      const id = ctx.realMap?.getPrimary(src) ?? ctx.fakeMap?.getPrimary(src);
+      if (id === undefined) {
+        return []; // throwing away images with bad links
       }
-      return []; // throwing away images with bad links
+
+      const res = document.createElement("img");
+      res.src = ctx.realMap?.getSecondary(id) ?? "";
+      res.dataset.id = id.toString();
+      return [res];
     },
   ];
 }
 
-function useImageOnDelete(url: string): TraverseHandler {
+function useImageInCode(): TraverseHandler {
   return [
     () => {},
     (elem, children, ctx): HTMLElement[] => {
-      let src = elem.getAttribute("src");
-      if (src !== null && src !== url) {
-        let res = document.createElement("img");
-        res.setAttribute("src", src);
-        return [res];
+      const src = elem.getAttribute("src") ?? "";
+      const id = ctx.realMap?.getPrimary(src) ?? ctx.fakeMap?.getPrimary(src);
+      if (id === undefined) {
+        return [];
       }
-      return [];
+
+      const res = document.createElement("template");
+      res.innerHTML = `<img src="${ctx.fakeMap?.getSecondary(id) ?? ""}">`;
+      const img = res.content.children[0].cloneNode(true) as HTMLImageElement;
+      return [img];
     },
   ];
 }
@@ -352,16 +375,18 @@ function useFormulaInCode(): TraverseHandler {
   ];
 }
 
+function traverse(elem: DocumentFragment, rules: TraverseRules, ctx: TraverseContext): [HTMLTemplateElement];
+function traverse(elem: TraverseElement, rules: TraverseRules, ctx: TraverseContext): TraverseElement[];
 function traverse(
-  elem: DocumentFragment | TraverseElement,
+  elem: TraverseElement | DocumentFragment,
   rules: TraverseRules,
   ctx: TraverseContext
-): TraverseElement[] {
+): TraverseElement[] | [HTMLTemplateElement] {
   if (elem instanceof DocumentFragment) {
-    let node = document.createElement("div");
+    let node = document.createElement("template");
     for (let child of elem.childNodes) {
       for (let curr of traverse(child as HTMLElement, rules, ctx)) {
-        node.appendChild(curr);
+        node.content.appendChild(curr);
       }
     }
     return [node];
@@ -403,7 +428,7 @@ function traverse(
   return children;
 }
 
-function codeToPreview(data: string): string {
+function codeToPreview(data: string, ctx: TraverseContext): string {
   // Dealing with possibly unmatched '<' & '>', checking tag names
   let lastOpen = -1;
   let tagBuffer = [];
@@ -460,56 +485,34 @@ function codeToPreview(data: string): string {
   template.innerHTML = sanitizedDataStr.replaceAll("\n", "<br>");
 
   // Removing any strange attributes
-  return (traverse(template.content, CODE_TO_PREVIEW_RULES, defaultContext)[0] as HTMLElement).innerHTML;
+  return traverse(template.content, CODE_TO_PREVIEW_RULES, ctx)[0].innerHTML;
 }
 
-function previewToQuill(data: string): string {
+function previewToQuill(data: string, ctx: TraverseContext): string {
   let template = document.createElement("template");
   template.innerHTML = data;
+
+  ctx = Object.assign(ctx, { size: ["3"], color: ["black"] });
 
   // Actually, we are not creating 100% compatible HTML here but hope that Quill is smart enough to handle it
-  return (traverse(template.content, PREVIEW_TO_QUILL_RULES, { size: ["3"], color: ["black"] })[0] as HTMLElement)
-    .innerHTML;
+  return traverse(template.content, PREVIEW_TO_QUILL_RULES, ctx)[0].innerHTML;
 }
 
-function quillToCode(data: string) {
+function quillToCode(data: string, ctx: TraverseContext) {
   let template = document.createElement("template");
   template.innerHTML = data;
 
-  return (traverse(template.content, QUILL_TO_CODE_RULES, defaultContext)[0] as HTMLElement).innerHTML;
+  return traverse(template.content, QUILL_TO_CODE_RULES, ctx)[0].innerHTML;
 }
 
-function previewToCode(data: string) {
+function previewToCode(data: string, ctx: TraverseContext) {
   let template = document.createElement("template");
   template.innerHTML = data;
 
-  return (traverse(template.content, PREVIEW_TO_CODE_RULES, defaultContext)[0] as HTMLElement).innerHTML;
+  return traverse(template.content, PREVIEW_TO_CODE_RULES, ctx)[0].innerHTML;
 }
 
-// function deleteImageOccurrences(url) {
-//   const RULES = [
-//     [0, useText()],
-//     ["img", useImageOnDelete(url)],
-//     ["*", useTag()]
-//   ];
-
-//   ON_HIDE[currentLayout]();
-
-//   let template = document.createElement("template");
-//   template.innerHTML = htmlPreview;
-//   template = traverse(template.content, RULES, {})[0];
-//   let curr = template.innerHTML;
-//   if (htmlPreview !== curr) {
-//     ++htmlVersion;
-//     htmlPreview = curr;
-//     htmlQuill = previewToQuill(htmlPreview);
-//     htmlCode = previewToCode(htmlPreview);
-//   }
-
-//   ON_SHOW[currentLayout]();
-// }
-
-export class TextEditorComponent extends Component<{ text: string }> {
+export class TextEditorComponent extends Component<TextEditorSettings> {
   private quill: Quill;
   private quillWrap: HTMLDivElement;
   private previewContainer: HTMLDivElement;
@@ -517,13 +520,31 @@ export class TextEditorComponent extends Component<{ text: string }> {
   private textVersion = 0;
   private domVersions = [0, 0, 0];
   private textHtml = ["", "", ""];
+  private ctx: TraverseContext;
+  private tabsSettings: TabSelectSettings;
 
-  constructor(settings: { text: string }, parent: Component<unknown> | null, children?: jsx.Fragment[]) {
+  constructor(settings: TextEditorSettings, parent: Component<unknown> | null, children?: jsx.Fragment[]) {
     super(settings, parent, children);
+
+    const fileInput = (<input type="file" hidden accept="image/*" />).asElement() as HTMLInputElement;
+
+    this.ctx = {
+      color: [],
+      size: [],
+      uploadImage: this.settings.uploadImage,
+      realMap: this.settings.realMap,
+      fakeMap: this.settings.fakeMap,
+    };
+    this.tabsSettings = {
+      selectedTab: 0,
+      tabNames: ["Редактор", "Код", "Предпросмотр"],
+      onTabSwitch: this.onTabSwitch.bind(this),
+    };
 
     this.quillWrap = document.createElement("div");
     this.quillWrap.classList.add("ql-wrap");
-    this.quillWrap.innerHTML = `<div></div>`;
+    this.quillWrap.appendChild(document.createElement("div"));
+    this.quillWrap.appendChild(fileInput);
 
     this.previewContainer = document.createElement("div");
     this.previewContainer.classList.add("preview-container");
@@ -551,10 +572,17 @@ export class TextEditorComponent extends Component<{ text: string }> {
             ["image", "link", "formula"],
             ["clean"],
           ],
-          handlers: {
-            image: async (): Promise<void> => {
-              // QI.insertEmbed(QI.getSelection().index, "image", url);
-            },
+        },
+        uploader: {
+          handler: (range: RangeStatic, files: File[]): void => {
+            console.log("handler", range, files);
+            const delta = new Delta().retain(range.index).delete(range.length);
+            for (const file of files) {
+              const id = this.settings.uploadImage(file);
+              delta.insert({ image: this.settings.realMap?.getSecondary(id) });
+            }
+            this.quill.updateContents(delta, "user");
+            this.quill.setSelection(range.index + files.length, 0, "silent");
           },
         },
         clipboard: {
@@ -567,7 +595,10 @@ export class TextEditorComponent extends Component<{ text: string }> {
               return;
             }
             let selection = this.quill.getSelection();
-            let html = previewToQuill(codeToPreview(quillToCode((this.quill as any).getSemanticHTML())));
+            let html = previewToQuill(
+              codeToPreview(quillToCode((this.quill as any).getSemanticHTML(), this.ctx), this.ctx),
+              this.ctx
+            );
             this.quill.setContents(this.quill.clipboard.convert({ html: html, text: "\n" }));
             // FIXME selection will change unexpectedly if pasted text contains forbidden tags
             if (selection) {
@@ -594,11 +625,30 @@ export class TextEditorComponent extends Component<{ text: string }> {
       theme: "snow",
     });
 
+    fileInput.addEventListener("change", async () => {
+      if (fileInput.files?.length !== 1) {
+        return;
+      }
+      const file = fileInput.files[0];
+      fileInput.value = "";
+
+      const id = await this.settings.uploadImage(file);
+      const range = this.quill.getSelection(true);
+      const update = new Delta()
+        .retain(range.index)
+        .delete(range.length)
+        .insert({
+          image: this.ctx.realMap?.getSecondary(id),
+        });
+      this.quill.updateContents(update, "user");
+      this.quill.setSelection(range.index + 1, 0, "silent");
+    });
+
     if (settings.text !== "") {
       this.textVersion = 1;
       this.textHtml[EditorTabs.PREVIEW] = settings.text;
-      this.textHtml[EditorTabs.CODE] = previewToCode(settings.text);
-      this.textHtml[EditorTabs.QUILL] = previewToQuill(settings.text);
+      this.textHtml[EditorTabs.CODE] = previewToCode(settings.text, this.ctx);
+      this.textHtml[EditorTabs.QUILL] = previewToQuill(settings.text, this.ctx);
       this.onTabSwitch(0, -1);
     }
   }
@@ -609,9 +659,9 @@ export class TextEditorComponent extends Component<{ text: string }> {
       if (this.textHtml[oldIndex] !== code) {
         this.textHtml[oldIndex] = code;
         ++this.textVersion;
-        const preview = (this.textHtml[EditorTabs.PREVIEW] = codeToPreview(code));
+        const preview = (this.textHtml[EditorTabs.PREVIEW] = codeToPreview(code, this.ctx));
         this.settings.text = preview;
-        this.textHtml[EditorTabs.QUILL] = previewToQuill(preview);
+        this.textHtml[EditorTabs.QUILL] = previewToQuill(preview, this.ctx);
       }
     } else if (oldIndex === EditorTabs.QUILL) {
       let quill = (this.quill as any).getSemanticHTML() as string;
@@ -621,8 +671,8 @@ export class TextEditorComponent extends Component<{ text: string }> {
       if (this.textHtml[oldIndex] !== quill) {
         this.textHtml[oldIndex] = quill;
         ++this.textVersion;
-        const code = (this.textHtml[EditorTabs.CODE] = quillToCode(quill).trimEnd());
-        this.settings.text = this.textHtml[EditorTabs.PREVIEW] = codeToPreview(code);
+        const code = (this.textHtml[EditorTabs.CODE] = quillToCode(quill, this.ctx).trimEnd());
+        this.settings.text = this.textHtml[EditorTabs.PREVIEW] = codeToPreview(code, this.ctx);
       }
     }
     this.domVersions[oldIndex] = this.textVersion;
@@ -650,15 +700,31 @@ export class TextEditorComponent extends Component<{ text: string }> {
     }
   }
 
+  onImageRemoval(): void {
+    const RULES: TraverseRules = [
+      [0, useText()],
+      ["img", useImageInPreview()],
+      ["*", useTag()],
+    ];
+
+    this.onTabSwitch(-1, this.tabsSettings.selectedTab);
+
+    const template = document.createElement("template");
+    template.innerHTML = this.textHtml[EditorTabs.PREVIEW];
+    const curr = traverse(template.content, RULES, this.ctx)[0].innerHTML;
+    if (this.textHtml[EditorTabs.PREVIEW] !== curr) {
+      ++this.textVersion;
+      this.textHtml[EditorTabs.PREVIEW] = this.settings.text = curr;
+      this.textHtml[EditorTabs.QUILL] = previewToQuill(curr, this.ctx);
+      this.textHtml[EditorTabs.CODE] = previewToCode(curr, this.ctx);
+    }
+
+    this.onTabSwitch(this.tabsSettings.selectedTab, -1);
+  }
+
   createElement(): HTMLElement {
     return (
-      <TabSelect
-        settings={{
-          selectedTab: 0,
-          tabNames: ["Редактор", "Код", "Предпросмотр"],
-          onTabSwitch: this.onTabSwitch.bind(this),
-        }}
-      >
+      <TabSelect settings={this.tabsSettings}>
         {this.quillWrap}
         {this.codeContainer}
         {this.previewContainer}

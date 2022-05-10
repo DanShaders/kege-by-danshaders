@@ -8,7 +8,7 @@
 
 .ql-toolbar.ql-snow + .ql-container.ql-snow {
   border: none;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--bs-gray-300);
   margin: 0 6px;
 }
 
@@ -28,6 +28,10 @@
   white-space: pre-wrap;
   tab-size: 4;
   padding: 2px 9px;
+}
+
+.preview-container img {
+  max-width: 100%;
 }
 
 .code-container {

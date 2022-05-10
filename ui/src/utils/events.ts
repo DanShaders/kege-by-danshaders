@@ -5,20 +5,24 @@ export type ListPosition = {
 };
 
 export class PositionUpdateEvent extends Event {
+  static NAME = "positionupdate";
+
   pos: ListPosition;
 
   constructor(pos: ListPosition) {
-    super("positionupdate");
+    super(PositionUpdateEvent.NAME);
     this.pos = pos;
   }
 }
 
 export class LengthChangeEvent extends Event {
+  static NAME = "lengthchange";
+
   length: number;
   delta: number;
 
   constructor(length: number, delta: number) {
-    super("lengthchange");
+    super(LengthChangeEvent.NAME);
     this.length = length;
     this.delta = delta;
   }

@@ -6,6 +6,7 @@ import * as diff from "proto/tasks_pb_diff";
 import { TaskTypeListResponse } from "proto/task-types_pb";
 import { getTaskTypes } from "admin";
 import { dbId } from "utils/common";
+import BidirectionalMap from "utils/bidirectional-map";
 import { Router } from "utils/router";
 import { SyncController } from "utils/sync-controller";
 import { requestU, EmptyPayload } from "utils/requests";
@@ -13,27 +14,46 @@ import { toggleLoadingScreen } from "utils/common";
 import { ButtonIcon } from "components/button-icon";
 import { FileSelectComponent, FileSelect } from "components/file-select";
 import { AnswerTable } from "components/answer-table";
-import { TextEditor } from "components/text-editor";
+import { TextEditor, TextEditorComponent } from "components/text-editor";
 import { LengthChangeEvent } from "utils/events";
 
 import * as jsx from "jsx";
 
 type PageSettings = diff.DiffableTask & {
   taskTypes: TaskTypeListResponse.AsObject;
+  uploadImage: (file: File | Blob) => number;
+  realMap: BidirectionalMap<number, string>;
+  fakeMap: BidirectionalMap<number, string>;
 };
 
 type AttachmentSettings = {
   isBlob: boolean;
   realLink: string;
   fakeLink: string;
+  realMap: BidirectionalMap<number, string>;
+  fakeMap: BidirectionalMap<number, string>;
 };
 
 class Attachment extends SetEntry<diff.Task.DiffableAttachment, AttachmentSettings> {
   createElement(): HTMLElement {
+    const setVisibility = (e: Event) => {
+      this.settings.shownToUser = (e.target as HTMLInputElement).checked;
+    };
+
     return (
       <tr>
-        <td>{this.settings.filename}</td>
         <td>
+          <div class="text-truncate">{this.settings.filename}</div>
+        </td>
+        <td>
+          <div class="form-check d-inline-block align-middle m-0" title="Показывать участнику">
+            <input
+              type="checkbox"
+              class="form-check-input"
+              onchange={setVisibility}
+              checkedIf={this.settings.shownToUser}
+            />
+          </div>
           <ButtonIcon settings={{ title: "Открыть", icon: "icon-open", onClick: this.open.bind(this) }} />
           <ButtonIcon
             settings={{ title: "Удалить", icon: "icon-delete", hoverColor: "red", onClick: this.delete.bind(this) }}
@@ -56,6 +76,8 @@ class Attachment extends SetEntry<diff.Task.DiffableAttachment, AttachmentSettin
       URL.revokeObjectURL(this.settings.realLink);
     }
     this.settings.deleted = true;
+    this.settings.realMap.delete(this.settings.id);
+    this.settings.fakeMap.delete(this.settings.id);
     this.parent.pop(this.i);
   }
 }
@@ -66,18 +88,53 @@ class Page extends Component<PageSettings> {
 
     const answerTable = new AnswerTable(this.settings, this);
     let linkCnt = 1;
+
+    const getLink = (): string => {
+      return `f://${linkCnt++}`;
+    };
+
     const attachmentsSet = new SetComponent<diff.Task.DiffableAttachment, AttachmentSettings>(
       this.settings.attachments,
       this,
       listProviderOf("tbody"),
       factoryOf(Attachment),
-      (obj) =>
-        Object.assign(obj, {
+      (obj): diff.Task.DiffableAttachment & AttachmentSettings => {
+        const realLink = "api/attachment/" + obj.hash,
+          fakeLink = getLink();
+        this.settings.realMap.add(obj.id, realLink);
+        this.settings.fakeMap.add(obj.id, fakeLink);
+        return Object.assign(obj, {
           isBlob: false,
-          realLink: "api/attachment/" + obj.hash,
-          fakeLink: `f://${linkCnt++}`,
-        })
+          realLink: realLink,
+          fakeLink: fakeLink,
+          realMap: this.settings.realMap,
+          fakeMap: this.settings.fakeMap,
+        });
+      }
     );
+
+    const addFile = async (id: number, file: File | Blob, filename: string, shownToUser: boolean): Promise<void> => {
+      const realLink = URL.createObjectURL(file),
+        fakeLink = getLink();
+      this.settings.realMap.add(id, realLink);
+      this.settings.fakeMap.add(id, fakeLink);
+
+      const contents = new Uint8Array(await file.arrayBuffer());
+      const links = {
+        isBlob: true,
+        realLink: realLink,
+        fakeLink: fakeLink,
+        realMap: this.settings.realMap,
+        fakeMap: this.settings.fakeMap,
+      };
+      const remote = new Task.Attachment().setId(id);
+      attachmentsSet.push(new diff.Task.DiffableAttachment(remote), links, (local) => {
+        local.filename = filename;
+        local.shownToUser = shownToUser;
+        local.contents = contents;
+        local.mimeType = file.type;
+      });
+    };
 
     const uploadFile = async () => {
       const files = fileInput.getFiles() ?? [];
@@ -86,22 +143,20 @@ class Page extends Component<PageSettings> {
         return;
       }
       const file = files[0];
-      const contents = new Uint8Array(await file.arrayBuffer());
-      const links = {
-        isBlob: true,
-        realLink: URL.createObjectURL(file),
-        fakeLink: `f://${linkCnt++}`,
-      };
-      attachmentsSet.push(new diff.Task.DiffableAttachment(new Task.Attachment().setId(dbId())), links, (local) => {
-        local.filename = filenameInput.value || file.name;
-        local.contents = contents;
-        local.mimeType = file.type;
-      });
+      await addFile(dbId(), file, filenameInput.value || file.name, true);
       fileInput.clear();
     };
 
-    const S_ROW = "row gy-3",
-      S_LABEL = "col-md-2 text-md-end fw-600 gx-2 gx-lg-3",
+    this.settings.uploadImage = (file: File | Blob): number => {
+      const id = dbId();
+      (async () => {
+        await addFile(id, file, file instanceof File ? file.name : "Image", false);
+      })();
+      return id;
+    };
+
+    const S_ROW = "row gy-2",
+      S_LABEL = "col-md-2 text-md-end fw-600 gx-2 gx-lg-3 align-self-start",
       S_INPUT = "col-md-10 gy-0 gy-md-2 gx-2 gx-lg-3";
 
     const elem = (
@@ -121,7 +176,7 @@ class Page extends Component<PageSettings> {
           <label class={S_LABEL}>Текст</label>
           <div class={S_INPUT}>
             <div class="border rounded focusable" style="background-color: white;">
-              <TextEditor settings={this.settings} />
+              <TextEditor ref settings={this.settings} />
             </div>
           </div>
 
@@ -136,12 +191,12 @@ class Page extends Component<PageSettings> {
             <label class={S_LABEL}>Файлы</label>
             <div class={S_INPUT}>
               <div class="border rounded">
-                <table class="table table-first-col-left table-no-sep table-external-border mb-0">
+                <table class="table table-fixed table-first-col-left table-no-sep table-external-border mb-0">
                   <thead>
                     <tr>
                       <td class="column-norm">Описание</td>
-                      <td class="column-min"></td>
-                      <td class="column-min">Ссылка</td>
+                      <td class="column-100px"></td>
+                      <td class="column-80px">Ссылка</td>
                     </tr>
                   </thead>
                   {attachmentsSet.elem}
@@ -165,8 +220,9 @@ class Page extends Component<PageSettings> {
       </div>
     ).asElement(elems) as HTMLDivElement;
 
-    const [select, filesList, filenameInput, fileInput] = elems as [
+    const [select, textEditor, filesList, filenameInput, fileInput] = elems as [
       HTMLSelectElement,
+      TextEditorComponent,
       HTMLDivElement,
       HTMLTextAreaElement,
       FileSelectComponent
@@ -177,6 +233,9 @@ class Page extends Component<PageSettings> {
         filesList.setAttribute("hidden", "");
       } else {
         filesList.removeAttribute("hidden");
+      }
+      if (delta < 0) {
+        textEditor.onImageRemoval();
       }
     }) as EventListener);
 
@@ -213,7 +272,13 @@ async function showTaskListPage(params: URLSearchParams): Promise<void> {
   settings.answerCols ||= 1;
   syncController.supressSave = false;
 
-  const page = new Page(Object.assign(settings, { taskTypes: await getTaskTypes() }), null);
+  const pageSettings = Object.assign(settings, {
+    taskTypes: await getTaskTypes(),
+    uploadImage: () => 0,
+    realMap: new BidirectionalMap<number, string>(),
+    fakeMap: new BidirectionalMap<number, string>(),
+  });
+  const page = new Page(pageSettings, null);
 
   const redirectBack = (): never => Router.instance.redirect(params.get("back") ?? "");
   (

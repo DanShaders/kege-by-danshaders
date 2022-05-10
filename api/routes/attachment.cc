@@ -18,7 +18,7 @@ static coro<void> handle_attachment(fcgx::request_t *r) {
 		co_await routes::require_auth(db, r);
 		tie(filename, mime_type) =
 			(co_await db.exec("SELECT filename, mime_type FROM task_attachments WHERE hash = $1 "
-							  "AND NOT coalesce(deleted, false)",
+							  "AND NOT coalesce(deleted, false) LIMIT 1",
 							  hash))
 				.expect1<std::string, std::string>();
 	}

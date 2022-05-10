@@ -1,7 +1,7 @@
 import { Component, createComponentFactory } from "./component";
 import * as jsx from "../utils/jsx";
 
-type TabSelectSettings = {
+export type TabSelectSettings = {
   selectedTab: number;
   tabNames: string[];
   onTabSwitch?: (index: number, oldIndex: number) => void;

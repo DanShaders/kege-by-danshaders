@@ -22,6 +22,10 @@
   border-bottom: none;
 }
 
+.table-fixed {
+  table-layout: fixed;
+}
+
 .table tbody tr {
   transition: 0.15s background-color ease-in-out;
 }
@@ -36,6 +40,14 @@
 
 .column-norm {
   width: auto;
+}
+
+.column-80px {
+  width: 80px;
+}
+
+.column-100px {
+  width: 100px;
 }
 
 .column-200px {

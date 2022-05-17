@@ -27,6 +27,7 @@ void sleep::await_suspend(std::coroutine_handle<> h) {
 }
 
 /* ==== async::libev_event_loop::impl ==== */
+/** @private */
 struct data_t {
 	enum { NEW_TIMEOUT, NEW_SOCKET, DEL_SOCKET, MOD_SOCKET } type;
 
@@ -39,6 +40,7 @@ struct data_t {
 
 typedef struct ev_loop ev_loop_t;
 
+/** @private */
 struct libev_event_loop::impl {
 	std::vector<std::shared_ptr<event_source>> sources;
 	ev_loop_t *loop;

@@ -16,6 +16,12 @@ main {
   padding-right: 0.3rem !important;
 }
 
+@media (min-width: 1400px) {
+  main {
+    max-width: 1140px !important;
+  }
+}
+
 .btn-no-shadow:focus {
   outline: none;
   box-shadow: none;

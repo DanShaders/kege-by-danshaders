@@ -168,9 +168,11 @@ FILE_PATTERNS          = *.c \
                          *.qsf \
                          *.ice
 RECURSIVE              = YES
-EXCLUDE                = api/src/unwind-cxx.h
+EXCLUDE                = 
+# EXCLUDE                = api/src/unwind-cxx.h
 EXCLUDE_SYMLINKS       = NO
-EXCLUDE_PATTERNS       =
+EXCLUDE_PATTERNS       = 
+# EXCLUDE_PATTERNS       = */detail/*.impl.h
 EXCLUDE_SYMBOLS        =
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       = *

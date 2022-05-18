@@ -1,3 +1,4 @@
+/** @cond FALSE */
 // -*- C++ -*- Exception handling and frame unwind runtime interface routines.
 // Copyright (C) 2001-2022 Free Software Foundation, Inc.
 //
@@ -26,32 +27,32 @@
 // for cross-architecture compatibility are noted with "@@@".
 
 #ifndef _UNWIND_CXX_H
-#define _UNWIND_CXX_H 1
+#	define _UNWIND_CXX_H 1
 
 // Level 2: C++ ABI
 
-#include <bits/atomic_word.h>
-#include <cxxabi.h>
-#include <unwind.h>
+#	include <bits/atomic_word.h>
+#	include <cxxabi.h>
+#	include <unwind.h>
 
-#include <cstddef>
-#include <exception>
-#include <typeinfo>
+#	include <cstddef>
+#	include <exception>
+#	include <typeinfo>
 
-#ifdef _GLIBCXX_HAVE_SYS_SDT_H
-#	include <sys/sdt.h>
+#	ifdef _GLIBCXX_HAVE_SYS_SDT_H
+#		include <sys/sdt.h>
 /* We only want to use stap probes starting with v3.  Earlier versions
    added too much startup cost.  */
-#	if defined(STAP_PROBE2) && _SDT_NOTE_TYPE >= 3
-#		define PROBE2(name, arg1, arg2) STAP_PROBE2(libstdcxx, name, arg1, arg2)
+#		if defined(STAP_PROBE2) && _SDT_NOTE_TYPE >= 3
+#			define PROBE2(name, arg1, arg2) STAP_PROBE2(libstdcxx, name, arg1, arg2)
+#		endif
 #	endif
-#endif
 
-#ifndef PROBE2
-#	define PROBE2(name, arg1, arg2)
-#endif
+#	ifndef PROBE2
+#		define PROBE2(name, arg1, arg2)
+#	endif
 
-#pragma GCC visibility push(default)
+#	pragma GCC visibility push(default)
 
 namespace __cxxabiv1 {
 
@@ -76,13 +77,13 @@ struct __cxa_exception {
 	// value is a signal that this object has been rethrown.
 	int handlerCount;
 
-#ifdef __ARM_EABI_UNWINDER__
+#	ifdef __ARM_EABI_UNWINDER__
 	// Stack of exceptions in cleanups.
 	__cxa_exception *nextPropagatingException;
 
 	// The number of active cleanup handlers for this exception.
 	int propagationCount;
-#else
+#	else
 	// Cache parsed handler data from the personality routine Phase 1
 	// for Phase 2 and __cxa_call_unexpected.
 	int handlerSwitchValue;
@@ -90,7 +91,7 @@ struct __cxa_exception {
 	const unsigned char *languageSpecificData;
 	_Unwind_Ptr catchTemp;
 	void *adjustedPtr;
-#endif
+#	endif
 
 	// The generic exception header.  Must be last.
 	_Unwind_Exception unwindHeader;
@@ -128,13 +129,13 @@ struct __cxa_dependent_exception {
 	// value is a signal that this object has been rethrown.
 	int handlerCount;
 
-#ifdef __ARM_EABI_UNWINDER__
+#	ifdef __ARM_EABI_UNWINDER__
 	// Stack of exceptions in cleanups.
 	__cxa_exception *nextPropagatingException;
 
 	// The number of active cleanup handlers for this exception.
 	int propagationCount;
-#else
+#	else
 	// Cache parsed handler data from the personality routine Phase 1
 	// for Phase 2 and __cxa_call_unexpected.
 	int handlerSwitchValue;
@@ -142,7 +143,7 @@ struct __cxa_dependent_exception {
 	const unsigned char *languageSpecificData;
 	_Unwind_Ptr catchTemp;
 	void *adjustedPtr;
-#endif
+#	endif
 
 	// The generic exception header.  Must be last.
 	_Unwind_Exception unwindHeader;
@@ -152,9 +153,9 @@ struct __cxa_dependent_exception {
 struct __cxa_eh_globals {
 	__cxa_exception *caughtExceptions;
 	unsigned int uncaughtExceptions;
-#ifdef __ARM_EABI_UNWINDER__
+#	ifdef __ARM_EABI_UNWINDER__
 	__cxa_exception *propagatingExceptions;
-#endif
+#	endif
 };
 
 // @@@ These are not directly specified by the IA-64 C++ ABI.
@@ -165,7 +166,7 @@ struct __cxa_eh_globals {
 extern "C" void __cxa_call_unexpected(void *) __attribute__((__noreturn__));
 extern "C" void __cxa_call_terminate(_Unwind_Exception *) throw() __attribute__((__noreturn__));
 
-#ifdef __ARM_EABI_UNWINDER__
+#	ifdef __ARM_EABI_UNWINDER__
 // Arm EABI specified routines.
 typedef enum {
 	ctm_failed = 0,
@@ -176,7 +177,7 @@ extern "C" __cxa_type_match_result __cxa_type_match(_Unwind_Exception *, const s
 													bool, void **);
 extern "C" bool __cxa_begin_cleanup(_Unwind_Exception *);
 extern "C" void __cxa_end_cleanup(void);
-#endif
+#	endif
 
 // Handles cleanup from transactional memory restart.
 extern "C" void __cxa_tm_cleanup(void *, void *, unsigned int) throw();
@@ -218,7 +219,7 @@ static inline __cxa_dependent_exception *__get_dependent_exception_from_ue(_Unwi
 	return reinterpret_cast<__cxa_dependent_exception *>(exc + 1) - 1;
 }
 
-#ifdef __ARM_EABI_UNWINDER__
+#	ifdef __ARM_EABI_UNWINDER__
 static inline bool __is_gxx_exception_class(_Unwind_Exception_Class c) {
 	// TODO: Take advantage of the fact that c will always be word aligned.
 	return c[0] == 'G' && c[1] == 'N' && c[2] == 'U' && c[3] == 'C' && c[4] == 'C' && c[5] == '+' &&
@@ -272,7 +273,7 @@ static inline void __GXX_INIT_FORCED_UNWIND_CLASS(_Unwind_Exception_Class c) {
 static inline void *__gxx_caught_object(_Unwind_Exception *eo) {
 	return (void *) eo->barrier_cache.bitpattern[0];
 }
-#else  // !__ARM_EABI_UNWINDER__
+#	else  // !__ARM_EABI_UNWINDER__
 // This is the primary exception class we report -- "GNUCC++\0".
 const _Unwind_Exception_Class __gxx_primary_exception_class =
 	((((((((_Unwind_Exception_Class) 'G' << 8 | (_Unwind_Exception_Class) 'N') << 8 |
@@ -314,8 +315,8 @@ static inline bool __is_dependent_exception(_Unwind_Exception_Class c) {
 	return (c & 1);
 }
 
-#	define __GXX_INIT_PRIMARY_EXCEPTION_CLASS(c) c = __gxx_primary_exception_class
-#	define __GXX_INIT_DEPENDENT_EXCEPTION_CLASS(c) c = __gxx_dependent_exception_class
+#		define __GXX_INIT_PRIMARY_EXCEPTION_CLASS(c) c = __gxx_primary_exception_class
+#		define __GXX_INIT_DEPENDENT_EXCEPTION_CLASS(c) c = __gxx_dependent_exception_class
 
 // GNU C++ personality routine, Version 0.
 extern "C" _Unwind_Reason_Code __gxx_personality_v0(int, _Unwind_Action, _Unwind_Exception_Class,
@@ -332,7 +333,7 @@ static inline void *__gxx_caught_object(_Unwind_Exception *eo) {
 	__cxa_exception *header = __get_exception_header_from_ue(eo);
 	return header->adjustedPtr;
 }
-#endif  // !__ARM_EABI_UNWINDER__
+#	endif  // !__ARM_EABI_UNWINDER__
 
 static inline void *__get_object_from_ue(_Unwind_Exception *eo) throw() {
 	return __is_dependent_exception(eo->exception_class)
@@ -346,6 +347,7 @@ static inline void *__get_object_from_ambiguous_exception(__cxa_exception *p_or_
 
 } /* namespace __cxxabiv1 */
 
-#pragma GCC visibility pop
+#	pragma GCC visibility pop
 
 #endif  // _UNWIND_CXX_H
+		/** @endcond */

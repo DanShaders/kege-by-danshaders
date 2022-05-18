@@ -73,7 +73,7 @@ public:
 	 * Removes socket from the event loop.
 	 */
 	void socket_del(socket_storage *storage);
-	
+
 	/**
 	 * Updates the mask of listened events corresponding to @ref socket_storage::event_mask
 	 */

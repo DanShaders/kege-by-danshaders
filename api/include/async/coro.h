@@ -15,6 +15,7 @@ class coro;
 class suspend_t;
 
 namespace detail {
+	/** @private */
 	struct promise_type_facade {
 		std::optional<std::exception_ptr> exc;
 		std::optional<event_loop_work> parent;
@@ -40,6 +41,7 @@ public:
 		std::conditional<std::is_same_v<T, void>, void_promise_type, value_promise_type>::type;
 	using coro_handle = std::coroutine_handle<promise_type>;
 
+	/** @private */
 	struct base_promise_type : detail::promise_type_facade {
 		coro_handle handle;
 
@@ -47,10 +49,12 @@ public:
 		std::suspend_always final_suspend() noexcept;
 	};
 
+	/** @private */
 	struct void_promise_type : base_promise_type {
 		void return_void();
 	};
 
+	/** @private */
 	struct value_promise_type : base_promise_type {
 		std::optional<T> ret_val;
 
@@ -72,6 +76,7 @@ public:
 	void await_suspend(std::coroutine_handle<> h);
 };
 
+/** @private */
 class suspend_t {
 public:
 	bool await_ready() noexcept {

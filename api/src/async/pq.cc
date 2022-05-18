@@ -63,6 +63,7 @@ coro<void> connection::rollback() {
 }
 
 /* ==== async::pq::connection_pool::impl ==== */
+/** @private */
 struct connection_pool::impl {
 	std::string db_path;
 	std::size_t conns_desired, conns_alive = 0;

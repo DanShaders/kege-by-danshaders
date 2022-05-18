@@ -2,6 +2,7 @@
 using namespace routes;
 
 /* ==== routes::route_storage ==== */
+/** @private */
 struct route_storage::storage_t {
 public:
 	struct node {

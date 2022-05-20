@@ -3,7 +3,7 @@ CREATE SEQUENCE seq_id;
 CREATE TABLE task_types (
 	id bigint DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY,
 	obsolete bool,
-	short_name text,
+	short_name integer,
 	full_name text,
 	grading integer,
 	scale_factor double precision CHECK (scale_factor > 0),

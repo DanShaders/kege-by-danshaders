@@ -22,8 +22,9 @@ static coro<void> handle_get(fcgx::request_t *r) {
 		co_return;
 	}
 
-	auto [id, task_type, parent, task, answer_rows, answer_cols, answer, deleted] =
-		q.expect1<int64_t, int64_t, int64_t, std::string_view, int, int, std::string_view, bool>();
+	auto [id, task_type, parent, task, tag, answer_rows, answer_cols, answer, deleted] =
+		q.expect1<int64_t, int64_t, int64_t, std::string_view, std::string_view, int, int,
+				  std::string_view, bool>();
 
 	api::Task msg{{
 		.id = id,
@@ -33,6 +34,7 @@ static coro<void> handle_get(fcgx::request_t *r) {
 		.answer_rows = answer_rows,
 		.answer_cols = answer_cols,
 		.answer = std::string(answer),
+		.tag = std::string(tag),
 	}};
 
 	auto q2 = co_await db.exec(
@@ -60,7 +62,7 @@ const char SHA3_256_EMPTY[] =
 const char TASK_UPDATE_SQL[] =
 	"INSERT INTO tasks ("
 	  "id, task_type, parent, task, answer_rows, "
-	  "answer_cols, answer"
+	  "answer_cols, answer, tag"
 	") "
 	"VALUES "
 	  "("
@@ -70,7 +72,8 @@ const char TASK_UPDATE_SQL[] =
 	    "(CASE WHEN $7 THEN $6 ELSE NULL END), "
 	    "(CASE WHEN $9 THEN $8::integer ELSE NULL END), "
 	    "(CASE WHEN $11 THEN $10::integer ELSE NULL END), "
-	    "(CASE WHEN $13 THEN $12::bytea ELSE NULL END)"
+	    "(CASE WHEN $13 THEN $12::bytea ELSE NULL END), "
+	    "(CASE WHEN $15 THEN $14 ELSE NULL END)"
 	  ")"
 	"ON CONFLICT (id) DO UPDATE SET "
 	  "task_type = (CASE WHEN $3 THEN excluded ELSE tasks END).task_type, "
@@ -78,7 +81,8 @@ const char TASK_UPDATE_SQL[] =
 	  "task = (CASE WHEN $7 THEN excluded ELSE tasks END).task, "
 	  "answer_rows = (CASE WHEN $9 THEN excluded ELSE tasks END).answer_rows, "
 	  "answer_cols = (CASE WHEN $11 THEN excluded ELSE tasks END).answer_cols, "
-	  "answer = (CASE WHEN $13 THEN excluded ELSE tasks END).answer";
+	  "answer = (CASE WHEN $13 THEN excluded ELSE tasks END).answer, "
+	  "tag = (CASE WHEN $15 THEN excluded ELSE tasks END).tag";
 
 const char ATTACHMENT_UPDATE_SQL[] =
 	"INSERT INTO task_attachments ("
@@ -119,7 +123,8 @@ static coro<void> handle_update(fcgx::request_t *r) {
 	co_await db.exec(TASK_UPDATE_SQL, task.id(), task.task_type(), task.has_task_type(),
 					 task.parent(), task.has_parent(), task.text(), task.has_text(),
 					 task.answer_rows(), task.has_answer_rows(), task.answer_cols(),
-					 task.has_answer_cols(), task.answer(), task.has_answer());
+					 task.has_answer_cols(), task.answer(), task.has_answer(), task.tag(),
+					 task.has_tag());
 	for (const auto &attachment : task.attachments()) {
 		std::string hash = SHA3_256_EMPTY;
 		if (attachment.contents().size()) {

@@ -15,6 +15,7 @@ CREATE TABLE tasks (
 	task_type bigint,
 	parent bigint,
 	task text,
+	tag text,
 	answer_rows integer CHECK (answer_rows > 0 AND answer_rows <= 10),
 	answer_cols integer CHECK (answer_cols > 0 AND answer_cols <= 10),
 	answer bytea,

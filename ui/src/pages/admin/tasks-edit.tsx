@@ -173,6 +173,11 @@ class Page extends Component<PageSettings> {
             </select>
           </div>
 
+          <label class={S_LABEL}>Описание</label>
+          <div class={S_INPUT}>
+            <textarea ref class="form-control" rows="1" />
+          </div>
+
           <label class={S_LABEL}>Текст</label>
           <div class={S_INPUT}>
             <div class="border rounded focusable" style="background-color: white;">
@@ -220,8 +225,9 @@ class Page extends Component<PageSettings> {
       </div>
     ).asElement(elems) as HTMLDivElement;
 
-    const [select, textEditor, filesList, filenameInput, fileInput] = elems as [
+    const [select, tagInput, textEditor, filesList, filenameInput, fileInput] = elems as [
       HTMLSelectElement,
+      HTMLTextAreaElement,
       TextEditorComponent,
       HTMLDivElement,
       HTMLTextAreaElement,
@@ -241,6 +247,9 @@ class Page extends Component<PageSettings> {
 
     select.addEventListener("change", () => {
       this.settings.taskType = parseInt(select.value, 10);
+    });
+    tagInput.addEventListener("change", () => {
+      this.settings.tag = tagInput.value;
     });
     return elem;
   }

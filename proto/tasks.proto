@@ -15,6 +15,7 @@ message Task {
 	optional int32 answer_rows = 5;
 	optional int32 answer_cols = 6;
 	optional bytes answer = 7;
+	optional string tag = 9;
 
 	message Attachment {
 		int64 id = 1;

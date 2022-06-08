@@ -8,9 +8,11 @@
 #include "utils/api.h"
 #include "utils/common.h"
 #include "utils/crypto.h"
+#include "utils/html.h"
 using async::coro;
 
-static coro<void> handle_get(fcgx::request_t *r) {
+namespace {
+coro<void> handle_get(fcgx::request_t *r) {
 	auto db = co_await async::pq::connection_pool::local->get_connection();
 	co_await routes::require_auth(db, r, routes::PERM_VIEW_TASKS);
 
@@ -109,7 +111,61 @@ const char ATTACHMENT_UPDATE_SQL[] =
 	"RETURNING (xmax = 0)";
 // clang-format on
 
-static coro<void> handle_update(fcgx::request_t *r) {
+const lxb_char_t *operator"" _u(const char *str, size_t) {
+	return (const lxb_char_t *) str;
+}
+
+const std::vector<utils::transform_rule> RULES_GATHER_IDS = {
+	{"img[data-id]",
+	 [](lxb_dom_node_t *node, void *ctx) {
+		 auto links = (std::vector<int64_t> *) ctx;
+
+		 size_t attr_length;
+		 auto elem = lxb_dom_interface_element(node);
+		 auto value =
+			 (const char *) lxb_dom_element_get_attribute(elem, "data-id"_u, 7, &attr_length);
+
+		 int64_t id = -1;
+		 std::from_chars(value, value + attr_length, id);
+		 links->push_back(id);
+		 return node;
+	 }},
+};
+
+const std::vector<utils::transform_rule> RULES_SANITIZE = {
+	{"img",
+	 [](lxb_dom_node_t *node, void *ctx) -> lxb_dom_node_t * {
+		 auto id_map = (std::map<int64_t, std::string> *) ctx;
+
+		 size_t attr_length;
+		 auto elem = lxb_dom_interface_element(node);
+		 auto value =
+			 (const char *) lxb_dom_element_get_attribute(elem, "data-id"_u, 7, &attr_length);
+
+		 int64_t id = -1;
+		 std::from_chars(value, value + attr_length, id);
+
+		 if (auto it = id_map->find(id); it != id_map->end()) {
+			 auto url = "api/attachment/" + it->second;
+			 lxb_dom_element_set_attribute(elem, "src"_u, 3, (const lxb_char_t *) url.data(),
+										   url.size());
+			 return node;
+		 } else {
+			 return nullptr;
+		 }
+	 }},
+	// TODO: actually sanitize
+};
+
+utils::transform_rules TRANSFORM_GATHER_IDS = nullptr;
+utils::transform_rules TRANSFORM_SANITIZE = nullptr;
+
+void compile_rules() {
+	TRANSFORM_GATHER_IDS = utils::compile_transform_rules(RULES_GATHER_IDS);
+	TRANSFORM_SANITIZE = utils::compile_transform_rules(RULES_SANITIZE);
+}
+
+coro<void> handle_update(fcgx::request_t *r) {
 	auto db = co_await async::pq::connection_pool::local->get_connection();
 	co_await routes::require_auth(db, r, routes::PERM_WRITE_TASKS);
 
@@ -120,11 +176,7 @@ static coro<void> handle_update(fcgx::request_t *r) {
 	std::vector<std::pair<std::string, const std::string &>> files;
 
 	co_await db.transaction();
-	co_await db.exec(TASK_UPDATE_SQL, task.id(), task.task_type(), task.has_task_type(),
-					 task.parent(), task.has_parent(), task.text(), task.has_text(),
-					 task.answer_rows(), task.has_answer_rows(), task.answer_cols(),
-					 task.has_answer_cols(), task.answer(), task.has_answer(), task.tag(),
-					 task.has_tag());
+
 	for (const auto &attachment : task.attachments()) {
 		std::string hash = SHA3_256_EMPTY;
 		if (attachment.contents().size()) {
@@ -141,6 +193,41 @@ static coro<void> handle_update(fcgx::request_t *r) {
 			files.push_back({hash, attachment.contents()});
 		}
 	}
+
+	std::string task_text;
+	if (task.has_text()) {
+		if (!TRANSFORM_GATHER_IDS) {
+			compile_rules();
+		}
+
+		utils::html_fragment text(task.text());
+		std::vector<int64_t> ids;
+		text.transform(TRANSFORM_GATHER_IDS, &ids);
+
+		std::map<int64_t, std::string> id_map;
+		if (ids.size()) {
+			std::string query =
+				"SELECT id, hash FROM task_attachments WHERE task_id = $1 AND id IN (VALUES ";
+			for (auto id : ids) {
+				query += "(" + std::to_string(id) + "),";
+			}
+			query.pop_back();
+			query.push_back(')');
+			auto q = co_await db.exec(query.data(), task.id());
+			for (auto [id, hash] : q.iter<int64_t, std::string_view>()) {
+				id_map[id] = hash;
+			}
+		}
+		text.transform(TRANSFORM_SANITIZE, &id_map);
+		task.set_text(text.get_html());
+	}
+
+	co_await db.exec(TASK_UPDATE_SQL, task.id(), task.task_type(), task.has_task_type(),
+					 task.parent(), task.has_parent(), task.text(), task.has_text(),
+					 task.answer_rows(), task.has_answer_rows(), task.answer_cols(),
+					 task.has_answer_cols(), task.answer(), task.has_answer(), task.tag(),
+					 task.has_tag());
+
 	co_await db.commit();
 
 	for (const auto &[hash, content] : files) {
@@ -151,6 +238,7 @@ static coro<void> handle_update(fcgx::request_t *r) {
 	}
 	utils::ok(r, utils::empty_payload{});
 }
+}  // namespace
 
 ROUTE_REGISTER("/tasks/$id", handle_get)
 ROUTE_REGISTER("/tasks/update", handle_update)

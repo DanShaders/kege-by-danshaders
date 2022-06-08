@@ -42,6 +42,7 @@ set(
 	src/utils/api.cc
 	src/utils/common.cc
 	src/utils/crypto.cc
+	src/utils/html.cc
 
 	routes/_basic.cc
 	routes/_wrap.cc
@@ -76,7 +77,9 @@ if (KEGE_EXCEPTION_STACKTRACE)
 		CONFIGURE_COMMAND
 			<SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
 		UPDATE_COMMAND ""
-		BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libbacktrace.a
+		EXCLUDE_FROM_ALL
+		BUILD_BYPRODUCTS
+			<INSTALL_DIR>/lib/libbacktrace.a
 	)
 	ExternalProject_Get_property(LIBBACKTRACE INSTALL_DIR)
 	set(BACKTRACE_INCLUDE_DIRS "${INSTALL_DIR}/include")
@@ -102,6 +105,25 @@ ExternalProject_Get_property(CPP_PROTOC_INITIALIZERS INSTALL_DIR)
 set(CPP_PROTOC_INITIALIZERS_PATH "${INSTALL_DIR}/bin")
 
 
+# ==== Target lexbor ====
+ExternalProject_Add(
+	LEXBOR
+	GIT_REPOSITORY "https://github.com/lexbor/lexbor.git"
+	GIT_TAG "9c6915b98b0c33ac140bc85cc2c9b9eb0a93751b"
+	CMAKE_ARGS
+		-DLEXBOR_BUILD_SHARED=OFF
+		-DCMAKE_BUILD_TYPE=Release
+		-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+	UPDATE_COMMAND ""
+	EXCLUDE_FROM_ALL
+	BUILD_BYPRODUCTS
+		<INSTALL_DIR>/lib/liblexbor_static.a
+)
+ExternalProject_Get_property(LEXBOR INSTALL_DIR)
+set(LEXBOR_INCLUDE_DIRS "${INSTALL_DIR}/include")
+set(LEXBOR_LIBRARIES
+	"${INSTALL_DIR}/lib/liblexbor_static.a")
+
 # ==== *.proto -> *.pb.cc ====
 find_package(Protobuf REQUIRED)
 
@@ -123,7 +145,7 @@ endforeach()
 # ==== Target KEGE_BASE ====
 add_library(KEGE_BASE INTERFACE)
 
-add_dependencies(KEGE_BASE CPP_PROTOC_INITIALIZERS LIBBACKTRACE)
+add_dependencies(KEGE_BASE CPP_PROTOC_INITIALIZERS LIBBACKTRACE LEXBOR)
 pkg_check_modules(CURL REQUIRED libcurl)
 pkg_check_modules(FCGI REQUIRED fcgi)
 pkg_check_modules(NLOHMANN_JSON REQUIRED nlohmann_json)
@@ -137,15 +159,16 @@ target_include_directories(
 	"${PROJECT_BINARY_DIR}"
 	"${CMAKE_CURRENT_BINARY_DIR}"
 	"${PROJECT_SOURCE_DIR}/include"
-	
+
 	${BACKTRACE_INCLUDE_DIRS}
 	${CURL_INCLUDE_DIRS}
 	${FCGI_INCLUDE_DIRS}
+	${LEXBOR_INCLUDE_DIRS}
 	${NLOHMANN_JSON_INCLUDE_DIRS}
 	${OPENSSL_INCLUDE_DIRS}
-	${URIPARSER_INCLUDE_DIRS}
-	${PROTOBUF_INCLUDE_DIRS}
 	${PQ_INCLUDE_DIRS}
+	${PROTOBUF_INCLUDE_DIRS}
+	${URIPARSER_INCLUDE_DIRS}
 )
 
 target_compile_options(
@@ -160,11 +183,12 @@ target_link_libraries(
 	${BACKTRACE_LIBRARIES}
 	${CURL_LIBRARIES}
 	${FCGI_LIBRARIES}
+	${LEXBOR_LIBRARIES}
 	${NLOHMANN_JSON_LIBRARIES}
 	${OPENSSL_LIBRARIES}
-	${URIPARSER_LIBRARIES}
-	${PROTOBUF_LIBRARIES}
 	${PQ_LIBRARIES}
+	${PROTOBUF_LIBRARIES}
+	${URIPARSER_LIBRARIES}
 	pthread
 	dl
 	ev

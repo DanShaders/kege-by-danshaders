@@ -13,6 +13,7 @@ using namespace stacktrace;
 
 namespace {
 backtrace_state *state;
+bool inited = false;
 
 void init_error_cb(void *, const char *msg, int errnum) {
 	logging::error("stacktrace init failed: " + std::to_string(errnum) + msg);
@@ -101,6 +102,13 @@ extern "C" __attribute__((nothrow)) void __cxa_free_exception(void *vptr) {
 
 extern "C" __attribute__((nothrow)) void __cxa_throw(void *thrown_exception, std::type_info *tinfo,
 													 void (*dest)(void *)) {
+	if (!inited) [[unlikely]] {
+		// Exception during static initialization, it is unlikely that we will ever want a
+		// stacktrace of it.
+		((decltype(real__cxa_throw)) dlsym(RTLD_NEXT, "__cxa_throw"))(thrown_exception, tinfo,
+																	  dest);
+	}
+
 	exception_st *st = nullptr;
 	backtrace_full(state, 1, (backtrace_full_callback) stacktrace_entry_cb, stacktrace_error_cb,
 				   &st);
@@ -116,6 +124,7 @@ void stacktrace::init() {
 	if (!state || !real__cxa_throw) {
 		throw std::exception();
 	}
+	inited = true;
 }
 
 const exception_st *stacktrace::get_stacktrace(const std::exception_ptr &ptr) {

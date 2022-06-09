@@ -115,6 +115,18 @@ const lxb_char_t *operator"" _u(const char *str, size_t) {
 	return (const lxb_char_t *) str;
 }
 
+const std::vector<std::string> ALLOWED_TAGS = {
+	"a", "b", "i", "s", "u", "div", "img", "font", "sub", "sup", "br", "formula", "pre",
+};
+
+const auto CATCH_ALL_SELECTOR = ([] {
+	std::string slctr;
+	for (auto tag : ALLOWED_TAGS) {
+		slctr += ":not(" + tag + ")";
+	}
+	return slctr;
+})();
+
 const std::vector<utils::transform_rule> RULES_GATHER_IDS = {
 	{"img[data-id]",
 	 [](lxb_dom_node_t *node, void *ctx) {
@@ -131,6 +143,35 @@ const std::vector<utils::transform_rule> RULES_GATHER_IDS = {
 		 return node;
 	 }},
 };
+
+auto use_tag(std::map<std::string_view, std::set<std::string_view>> allowed_attrs = {}) {
+	return [=](lxb_dom_node_t *node, void *) {
+		auto elem = lxb_dom_interface_element(node);
+
+		for (auto attr = elem->first_attr; attr;) {
+			size_t key_size, value_size;
+			auto key = (const char *) lxb_dom_attr_qualified_name(attr, &key_size);
+			auto value = (const char *) lxb_dom_attr_value(attr, &value_size);
+			auto next = attr->next;
+
+			auto it = allowed_attrs.find({key, key_size});
+			bool is_allowed = true;
+			if (it != allowed_attrs.end()) {
+				if (it->second.size() && !it->second.count({value, value_size})) {
+					is_allowed = false;
+				}
+			} else {
+				is_allowed = false;
+			}
+			if (!is_allowed) {
+				lxb_dom_element_attr_remove(elem, attr);
+			}
+			attr = next;
+		}
+
+		return node;
+	};
+}
 
 const std::vector<utils::transform_rule> RULES_SANITIZE = {
 	{"img",
@@ -154,7 +195,13 @@ const std::vector<utils::transform_rule> RULES_SANITIZE = {
 			 return nullptr;
 		 }
 	 }},
-	// TODO: actually sanitize
+
+	{"br, b, i, u, s, sub, sup, pre, formula", use_tag()},
+	{"div", use_tag({{"align", {"left", "center", "right", "justify"}}})},
+	{"img", use_tag({{"src", {}}})},
+	{"a", use_tag({{"href", {}}})},
+	{"font", use_tag({{"size", {"1", "2", "3", "4", "5", "6"}}, {"color", {}}})},
+	{CATCH_ALL_SELECTOR, [](auto...) { return nullptr; }},
 };
 
 utils::transform_rules TRANSFORM_GATHER_IDS = nullptr;

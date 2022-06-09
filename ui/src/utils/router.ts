@@ -39,14 +39,14 @@ export class Router {
 
   pageInstance?: Page;
 
-  private static hashChangeListener(): void {
-    Router.instance.redirect(location.hash.substr(1), false, true);
+  private static locationChangeListener(e: Event): void {
+    e.preventDefault();
+    Router.instance.redirect(location.pathname.substr(1) + location.search, false, true);
   }
 
   registerListener(): void {
-    window.addEventListener("hashchange", Router.hashChangeListener);
+    window.addEventListener("popstate", Router.locationChangeListener);
     window.addEventListener("beforeunload", (e): boolean => {
-      console.log("here", this.pageInstance);
       if (this.pageInstance) {
         if (!this.pageInstance.unload()) {
           e.preventDefault();
@@ -75,7 +75,7 @@ export class Router {
   }
 
   setUrl(url: string): void {
-    history.replaceState(undefined, "", "#" + url);
+    history.replaceState(undefined, "", "/" + url);
     this.currentURL = url;
     this.currentPage = url.split("?", 2)[0];
   }
@@ -101,7 +101,7 @@ export class Router {
     let handler = this.publicRoutes.get(page);
 
     if (handler && !historyUpdated) {
-      history.pushState(undefined, "", "#" + url);
+      history.pushState(undefined, "", "/" + url);
     }
     if (isPrivate) {
       handler ??= this.privateRoutes.get(page);
@@ -114,6 +114,7 @@ export class Router {
       if (page === "404") {
         throw new RouteNotFoundError(`Route for '${url}' is not found`);
       } else {
+        history.pushState(undefined, "", "/" + url);
         this.goTo("404?url=" + encodeURIComponent(url));
       }
     }

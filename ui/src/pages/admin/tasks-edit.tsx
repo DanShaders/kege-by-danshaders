@@ -101,7 +101,7 @@ class TaskEditComponent extends Component<TaskEditSettings> {
       listProviderOf("tbody"),
       factoryOf(Attachment),
       (obj): diff.Task.DiffableAttachment & AttachmentSettings => {
-        const realLink = "api/attachment/" + obj.hash,
+        const realLink = "/api/attachment/" + obj.hash,
           fakeLink = getLink();
         this.settings.realMap.add(obj.id, realLink);
         this.settings.fakeMap.add(obj.id, fakeLink);
@@ -275,7 +275,7 @@ class TaskEditPage extends SynchronizablePage<diff.DiffableTask> {
       this.params.set("id", dbId().toString());
       Router.instance.updateUrl();
     } else {
-      raw = await requestU(Task, "api/tasks/" + this.params.get("id"));
+      raw = await requestU(Task, "/api/tasks/" + this.params.get("id"));
     }
 
     const id = parseInt(this.params.get("id")!);
@@ -285,7 +285,7 @@ class TaskEditPage extends SynchronizablePage<diff.DiffableTask> {
     this.syncController = new SyncController({
       statusElem: statusElem,
       remote: new diff.DiffableTask(raw),
-      saveURL: "api/tasks/update",
+      saveURL: "/api/tasks/update",
     });
 
     const settings = this.syncController.getLocal();

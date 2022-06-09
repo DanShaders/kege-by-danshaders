@@ -50,7 +50,7 @@ let cachedTaskTypes: TaskTypeListResponse.AsObject;
 
 export async function getTaskTypes(): Promise<TaskTypeListResponse.AsObject> {
   if (!cachedTaskTypes) {
-    cachedTaskTypes = (await requestU(TaskTypeListResponse, "api/task-types/list")).toObject();
+    cachedTaskTypes = (await requestU(TaskTypeListResponse, "/api/task-types/list")).toObject();
   }
   return cachedTaskTypes;
 }

@@ -187,7 +187,7 @@ const std::vector<utils::transform_rule> RULES_SANITIZE = {
 		 std::from_chars(value, value + attr_length, id);
 
 		 if (auto it = id_map->find(id); it != id_map->end()) {
-			 auto url = "api/attachment/" + it->second;
+			 auto url = "/api/attachment/" + it->second;
 			 lxb_dom_element_set_attribute(elem, "src"_u, 3, (const lxb_char_t *) url.data(),
 										   url.size());
 			 return node;

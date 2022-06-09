@@ -75,11 +75,12 @@ async function showLoginPage(params: URLSearchParams): Promise<void> {
     HTMLInputElement
   ];
 
-  loginForm.addEventListener("submit", async (): Promise<boolean> => {
+  loginForm.addEventListener("submit", async (e): Promise<boolean> => {
+    e.preventDefault();
     toggleLoadingScreen(true, "login");
     loginSubmit.setAttribute("disabled", "");
     const data = new LoginRequest().setUsername(loginField.value).setPassword(passwordField.value);
-    const [code, result] = await request(UserInfo, "api/user/login", data);
+    const [code, result] = await request(UserInfo, "/api/user/login", data);
 
     if (code !== ErrorCode.OK || !result) {
       if (code === ErrorCode.INVALID_CREDENTIALS) {
@@ -107,7 +108,7 @@ async function logout(): Promise<void> {
     throw new Error("No userInfo");
   }
   const data = new LogoutRequest().setUserId(userInfo.userId);
-  await requestU(EmptyPayload, "api/user/logout", data);
+  await requestU(EmptyPayload, "/api/user/logout", data);
   setGlobalUserInfo(null);
   await Router.instance.goTo("#update-header");
   Router.instance.redirect("login?logged_out");

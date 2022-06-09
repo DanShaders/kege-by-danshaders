@@ -43,12 +43,21 @@ async function showLoginPage(params: URLSearchParams): Promise<void> {
                   type="text"
                   spellcheck="false"
                   placeholder="&nbsp;"
+                  autocomplete="username"
                 />
                 <label for="loginField">Логин</label>
               </div>
 
               <div class="form-floating mb-2">
-                <input ref required class="form-control" id="passwordField" type="password" placeholder="&nbsp;" />
+                <input
+                  ref
+                  required
+                  class="form-control"
+                  id="passwordField"
+                  type="password"
+                  placeholder="&nbsp;"
+                  autocomplete="current-password"
+                />
                 <label for="passwordField">Пароль</label>
               </div>
 

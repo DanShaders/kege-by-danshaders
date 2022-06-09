@@ -37,10 +37,7 @@ const ATTRIBUTES_WHITELIST = new Set([
   "codeblock",
 ]);
 
-const EMBED_WHITELIST = new Set([
-  "formula",
-  "image",
-]);
+const EMBED_WHITELIST = new Set(["formula", "image"]);
 
 const QUILL_COLORS = [
   "#000000",
@@ -168,7 +165,6 @@ export class TextEditorComponent extends Component<TextEditorSettings> {
         },
         uploader: {
           handler: (range: RangeStatic, files: File[]): void => {
-            console.log("handler", range, files);
             const delta = new Delta().retain(range.index).delete(range.length);
             for (const file of files) {
               const id = this.settings.uploadImage(file);

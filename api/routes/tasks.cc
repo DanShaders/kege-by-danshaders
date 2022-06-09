@@ -221,6 +221,7 @@ coro<void> handle_update(fcgx::request_t *r) {
 		utils::err(r, api::INVALID_QUERY);
 	}
 	std::vector<std::pair<std::string, const std::string &>> files;
+	std::map<int64_t, std::string> id_map;
 
 	co_await db.transaction();
 
@@ -229,16 +230,7 @@ coro<void> handle_update(fcgx::request_t *r) {
 		if (attachment.contents().size()) {
 			hash = utils::b16_encode(utils::sha3_256(attachment.contents()));
 		}
-		auto [is_inserted] =
-			(co_await db.exec(ATTACHMENT_UPDATE_SQL, attachment.id(), task.id(),
-							  attachment.filename(), attachment.has_filename(),
-							  attachment.mime_type(), attachment.has_mime_type(),
-							  attachment.shown_to_user(), attachment.has_shown_to_user(),
-							  attachment.deleted(), attachment.has_deleted(), hash))
-				.expect1<int>();
-		if (is_inserted) {
-			files.push_back({hash, attachment.contents()});
-		}
+		id_map[attachment.id()] = hash;
 	}
 
 	std::string task_text;
@@ -251,7 +243,6 @@ coro<void> handle_update(fcgx::request_t *r) {
 		std::vector<int64_t> ids;
 		text.transform(TRANSFORM_GATHER_IDS, &ids);
 
-		std::map<int64_t, std::string> id_map;
 		if (ids.size()) {
 			std::string query =
 				"SELECT id, hash FROM task_attachments WHERE task_id = $1 AND id IN (VALUES ";
@@ -274,6 +265,20 @@ coro<void> handle_update(fcgx::request_t *r) {
 					 task.answer_rows(), task.has_answer_rows(), task.answer_cols(),
 					 task.has_answer_cols(), task.answer(), task.has_answer(), task.tag(),
 					 task.has_tag());
+
+	for (const auto &attachment : task.attachments()) {
+		auto hash = id_map[attachment.id()];
+		auto [is_inserted] =
+			(co_await db.exec(ATTACHMENT_UPDATE_SQL, attachment.id(), task.id(),
+							  attachment.filename(), attachment.has_filename(),
+							  attachment.mime_type(), attachment.has_mime_type(),
+							  attachment.shown_to_user(), attachment.has_shown_to_user(),
+							  attachment.deleted(), attachment.has_deleted(), hash))
+				.expect1<int>();
+		if (is_inserted) {
+			files.push_back({hash, attachment.contents()});
+		}
+	}
 
 	co_await db.commit();
 

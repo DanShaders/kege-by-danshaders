@@ -8,7 +8,7 @@ import { getTaskTypes } from "admin";
 import { dbId } from "utils/common";
 import BidirectionalMap from "utils/bidirectional-map";
 import { Router } from "utils/router";
-import { SyncController } from "utils/sync-controller";
+import { SyncController, SynchronizablePage } from "utils/sync-controller";
 import { requestU, EmptyPayload } from "utils/requests";
 import { toggleLoadingScreen } from "utils/common";
 import { ButtonIcon } from "components/button-icon";
@@ -19,7 +19,7 @@ import { LengthChangeEvent } from "utils/events";
 
 import * as jsx from "jsx";
 
-type PageSettings = diff.DiffableTask & {
+type TaskEditSettings = diff.DiffableTask & {
   taskTypes: TaskTypeListResponse.AsObject;
   uploadImage: (file: File | Blob) => number;
   realMap: BidirectionalMap<number, string>;
@@ -82,7 +82,9 @@ class Attachment extends SetEntry<diff.Task.DiffableAttachment, AttachmentSettin
   }
 }
 
-class Page extends Component<PageSettings> {
+class TaskEditComponent extends Component<TaskEditSettings> {
+  textEditor?: TextEditorComponent;
+
   createElement(): HTMLElement {
     const elems: any[] = [];
 
@@ -233,6 +235,7 @@ class Page extends Component<PageSettings> {
       HTMLTextAreaElement,
       FileSelectComponent
     ];
+    this.textEditor = textEditor;
 
     attachmentsSet.addEventListener("lengthchange", (({ length, delta }: LengthChangeEvent) => {
       if (!length) {
@@ -253,58 +256,74 @@ class Page extends Component<PageSettings> {
     });
     return elem;
   }
+
+  flush() {
+    this.textEditor?.flush();
+  }
 }
 
-async function showTaskListPage(params: URLSearchParams): Promise<void> {
-  requireAuth(1);
+class TaskEditPage extends SynchronizablePage<diff.DiffableTask> {
+  static URL = "admin/tasks/edit";
 
-  let raw = new Task();
-  if (!params.has("id")) {
-    params.set("id", dbId().toString());
-    Router.instance.setUrl(Router.instance.currentPage + "?" + params.toString());
-  } else {
-    raw = await requestU(Task, "api/tasks/" + params.get("id"));
+  taskEdit?: TaskEditComponent;
+
+  override async mount(): Promise<void> {
+    requireAuth(1);
+    
+    let raw = new Task();
+    if (!this.params.has("id")) {
+      this.params.set("id", dbId().toString());
+      Router.instance.updateUrl();
+    } else {
+      raw = await requestU(Task, "api/tasks/" + this.params.get("id"));
+    }
+
+    const id = parseInt(this.params.get("id")!);
+    raw.setId(id);
+
+    const statusElem = document.createElement("span");
+    this.syncController = new SyncController({
+      statusElem: statusElem,
+      remote: new diff.DiffableTask(raw),
+      saveURL: "api/tasks/update",
+    });
+
+    const settings = this.syncController.getLocal();
+    settings.answerRows ||= 1;
+    settings.answerCols ||= 1;
+    this.syncController.supressSave = false;
+
+    const pageSettings = Object.assign(settings, {
+      taskTypes: await getTaskTypes(),
+      uploadImage: () => 0,
+      realMap: new BidirectionalMap<number, string>(),
+      fakeMap: new BidirectionalMap<number, string>(),
+    });
+    this.taskEdit = new TaskEditComponent(pageSettings, null);
+
+    const redirectBack = (): never => Router.instance.redirect(this.params.get("back") ?? "");
+    (
+      <>
+        <div class="row align-items-end g-0 mb-0 mb-md-3">
+          <h2 class="col-md mb-0">
+            <ButtonIcon
+              settings={{ title: "Назад", icon: "icon-back", margins: [0, 5, 2, 0], onClick: redirectBack }}
+            />
+            Редактирование задания
+          </h2>
+          <span class="col-md-auto text-end">&nbsp;{statusElem}</span>
+        </div>
+
+        {this.taskEdit.elem}
+      </>
+    ).replaceContentsOf("main");
+
+    toggleLoadingScreen(false);
   }
 
-  const id = parseInt(params.get("id")!);
-  raw.setId(id);
-
-  const statusElem = document.createElement("span");
-  const syncController = new SyncController({
-    statusElem: statusElem,
-    remote: new diff.DiffableTask(raw),
-    saveURL: "api/tasks/update",
-  });
-
-  const settings = syncController.getLocal();
-  settings.answerRows ||= 1;
-  settings.answerCols ||= 1;
-  syncController.supressSave = false;
-
-  const pageSettings = Object.assign(settings, {
-    taskTypes: await getTaskTypes(),
-    uploadImage: () => 0,
-    realMap: new BidirectionalMap<number, string>(),
-    fakeMap: new BidirectionalMap<number, string>(),
-  });
-  const page = new Page(pageSettings, null);
-
-  const redirectBack = (): never => Router.instance.redirect(params.get("back") ?? "");
-  (
-    <>
-      <div class="row align-items-end g-0 mb-0 mb-md-3">
-        <h2 class="col-md mb-0">
-          <ButtonIcon settings={{ title: "Назад", icon: "icon-back", margins: [0, 5, 2, 0], onClick: redirectBack }} />
-          Редактирование задания
-        </h2>
-        <span class="col-md-auto text-end">&nbsp;{statusElem}</span>
-      </div>
-
-      {page.elem}
-    </>
-  ).replaceContentsOf("main");
-
-  toggleLoadingScreen(false);
+  override flush(): void {
+    this.taskEdit?.flush();
+  }
 }
 
-Router.instance.addRoute("admin/tasks/edit", showTaskListPage);
+Router.instance.registerPage(TaskEditPage);

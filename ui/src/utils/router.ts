@@ -1,9 +1,33 @@
-import { toggleLoadingScreen, LoadingReason } from "../utils/common";
+import { toggleLoadingScreen, LoadingReason } from "./common";
+import { nonNull } from "./assert";
 
 type Handler = (params: URLSearchParams) => Promise<void>;
 
 export class RedirectNotification {}
 export class RouteNotFoundError extends Error {}
+
+export abstract class Page {
+  params: URLSearchParams;
+
+  constructor(params: URLSearchParams) {
+    this.params = params;
+  }
+
+  abstract mount(): Promise<void>;
+
+  unload(): boolean {
+    return true;
+  }
+
+  async unmount(): Promise<boolean> {
+    return this.unload();
+  }
+}
+
+type PageClass = {
+  URL: string;
+  new (params: URLSearchParams): Page;
+};
 
 export class Router {
   private static _instance: Router;
@@ -13,12 +37,24 @@ export class Router {
   currentURL: string = "";
   currentPage: string = "";
 
+  pageInstance?: Page;
+
   private static hashChangeListener(): void {
     Router.instance.redirect(location.hash.substr(1), false, true);
   }
 
   registerListener(): void {
     window.addEventListener("hashchange", Router.hashChangeListener);
+    window.addEventListener("beforeunload", (e): boolean => {
+      console.log("here", this.pageInstance);
+      if (this.pageInstance) {
+        if (!this.pageInstance.unload()) {
+          e.preventDefault();
+          return (e.returnValue = true);
+        }
+      }
+      return false;
+    });
   }
 
   private constructor() {
@@ -51,6 +87,16 @@ export class Router {
     reason: LoadingReason = "loading"
   ): Promise<void> {
     toggleLoadingScreen(true, reason);
+
+    if (this.pageInstance) {
+      if (!(await this.pageInstance.unmount())) {
+        toggleLoadingScreen(false);
+        location.hash = this.currentURL;
+        return;
+      }
+      this.pageInstance = undefined;
+    }
+
     const [page, params] = url.split("?", 2);
     let handler = this.publicRoutes.get(page);
 
@@ -78,5 +124,16 @@ export class Router {
       await this.goTo(url, isPrivate, historyUpdated, reason);
     }, 0);
     throw new RedirectNotification();
+  }
+
+  updateUrl(): void {
+    this.setUrl(this.currentPage + "?" + nonNull(this.pageInstance).params.toString());
+  }
+
+  registerPage<T extends PageClass>(PageClass: T): void {
+    this.addRoute(PageClass.URL, async (params): Promise<void> => {
+      this.pageInstance = new PageClass(params);
+      await this.pageInstance.mount();
+    });
   }
 }

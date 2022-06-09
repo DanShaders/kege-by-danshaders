@@ -264,7 +264,7 @@ export class TextEditorComponent extends Component<TextEditorSettings> {
       }
     }
 
-    if (index !== -1 && oldIndex !== -1) {
+    if (index !== -1 && oldIndex !== -1 && oldIndex !== index) {
       if (index === EditorTabs.QUILL) {
         this.quill.focus();
       } else if (index === EditorTabs.CODE) {
@@ -295,6 +295,10 @@ export class TextEditorComponent extends Component<TextEditorSettings> {
         {this.previewContainer}
       </TabSelect>
     ).asElement() as HTMLElement;
+  }
+
+  flush(): void {
+    this.onTabSwitch(this.tabsSettings.selectedTab, this.tabsSettings.selectedTab);
   }
 }
 

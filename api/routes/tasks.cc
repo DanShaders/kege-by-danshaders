@@ -127,23 +127,6 @@ const auto CATCH_ALL_SELECTOR = ([] {
 	return slctr;
 })();
 
-const std::vector<utils::transform_rule> RULES_GATHER_IDS = {
-	{"img[data-id]",
-	 [](lxb_dom_node_t *node, void *ctx) {
-		 auto links = (std::vector<int64_t> *) ctx;
-
-		 size_t attr_length;
-		 auto elem = lxb_dom_interface_element(node);
-		 auto value =
-			 (const char *) lxb_dom_element_get_attribute(elem, "data-id"_u, 7, &attr_length);
-
-		 int64_t id = -1;
-		 std::from_chars(value, value + attr_length, id);
-		 links->push_back(id);
-		 return node;
-	 }},
-};
-
 auto use_tag(std::map<std::string_view, std::set<std::string_view>> allowed_attrs = {}) {
 	return [=](lxb_dom_node_t *node, void *) {
 		auto elem = lxb_dom_interface_element(node);
@@ -204,13 +187,7 @@ const std::vector<utils::transform_rule> RULES_SANITIZE = {
 	{CATCH_ALL_SELECTOR, [](auto...) { return nullptr; }},
 };
 
-utils::transform_rules TRANSFORM_GATHER_IDS = nullptr;
-utils::transform_rules TRANSFORM_SANITIZE = nullptr;
-
-void compile_rules() {
-	TRANSFORM_GATHER_IDS = utils::compile_transform_rules(RULES_GATHER_IDS);
-	TRANSFORM_SANITIZE = utils::compile_transform_rules(RULES_SANITIZE);
-}
+std::atomic<utils::transform_rules> TRANSFORM_SANITIZE = nullptr;
 
 coro<void> handle_update(fcgx::request_t *r) {
 	auto db = co_await async::pq::connection_pool::local->get_connection();
@@ -235,26 +212,16 @@ coro<void> handle_update(fcgx::request_t *r) {
 
 	std::string task_text;
 	if (task.has_text()) {
-		if (!TRANSFORM_GATHER_IDS) {
-			compile_rules();
+		if (!TRANSFORM_SANITIZE.load()) {
+			// Might be called concurrently, seems harmless
+			TRANSFORM_SANITIZE = utils::compile_transform_rules(RULES_SANITIZE);
 		}
 
 		utils::html_fragment text(task.text());
-		std::vector<int64_t> ids;
-		text.transform(TRANSFORM_GATHER_IDS, &ids);
-
-		if (ids.size()) {
-			std::string query =
-				"SELECT id, hash FROM task_attachments WHERE task_id = $1 AND id IN (VALUES ";
-			for (auto id : ids) {
-				query += "(" + std::to_string(id) + "),";
-			}
-			query.pop_back();
-			query.push_back(')');
-			auto q = co_await db.exec(query.data(), task.id());
-			for (auto [id, hash] : q.iter<int64_t, std::string_view>()) {
-				id_map[id] = hash;
-			}
+		auto q =
+			co_await db.exec("SELECT id, hash FROM task_attachments WHERE task_id = $1", task.id());
+		for (auto [id, hash] : q.iter<int64_t, std::string_view>()) {
+			id_map[id] = hash;
 		}
 		text.transform(TRANSFORM_SANITIZE, &id_map);
 		task.set_text(text.get_html());

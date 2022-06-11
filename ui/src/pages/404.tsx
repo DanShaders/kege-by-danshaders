@@ -15,7 +15,10 @@ async function show404(params: URLSearchParams): Promise<void> {
       </p>
     </>
   ).replaceContentsOf("main") as [HTMLAnchorElement];
-  link.addEventListener("click", (e) => Router.instance.redirect(""));
+  link.addEventListener("click", (e) => {
+    e.preventDefault();
+    Router.instance.redirect("");
+  });
   toggleLoadingScreen(false);
 }
 

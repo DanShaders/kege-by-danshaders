@@ -3,7 +3,6 @@ import { nonNull } from "./assert";
 
 type Handler = (params: URLSearchParams) => Promise<void>;
 
-export class RedirectNotification {}
 export class RouteNotFoundError extends Error {}
 
 export abstract class Page {
@@ -120,11 +119,10 @@ export class Router {
     }
   }
 
-  redirect(url: string, isPrivate: boolean = true, historyUpdated = false, reason: LoadingReason = "loading"): never {
+  redirect(url: string, isPrivate: boolean = true, historyUpdated = false, reason: LoadingReason = "loading"): void {
     setTimeout(async () => {
       await this.goTo(url, isPrivate, historyUpdated, reason);
     }, 0);
-    throw new RedirectNotification();
   }
 
   updateUrl(): void {

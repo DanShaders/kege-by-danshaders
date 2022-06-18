@@ -1,5 +1,4 @@
-import { Router, RedirectNotification, RouteNotFoundError } from "./utils/router";
-import { formCallbacks } from "./utils/common";
+import { Router, RouteNotFoundError } from "./utils/router";
 
 import "./pages/404";
 import "./pages/common";
@@ -11,12 +10,10 @@ async function initApplication(): Promise<void> {
   try {
     await Router.instance.goTo(location.pathname.substr(1) + location.search, false, true);
   } catch (e) {
-    if (!(e instanceof RedirectNotification)) {
-      if (e instanceof RouteNotFoundError) {
-        await Router.instance.goTo("");
-      } else {
-        formCallbacks.reportUnexpectedError(e);
-      }
+    if (e instanceof RouteNotFoundError) {
+      await Router.instance.goTo("");
+    } else {
+      throw e;
     }
   }
 }

@@ -7,7 +7,7 @@ import * as jsx from "../../utils/jsx";
 async function showTaskListPage(): Promise<void> {
   requireAuth(1);
 
-  const newTaskHandler = (): never =>
+  const newTaskHandler = (): void =>
     Router.instance.redirect("admin/tasks/edit?back=" + encodeURIComponent(Router.instance.currentURL));
   (
     <>

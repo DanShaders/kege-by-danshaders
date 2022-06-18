@@ -301,7 +301,7 @@ class TaskEditPage extends SynchronizablePage<diff.DiffableTask> {
     });
     this.taskEdit = new TaskEditComponent(pageSettings, null);
 
-    const redirectBack = (): never => Router.instance.redirect(this.params.get("back") ?? "");
+    const redirectBack = (): void => Router.instance.redirect(this.params.get("back") ?? "");
     (
       <>
         <div class="row align-items-end g-0 mb-0 mb-md-3">

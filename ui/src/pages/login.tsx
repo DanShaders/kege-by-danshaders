@@ -1,5 +1,5 @@
 import { Router } from "../utils/router";
-import { setupForm, toggleLoadingScreen } from "../utils/common";
+import { toggleLoadingScreen } from "../utils/common";
 import { request, requestU, EmptyPayload } from "../utils/requests";
 import { userInfo, setGlobalUserInfo } from "./common";
 import { Notice, NoticeComponent, NoticeSettings } from "../components/notice";

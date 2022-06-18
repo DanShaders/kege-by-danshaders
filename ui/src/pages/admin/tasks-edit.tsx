@@ -269,7 +269,7 @@ class TaskEditPage extends SynchronizablePage<diff.DiffableTask> {
 
   override async mount(): Promise<void> {
     requireAuth(1);
-    
+
     let raw = new Task();
     if (!this.params.has("id")) {
       this.params.set("id", dbId().toString());

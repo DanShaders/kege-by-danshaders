@@ -42,6 +42,7 @@ set(
 	src/utils/api.cc
 	src/utils/common.cc
 	src/utils/crypto.cc
+	src/utils/filter.cc
 	src/utils/html.cc
 
 	routes/_basic.cc

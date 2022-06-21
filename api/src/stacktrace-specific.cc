@@ -2,39 +2,28 @@
 #include <execinfo.h>
 
 #include "KEGE.h"
-#include "logging.h"
 #include "stacktrace.h"
 using namespace stacktrace;
 
-void print_exception_to(const std::string &what, std::ostream &out, bool is_nested = false) {
-	int status = 0;
+static void print_exception(const std::string &what, fmtlog::LogLevel log_level,
+							bool is_nested = false) {
 	const char *exc_type = __cxxabiv1::__cxa_current_exception_type()->name();
-	char *buff = __cxxabiv1::__cxa_demangle(exc_type, 0, 0, &status);
 
-	if (!is_nested) {
-		out << "Exception in thread \"" << logging::get_thread_name() << "\" ";
-	} else {
-		out << "Caused by: ";
+	std::string_view exc_typename{exc_type};
+	int status = 0;
+	char *buff = __cxxabiv1::__cxa_demangle(exc_type, 0, 0, &status);
+	if (!status) {
+		exc_typename = buff;
+		if (exc_typename.starts_with("std::_Nested_exception<") && exc_typename.ends_with(">")) {
+			exc_typename = exc_typename.substr(23, exc_typename.size() - 24);
+		}
 	}
 
-	if (status) {
-		out << exc_type;
-	} else {
-		auto len = strlen(buff);
-		if (!strncmp(buff, "std::_Nested_exception<", 23) && buff[len - 1] == '>') {
-			out << std::string_view(buff + 23, len - 24);
-		} else {
-			out << buff;
-		}
+	FMTLOG(log_level, "{} {}: {}", !is_nested ? "Exception" : "Caused by", exc_typename, what);
+
+	if (!status) {
 		std::free(buff);
 	}
-
-	if (what.size() &&
-		(what != "std::exception" || (strcmp(exc_type, "St9exception") &&
-									  strcmp(exc_type, "St17_Nested_exceptionISt9exceptionE")))) {
-		out << ": " << what;
-	}
-	out << "\n";
 
 #if KEGE_EXCEPTION_STACKTRACE
 	auto st = stacktrace::get_stacktrace(std::current_exception());
@@ -65,7 +54,8 @@ void print_exception_to(const std::string &what, std::ostream &out, bool is_nest
 					continue;
 				}
 				char **symbol = backtrace_symbols((void **) &s.pc, 1);
-				out << "  at " << (should_print_awaiting ? "[awaiting] " : "") << symbol[0] << "\n";
+				FMTLOG(log_level, "  at {}{}", should_print_awaiting ? "[awaiting] " : "",
+					   symbol[0]);
 				should_print_awaiting = false;
 				std::free(symbol);
 			} else {
@@ -86,8 +76,8 @@ void print_exception_to(const std::string &what, std::ostream &out, bool is_nest
 						continue;
 					}
 				}
-				out << "  at " << (should_print_awaiting ? "[awaiting] " : "") << function << " ("
-					<< file << ":" << s.lineno << ")\n";
+				FMTLOG(log_level, "  at {}{} ({}:{})", should_print_awaiting ? "[awaiting] " : "",
+					   function, file, s.lineno);
 				should_print_awaiting = false;
 			}
 		}
@@ -97,7 +87,7 @@ void print_exception_to(const std::string &what, std::ostream &out, bool is_nest
 }
 
 template <typename T>
-static void log_exception_chain(const T &e, std::ostream &out, bool is_nested = false) {
+static void log_exception_chain(const T &e, fmtlog::LogLevel log_level, bool is_nested = false) {
 	try {
 		if constexpr (std::same_as<T, std::exception_ptr>) {
 			std::rethrow_exception(e);
@@ -105,15 +95,13 @@ static void log_exception_chain(const T &e, std::ostream &out, bool is_nested = 
 			std::rethrow_if_nested(e);
 		}
 	} catch (const std::exception &next) {
-		print_exception_to(next.what(), out, is_nested);
-		log_exception_chain(next, out, true);
-	} catch (...) { print_exception_to("", out, true); }
+		print_exception(next.what(), log_level, is_nested);
+		log_exception_chain(next, log_level, true);
+	} catch (...) { print_exception("", log_level, true); }
 }
 
 void stacktrace::log_unhandled_exception(const std::exception_ptr &e) {
-	std::ostringstream oss;
-	log_exception_chain(e, oss);
-	logging::warn(oss.str());
+	log_exception_chain(e, fmtlog::WRN);
 }
 
 inline std::atomic_bool should_exit;
@@ -125,10 +113,9 @@ void stacktrace::terminate_handler() {
 	should_exit = true;
 
 	if (!std::current_exception()) {
-		logging::error("terminate called without an active exception");
+		loge("terminate called without an active exception");
 	} else {
-		std::ostringstream oss;
-		log_exception_chain(std::current_exception(), oss);
-		logging::error(oss.str());
+		log_exception_chain(std::current_exception(), fmtlog::ERR);
 	}
+	fmtlog::poll();
 }

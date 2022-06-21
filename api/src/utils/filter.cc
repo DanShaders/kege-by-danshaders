@@ -456,7 +456,7 @@ filter::filter(std::string_view filter_str,
 			auto var_name = filter_str.substr(l, r - l);
 			auto it = var_id.find(var_name);
 			if (it == var_id.end()) {
-				pimpl->err << "Unknown variable `" << var_name << "' at index " << l << "\n";
+				pimpl->err << "Unknown variable ‘" << var_name << "’ at index " << l << "\n";
 			} else {
 				info.u = it->second;
 			}
@@ -497,8 +497,8 @@ filter::filter(std::string_view filter_str,
 			ctx.code[i] = OP_LOAD_INT64;
 			ctx.code[i + 1] = (int64_t) &ctx.data_regex[size_t(ctx.code[i + 1])];
 		}
-		if (ctx.code[i] == OP_LOAD_INT64 || ctx.code[i] == OP_LOAD_VAR ||
-			ctx.code[i] == OP_CJUMP || ctx.code[i] == OP_NJUMP) {
+		if (ctx.code[i] == OP_LOAD_INT64 || ctx.code[i] == OP_LOAD_VAR || ctx.code[i] == OP_CJUMP ||
+			ctx.code[i] == OP_NJUMP) {
 			++i;
 		}
 	}

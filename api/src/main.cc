@@ -8,7 +8,6 @@
 #include "async/curl.h"
 #include "async/libev-event-loop.h"
 #include "async/pq.h"
-#include "logging.h"
 #include "routes.h"
 #include "stacktrace.h"
 
@@ -54,18 +53,19 @@ coro<void> perform_request_wrap(FCGX_Request *raw) {
 }
 }  // namespace
 
-signed main() {
+int main() {
 	std::cout << "'KEGE by DanShaders' API (version: " << KEGE_VERSION << ", " BUILD_TYPE " build)"
 			  << std::endl
 			  << "Compiled at " __DATE__ " " __TIME__ " with GCC " __VERSION__ << std::endl
 			  << std::endl;
 
+	stacktrace::init();
 	async::detail::on_unhandled_exception_cb = stacktrace::log_unhandled_exception;
 	std::set_terminate(stacktrace::terminate_handler);
 
-	stacktrace::init();
-	logging::init();
-	logging::set_thread_name("main");
+	fmtlog::setThreadName("main");
+	fmtlog::setHeaderPattern("[{YmdHMSe}] [{t}] {l} ");
+
 	{
 		char const *kege_root = getenv("KEGE_ROOT");
 		conf = config::find_config(kege_root ? kege_root : ".");
@@ -88,9 +88,10 @@ signed main() {
 
 	auto worker_func = [&](std::size_t worker_id) {
 		auto &data = workers[worker_id];
-		logging::set_thread_name("worker-" + std::to_string(worker_id));
+		fmtlog::setThreadName(("worker-" + std::to_string(worker_id)).c_str());
+
 		data.loop->bind_to_thread();
-		logging::info("Worker is ready to process requests");
+		logi("Worker is ready to process requests");
 		data.loop->run(false);
 	};
 
@@ -114,16 +115,20 @@ signed main() {
 	}
 
 	while (!should_exit) {
-		pause();
+		timespec sleep_time{.tv_nsec = (long) 1e8};  // 100 ms
+		nanosleep(&sleep_time, nullptr);
+		fmtlog::poll();
 	}
 
 	for (std::size_t id = 0; id < conf.request_workers; ++id) {
 		workers[id].loop->stop_notify();
 	}
-	logging::info("Waiting for workers to process all remaining requests...");
+
+	logi("Waiting for workers to process all remaining requests...");
+	fmtlog::poll();
+
 	for (std::size_t id = 0; id < conf.request_workers; ++id) {
 		workers[id].t.join();
 	}
-
-	return 0;
+	fmtlog::poll();
 }

@@ -1,8 +1,6 @@
 #include "async/event-loop.h"
 using namespace async;
 
-#include "logging.h"
-
 /* ==== async::event_loop_work ==== */
 event_loop_work::event_loop_work() {}
 

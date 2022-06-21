@@ -4,8 +4,6 @@ using namespace async;
 #include <ev.h>
 
 #include "async/libev-event-loop.h"
-#include "logging.h"
-
 using detail::ev_with_arg;
 
 typedef struct ev_loop ev_loop_t;
@@ -36,9 +34,7 @@ void curl_storage::on_state_update(int new_state, int new_status) {
 		if (effective_url == nullptr) {
 			effective_url = "(nil)";
 		}
-		logging::warn(("curl failed with errno=" + std::to_string(new_status) +
-					   " while requesting " + effective_url)
-						  .c_str());
+		logw("curl failed with errno={} while requesting {}", new_status, effective_url);
 		status = 404;
 	} else if (state < HEADERS_RECIEVED && new_state >= HEADERS_RECIEVED) {
 		long response_code = 0;

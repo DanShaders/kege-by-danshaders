@@ -7,7 +7,6 @@ using namespace fcgx;
 
 #include "async/libev-event-loop.h"
 #include "async/socket.h"
-#include "logging.h"
 #include "utils/common.h"
 
 using async::coro, async::socket_storage, async::detail::ev_with_arg;

@@ -1,6 +1,4 @@
 #include "config.h"
-
-#include "logging.h"
 using namespace config;
 
 void config::from_json(const json &j, hl_socket_address &obj) {
@@ -28,7 +26,7 @@ void config::from_json(const json &j, config_t &obj) {
 
 config_t config::find_config(const std::filesystem::path &path) {
 	auto conf_path = path / "config.json";
-	logging::info("Loading configuration from " + std::string(conf_path) + "...");
+	logi("Loading configuration from {}...", conf_path.string());
 	std::ifstream conf_stream;
 	conf_stream.exceptions(conf_stream.exceptions() | std::ios::failbit);
 	conf_stream.open(conf_path);

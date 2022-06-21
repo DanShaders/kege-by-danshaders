@@ -34,7 +34,6 @@ set(
 	src/async/stackful.cc
 	src/config.cc
 	src/fcgx.cc
-	src/logging.cc
 	src/routes.cc
 	src/routes/session.cc
 	src/stacktrace.cc
@@ -122,8 +121,28 @@ ExternalProject_Add(
 )
 ExternalProject_Get_property(LEXBOR INSTALL_DIR)
 set(LEXBOR_INCLUDE_DIRS "${INSTALL_DIR}/include")
-set(LEXBOR_LIBRARIES
-	"${INSTALL_DIR}/lib/liblexbor_static.a")
+set(LEXBOR_LIBRARIES "${INSTALL_DIR}/lib/liblexbor_static.a")
+
+
+# ==== Target fmtlog ====
+ExternalProject_Add(
+	FMTLOG
+	GIT_REPOSITORY "https://github.com/MengRao/fmtlog.git"
+	GIT_TAG "c96260f7955f68f246401684b253b7eeef08cffd"
+	CMAKE_ARGS
+		-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+	UPDATE_COMMAND ""
+	EXCLUDE_FROM_ALL
+	BUILD_BYPRODUCTS
+		<INSTALL_DIR>/lib/libfmtlog-static.a
+	INSTALL_COMMAND
+		mkdir -p <INSTALL_DIR>/include/fmtlog &&
+		cp <SOURCE_DIR>/fmtlog.h <INSTALL_DIR>/include/fmtlog
+)
+ExternalProject_Get_property(FMTLOG INSTALL_DIR)
+set(FMTLOG_INCLUDE_DIRS "${INSTALL_DIR}/include")
+set(FMTLOG_LIBRARIES "${INSTALL_DIR}/lib/libfmtlog-static.a")
+
 
 # ==== *.proto -> *.pb.cc ====
 find_package(Protobuf REQUIRED)
@@ -149,10 +168,11 @@ add_library(KEGE_BASE INTERFACE)
 add_dependencies(KEGE_BASE CPP_PROTOC_INITIALIZERS LIBBACKTRACE LEXBOR)
 pkg_check_modules(CURL REQUIRED libcurl)
 pkg_check_modules(FCGI REQUIRED fcgi)
+pkg_check_modules(FMT REQUIRED fmt)
 pkg_check_modules(NLOHMANN_JSON REQUIRED nlohmann_json)
 pkg_check_modules(OPENSSL REQUIRED openssl)
-pkg_check_modules(URIPARSER REQUIRED liburiparser)
 pkg_check_modules(PQ REQUIRED libpq)
+pkg_check_modules(URIPARSER REQUIRED liburiparser)
 
 
 target_include_directories(
@@ -164,6 +184,8 @@ target_include_directories(
 	${BACKTRACE_INCLUDE_DIRS}
 	${CURL_INCLUDE_DIRS}
 	${FCGI_INCLUDE_DIRS}
+	${FMT_INCLUDE_DIRS}
+	${FMTLOG_INCLUDE_DIRS}
 	${LEXBOR_INCLUDE_DIRS}
 	${NLOHMANN_JSON_INCLUDE_DIRS}
 	${OPENSSL_INCLUDE_DIRS}
@@ -184,6 +206,8 @@ target_link_libraries(
 	${BACKTRACE_LIBRARIES}
 	${CURL_LIBRARIES}
 	${FCGI_LIBRARIES}
+	${FMT_LIBRARIES}
+	${FMTLOG_LIBRARIES}
 	${LEXBOR_LIBRARIES}
 	${NLOHMANN_JSON_LIBRARIES}
 	${OPENSSL_LIBRARIES}
@@ -224,7 +248,7 @@ endif()
 
 
 # ==== Additional compiler options ====
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -Og -g -fno-omit-frame-pointer -fsanitize=address,undefined -DKEGE_SANITIZE_ADDRESS")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -Og -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize=alignment -DKEGE_SANITIZE_ADDRESS")
 set(CMAKE_CXX_FLAGS_DEBUGL "${CMAKE_CXX_FLAGS} -Og -g -fno-omit-frame-pointer")
 set(CMAKE_CXX_FLAGS_THREAD "${CMAKE_CXX_FLAGS} -Og -g -fno-omit-frame-pointer -fsanitize=thread -DKEGE_SANITIZE_THREAD")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3")

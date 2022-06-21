@@ -4,7 +4,7 @@
 #include <dlfcn.h>
 #include <unistd.h>
 
-#include "logging.h"
+#include "KEGE.h"
 #include "unwind-cxx.h"
 using namespace stacktrace;
 
@@ -16,7 +16,7 @@ backtrace_state *state;
 bool inited = false;
 
 void init_error_cb(void *, const char *msg, int errnum) {
-	logging::error("stacktrace init failed: " + std::to_string(errnum) + msg);
+	loge("stacktrace init failed: {} {}", errnum, msg);
 }
 
 void stacktrace_error_cb(void *, const char *, int) {}
@@ -119,10 +119,11 @@ extern "C" __attribute__((nothrow)) void __cxa_throw(void *thrown_exception, std
 }  // namespace __cxxabiv1
 
 void stacktrace::init() {
+	logi("Exception stacktraces enabled");
 	real__cxa_throw = (decltype(real__cxa_throw)) dlsym(RTLD_NEXT, "__cxa_throw");
 	state = backtrace_create_state(nullptr, 1, init_error_cb, 0);
 	if (!state || !real__cxa_throw) {
-		throw std::exception();
+		std::terminate();
 	}
 	inited = true;
 }
@@ -146,7 +147,9 @@ void stacktrace::async_update_stacktrace(const std::exception_ptr &ptr) {
 
 #else
 
-void stacktrace::init() {}
+void stacktrace::init() {
+	logi("Exception stacktraces disabled");
+}
 
 const exception_st *stacktrace::get_stacktrace(const std::exception_ptr &) {
 	return nullptr;

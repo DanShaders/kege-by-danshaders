@@ -8,8 +8,6 @@
 using namespace async;
 using namespace pq;
 
-#include "logging.h"
-
 /* ==== async::pq::connection_storage ==== */
 connection_storage::~connection_storage() {
 	libev_event_loop::get()->socket_del(&sock);
@@ -122,7 +120,7 @@ struct connection_pool::impl {
 		}
 		if (!internal && PQstatus(conn->conn) != CONNECTION_OK) {
 			--conns_alive;
-			logging::warn("Connection to the database was lost");
+			logw("Connection to the database was lost");
 			populate_pool();
 			return;
 		}
@@ -146,7 +144,7 @@ struct connection_pool::impl {
 		} else {
 			while (pool.size() && PQstatus(pool.back()->conn) != CONNECTION_OK) {
 				--conns_alive;
-				logging::warn("Connection to the database was lost");
+				logw("Connection to the database was lost");
 				pool.pop_back();
 			}
 			if (conns_alive != conns_desired) {
@@ -193,6 +191,10 @@ void connection_pool::bind_to_thread() {
 
 void connection_pool::on_init() {
 	pimpl->populate_pool();
+	if (pimpl->conns_alive != pimpl->conns_desired) {
+		logw("Could not create pool of {} DB connections (only have {})", pimpl->conns_desired,
+			 pimpl->conns_alive);
+	}
 }
 
 void connection_pool::on_stop() {

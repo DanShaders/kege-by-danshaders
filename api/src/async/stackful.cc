@@ -3,8 +3,6 @@ using namespace async;
 
 #include <dlfcn.h>
 
-#include "logging.h"
-
 /* ==== async::coro_stack ==== */
 coro_stack::coro_stack() : stack(new uint64_t[STACK_LEN]) {}
 
@@ -116,10 +114,7 @@ void detail::stackful_resume(void *ptr) {
 			func_start = (func_start_t) dlsym(RTLD_DEFAULT, "__sanitizer_start_switch_fiber");
 			func_finish = (func_finish_t) dlsym(RTLD_DEFAULT, "__sanitizer_finish_switch_fiber");
 			if (!func_start || !func_finish) {
-				logging::warn(
-					"dlsym for "
-					"__sanitizer_(start|finish)_switch_"
-					"fiber failed");
+				logw("dlsym for __sanitizer_(start|finish)_switch_fiber failed");
 				func_start = 0;
 				func_finish = 0;
 			}

@@ -6,8 +6,6 @@ using namespace async;
 #include <sys/errno.h>
 #include <unistd.h>
 
-#include "logging.h"
-
 using detail::ev_with_arg;
 
 /* ==== async::sleep ==== */

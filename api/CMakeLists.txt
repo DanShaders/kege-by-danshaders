@@ -165,7 +165,7 @@ endforeach()
 # ==== Target KEGE_BASE ====
 add_library(KEGE_BASE INTERFACE)
 
-add_dependencies(KEGE_BASE CPP_PROTOC_INITIALIZERS LIBBACKTRACE LEXBOR)
+add_dependencies(KEGE_BASE CPP_PROTOC_INITIALIZERS LIBBACKTRACE LEXBOR FMTLOG)
 pkg_check_modules(CURL REQUIRED libcurl)
 pkg_check_modules(FCGI REQUIRED fcgi)
 pkg_check_modules(FMT REQUIRED fmt)

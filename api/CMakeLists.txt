@@ -136,6 +136,7 @@ ExternalProject_Add(
 	BUILD_BYPRODUCTS
 		<INSTALL_DIR>/lib/libfmtlog-static.a
 	INSTALL_COMMAND
+		cmake --install <BINARY_DIR> &&
 		mkdir -p <INSTALL_DIR>/include/fmtlog &&
 		cp <SOURCE_DIR>/fmtlog.h <INSTALL_DIR>/include/fmtlog
 )

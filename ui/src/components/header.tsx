@@ -1,5 +1,5 @@
 import { Component } from "./component";
-import { Router } from "../utils/router";
+import { Router, createLink } from "../utils/router";
 
 type HeaderTooltipEntries = {
   text: string;
@@ -36,10 +36,6 @@ type TooltipFiller = (event: Event) => void;
 
 export class HeaderComponent extends Component<HeaderSettings> {
   override createElement(): HTMLElement {
-    const goTo = (url: string) => {
-      return () => Router.instance.redirect(url);
-    };
-
     const forceHighlightOn = (id: string): void => {
       const hlElem = elemById.get(id);
       if (hlElem === undefined) return;
@@ -63,9 +59,9 @@ export class HeaderComponent extends Component<HeaderSettings> {
         if (clearTooltip) tooltip.innerHTML = "";
         for (const item of items) {
           if (item.text !== "") {
-            const elem = document.createElement("button");
+            const elem = document.createElement("a");
             elem.classList.add("page-tooltip-link");
-            elem.addEventListener("click", goTo(item.url));
+            createLink(elem, item.url);
             elem.innerHTML = item.text;
             tooltip.appendChild(elem);
           } else {
@@ -108,7 +104,7 @@ export class HeaderComponent extends Component<HeaderSettings> {
 
     // Main code starts here
     const [headerLogo, headerLinks, avatarWrap, tooltip] = elem.children;
-    headerLogo.addEventListener("click", goTo(""));
+    createLink(headerLogo as HTMLAnchorElement, "");
 
     const elemById = new Map<string, HTMLElement>();
     let headerLastClickTimestamp = -1;
@@ -138,7 +134,7 @@ export class HeaderComponent extends Component<HeaderSettings> {
 
     // Navigation links
     for (const link of this.settings.nav.items) {
-      const but = document.createElement("button");
+      const but = document.createElement("a");
       but.classList.add("page-header-link");
       but.classList.add("page-header-clickable");
       let buttonHTML = link.text;
@@ -147,7 +143,7 @@ export class HeaderComponent extends Component<HeaderSettings> {
         attachTooltip(but, link.id, defaultTooltipFillFunc(link.items));
       } else {
         elemById.set(link.id, but);
-        but.addEventListener("click", goTo(link.url));
+        createLink(but, link.url);
       }
       but.innerHTML = buttonHTML;
       headerLinks.appendChild(but);

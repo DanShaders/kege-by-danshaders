@@ -7,14 +7,18 @@ import * as jsx from "../../utils/jsx";
 async function showTaskListPage(): Promise<void> {
   requireAuth(1);
 
-  const newTaskHandler = (): void =>
-    Router.instance.redirect("admin/tasks/edit?back=" + encodeURIComponent(Router.instance.currentURL));
   (
     <>
       <h2 class="d-flex justify-content-between">
         Задания
         <span>
-          <ButtonIcon settings={{ title: "Новое задание", icon: "add", onClick: newTaskHandler }} />
+          <ButtonIcon
+            settings={{
+              title: "Новое задание",
+              icon: "add",
+              href: "admin/tasks/edit?back=" + encodeURIComponent(Router.instance.currentURL),
+            }}
+          />
           <ButtonIcon settings={{ title: "Импортировать", icon: "icon-import" }} />
         </span>
       </h2>

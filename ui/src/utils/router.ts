@@ -136,3 +136,13 @@ export class Router {
     });
   }
 }
+
+export function createLink(elem: HTMLAnchorElement, href: string): void {
+  elem.setAttribute("href", "/" + href);
+  elem.addEventListener("click", (e) => {
+    if (!e.metaKey && !e.ctrlKey) {
+      e.preventDefault();
+      Router.instance.redirect(href);
+    }
+  });
+}

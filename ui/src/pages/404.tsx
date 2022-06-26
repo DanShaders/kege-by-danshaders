@@ -1,4 +1,4 @@
-import { Router } from "../utils/router";
+import { Router, createLink } from "../utils/router";
 import { requireAuth } from "./common";
 import { toggleLoadingScreen } from "../utils/common";
 import * as jsx from "../utils/jsx";
@@ -9,16 +9,11 @@ async function show404(params: URLSearchParams): Promise<void> {
       <h2>404 Not Found</h2>
       <p>
         Запрошенный URL (<code>{params.get("url") ?? ""}</code>) не найден на сервере.&nbsp;
-        <a href="#" ref>
-          Вернуться на главную
-        </a>
+        <a ref>Вернуться на главную</a>
       </p>
     </>
   ).replaceContentsOf("main") as [HTMLAnchorElement];
-  link.addEventListener("click", (e) => {
-    e.preventDefault();
-    Router.instance.redirect("");
-  });
+  createLink(link, "");
   toggleLoadingScreen(false);
 }
 

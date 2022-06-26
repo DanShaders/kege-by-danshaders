@@ -57,6 +57,7 @@ header {
 }
 
 .page-header-link {
+  line-height: 30px;
   font-weight: 600;
   font-size: 12px;
   height: 30px;
@@ -65,7 +66,8 @@ header {
   border-radius: 4px;
   border: none;
   background-color: transparent;
-  color: inherit;
+  color: inherit !important;
+  text-decoration: none;
   transition: background-color 0.1s, color 0.1s, fill 0.1s;
 }
 
@@ -80,27 +82,6 @@ header {
   height: 16px;
   margin: -2px 0px;
   margin-left: 2px;
-}
-
-.page-hader-edit-wrap {
-  margin-left: auto;
-  margin-right: 5px;
-}
-
-.page-header-edit-but {
-  padding: 0px 6px;
-  border: none;
-  border-radius: 4px;
-  display: inline-flex;
-  vertical-align: middle;
-  transition: background-color 0.1s, color 0.1s, fill 0.1s;
-}
-
-.page-header-edit-icon {
-  width: 16px;
-  height: 16px;
-  padding: 3.5px 3.5px;
-  margin: 3.5px 0px;
 }
 
 .page-header-avatar-wrap {
@@ -131,7 +112,7 @@ header {
 .page-header-focused {
   background-color: white;
   fill: var(--bs-dark-blue);
-  color: var(--bs-dark-blue);
+  color: var(--bs-dark-blue) !important;
 }
 
 .page-header-signin {
@@ -170,6 +151,8 @@ header {
   height: 32px;
   text-align: left;
   z-index: 950;
+  color: inherit !important;
+  text-decoration: none;
 }
 
 .page-tooltip-link:hover {

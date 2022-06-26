@@ -301,13 +301,17 @@ class TaskEditPage extends SynchronizablePage<diff.DiffableTask> {
     });
     this.taskEdit = new TaskEditComponent(pageSettings, null);
 
-    const redirectBack = (): void => Router.instance.redirect(this.params.get("back") ?? "");
     (
       <>
         <div class="row align-items-end g-0 mb-0 mb-md-3">
           <h2 class="col-md mb-0">
             <ButtonIcon
-              settings={{ title: "Назад", icon: "icon-back", margins: [0, 5, 2, 0], onClick: redirectBack }}
+              settings={{
+                title: "Назад",
+                icon: "icon-back",
+                margins: [0, 5, 2, 0],
+                href: this.params.get("back") ?? "",
+              }}
             />
             Редактирование задания
           </h2>

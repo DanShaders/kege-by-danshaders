@@ -30,11 +30,13 @@ class ButtonIconComponent extends Component<Settings> {
       button.style.margin = this.settings.margins.join("px ") + "px";
     }
 
-    const href = this.settings.href;
-    if (typeof href === "string") {
-      createLink(button, href);
-    } else if (this.settings.onClick) {
-      button.addEventListener("click", this.settings.onClick);
+    if (this.settings.enabled) {
+      const href = this.settings.href;
+      if (typeof href === "string") {
+        createLink(button, href);
+      } else if (this.settings.onClick) {
+        button.addEventListener("click", this.settings.onClick);
+      }
     }
     return button;
   }

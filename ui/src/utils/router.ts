@@ -113,8 +113,10 @@ export class Router {
       if (page === "404") {
         throw new RouteNotFoundError(`Route for '${url}' is not found`);
       } else {
-        history.pushState(undefined, "", "/" + url);
-        this.goTo("404?url=" + encodeURIComponent(url));
+        if (!historyUpdated) {
+          history.pushState(undefined, "", "/" + url);
+        }
+        this.goTo("404?url=" + encodeURIComponent(url), true, true);
       }
     }
   }

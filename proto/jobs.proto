@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package api;
+import "diff.proto";
+
+message Jobs {
+	message Desc {
+		int64 id = 1;
+
+		string desc = 2;
+		string status = 3;
+		string open_link = 4;
+		string delete_link = 5;
+	}
+	repeated Desc jobs = 1;
+}

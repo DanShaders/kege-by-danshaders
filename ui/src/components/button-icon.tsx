@@ -5,6 +5,7 @@ import * as jsx from "../utils/jsx";
 type Settings = {
   title: string;
   icon: string;
+  enabled?: boolean;
   href?: string;
   onClick?: () => void;
   hoverColor?: string;
@@ -13,8 +14,10 @@ type Settings = {
 
 class ButtonIconComponent extends Component<Settings> {
   createElement(): HTMLElement {
+    this.settings.enabled ??= true;
+
     const button = (
-      <a class="button-icon" title={this.settings.title}>
+      <a class="button-icon" title={this.settings.title} disabledIf={!this.settings.enabled}>
         <svg>
           <use xlink:href={"#" + this.settings.icon}></use>
         </svg>

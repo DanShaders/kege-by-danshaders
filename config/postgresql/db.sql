@@ -142,6 +142,13 @@ CREATE TABLE standings (
 	FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
 );
 
+CREATE TABLE jobs (
+	id bigint,
+	type integer,
+	status bytea,
+	data bytea
+);
+
 -- admin:password
 INSERT INTO users (username, display_name, permissions, salt, password) VALUES (
 	'admin',

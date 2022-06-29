@@ -47,6 +47,7 @@ set(
 	routes/_basic.cc
 	routes/_wrap.cc
 	routes/attachment.cc
+	routes/jobs.cc
 	routes/task-types.cc
 	routes/tasks.cc
 	routes/user.cc
@@ -62,6 +63,7 @@ set(
 	PROTO_SOURCES
 	../proto/api.proto
 	../proto/diff.proto
+	../proto/jobs.proto
 	../proto/task-types.proto
 	../proto/tasks.proto
 	../proto/user.proto

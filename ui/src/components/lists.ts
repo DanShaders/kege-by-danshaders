@@ -1,8 +1,8 @@
-import { Component } from "./component";
+import { Component, AnyComponent } from "./component";
 import { IDiffableOf, DiffableSetOf } from "utils/diff";
 import { LengthChangeEvent, ListPosition, PositionUpdateEvent } from "utils/events";
 
-export interface ListProvider {
+interface ListProvider {
   elem: HTMLElement;
   length: number;
   eventTarget?: EventTarget;
@@ -12,12 +12,14 @@ export interface ListProvider {
   pop(i: number): void;
 }
 
-export abstract class EnumerableComponent<T, U, Enumerator extends Component<unknown>> extends Component<T & U> {
-  declare parent: Enumerator;
-
+export abstract class EnumerableComponent<
+  DiffableSettings,
+  StaticSettings,
+  Enumerator extends AnyComponent
+> extends Component<DiffableSettings & StaticSettings, Enumerator> {
   private pos: ListPosition;
 
-  constructor(settings: T & U, parent: Enumerator, pos: ListPosition) {
+  constructor(settings: DiffableSettings & StaticSettings, parent: Enumerator, pos: ListPosition) {
     super(settings, parent);
     this.pos = pos;
     this.addEventListener("positionupdate", this.onPositionUpdate.bind(this) as EventListener);
@@ -79,16 +81,32 @@ export class BasicListProvider implements ListProvider {
   }
 }
 
-export type ComponentFactory<T, U, Set extends Component<unknown>> = (
-  s: T & U,
-  p: Set,
-  pos: ListPosition
-) => EnumerableComponent<T, U, Set>;
+interface ArrayLike<T> {
+  length: number;
+  entries(): IterableIterator<[number, T]>;
+}
 
-export class SetComponent<T extends IDiffableOf<T>, U> extends Component<DiffableSetOf<T>> {
+type EnumerableConstructor<DiffableSettings, StaticSettings, Enumerator extends AnyComponent> = new (
+  s: DiffableSettings & StaticSettings,
+  p: Enumerator,
+  pos: ListPosition
+) => EnumerableComponent<DiffableSettings, StaticSettings, Enumerator>;
+
+type ComponentFactory<DiffableSettings, StaticSettings, Enumerator extends AnyComponent> = (
+  s: DiffableSettings & StaticSettings,
+  p: Enumerator,
+  pos: ListPosition
+) => EnumerableComponent<DiffableSettings, StaticSettings, Enumerator>;
+
+class BasicSetComponent<
+  DiffableSettings,
+  StaticSettings,
+  Settings extends ArrayLike<DiffableSettings>,
+  Parent extends AnyComponent = AnyComponent
+> extends Component<Settings, Parent> {
   protected provider;
-  protected factory;
-  protected comps;
+  protected factory: ComponentFactory<DiffableSettings, StaticSettings, this>;
+  protected comps: EnumerableComponent<DiffableSettings, StaticSettings, this>[];
 
   protected positionOf(i: number, length: number): ListPosition {
     return { i: i, isFirst: i === 0, isLast: i === length - 1 };
@@ -99,19 +117,23 @@ export class SetComponent<T extends IDiffableOf<T>, U> extends Component<Diffabl
   }
 
   constructor(
-    settings: DiffableSetOf<T>,
-    parent: Component<unknown> | null,
+    settings: Settings,
+    parent: Parent,
     provider: ListProvider,
-    factory: ComponentFactory<T, U, SetComponent<T, U>>,
-    settingsMap: (obj: T) => T & U
+    factory: ComponentFactory<
+      DiffableSettings,
+      StaticSettings,
+      BasicSetComponent<DiffableSettings, StaticSettings, Settings, Parent>
+    >,
+    settingsMap: (obj: DiffableSettings) => DiffableSettings & StaticSettings
   ) {
     super(settings, parent);
     this.provider = provider;
     this.provider.eventTarget = this;
-    this.factory = factory;
+    this.factory = factory as any;
     this.comps = Array.from(this.settings.entries()).map(([id, obj], index) =>
       factory(settingsMap(obj), this, this.positionOf(index, this.settings.length))
-    );
+    ) as any;
     for (const comp of this.comps) {
       this.provider.push(comp.elem);
     }
@@ -121,19 +143,16 @@ export class SetComponent<T extends IDiffableOf<T>, U> extends Component<Diffabl
     return this.provider.elem;
   }
 
-  push(remote: T, additional: U, initializeLocal: (local: T) => void): void {
-    const local = remote.clone();
-    this.settings.add(local, remote, initializeLocal);
-
+  protected pushComponent(settings: DiffableSettings & StaticSettings): void {
     const i = this.comps.length;
-    this.comps.push(this.factory(Object.assign(local, additional), this, this.positionOf(i, i + 1)));
+    this.comps.push(this.factory(settings, this, this.positionOf(i, i + 1)));
     if (i) {
       this.dispatchPositionUpdate(i - 1);
     }
     this.provider.push(this.comps[i].elem);
   }
 
-  pop(i: number): void {
+  protected popComponent(i: number): void {
     this.provider.pop(i);
     this.comps.splice(i, 1);
     for (let j = Math.max(0, i - 1); j < this.comps.length; ++j) {
@@ -146,7 +165,64 @@ export class SetComponent<T extends IDiffableOf<T>, U> extends Component<Diffabl
   }
 }
 
-export abstract class SetEntry<T extends IDiffableOf<T>, U> extends EnumerableComponent<T, U, SetComponent<T, U>> {}
+export class SetComponent<
+  Diffable extends IDiffableOf<Diffable>,
+  StaticSettings,
+  Parent extends AnyComponent = AnyComponent
+> extends BasicSetComponent<Diffable, StaticSettings, DiffableSetOf<Diffable>, Parent> {
+  constructor(
+    settings: DiffableSetOf<Diffable>,
+    parent: Parent,
+    provider: ListProvider,
+    factory: ComponentFactory<Diffable, StaticSettings, SetComponent<Diffable, StaticSettings, Parent>>,
+    settingsMap: (obj: Diffable) => Diffable & StaticSettings
+  ) {
+    super(settings, parent, provider, factory as any, settingsMap);
+  }
+
+  push(remote: Diffable, additional: StaticSettings, initializeLocal: (local: Diffable) => void): void {
+    const local = remote.clone();
+    this.settings.add(local, remote, initializeLocal);
+    this.pushComponent(Object.assign(local, additional));
+  }
+
+  pop(i: number): void {
+    this.popComponent(i);
+  }
+}
+
+export class ListComponent<Settings, Parent extends AnyComponent = AnyComponent> extends BasicSetComponent<
+  Settings,
+  {},
+  Settings[]
+> {
+  constructor(
+    settings: Settings[],
+    parent: Parent,
+    provider: ListProvider,
+    factory: ComponentFactory<Settings, {}, ListComponent<Settings, Parent>>
+  ) {
+    super(settings, parent, provider, factory as any, (e) => e);
+  }
+
+  push(comp: Settings): void {
+    this.settings.push(comp);
+    this.pushComponent(comp);
+  }
+
+  pop(i: number): void {
+    this.settings.splice(i, 1);
+    this.popComponent(i);
+  }
+}
+
+export abstract class SetEntry<Diffable extends IDiffableOf<Diffable>, StaticSettings> extends EnumerableComponent<
+  Diffable,
+  StaticSettings,
+  SetComponent<Diffable, StaticSettings>
+> {}
+
+export abstract class ListEntry<Settings> extends EnumerableComponent<Settings, {}, ListComponent<Settings>> {}
 
 export function listProviderOf(tag: string, classList: string[] = []): ListProvider {
   const elem = document.createElement(tag);
@@ -156,9 +232,9 @@ export function listProviderOf(tag: string, classList: string[] = []): ListProvi
   return new BasicListProvider(elem, 0);
 }
 
-export function factoryOf<T, U, Set extends Component<unknown>>(
-  Obj: new (s: T & U, p: Set, pos: ListPosition) => EnumerableComponent<T, U, Set>
-): ComponentFactory<T, U, Set> {
+export function factoryOf<DiffableSettings, StaticSettings, Enumerator extends AnyComponent>(
+  Obj: EnumerableConstructor<DiffableSettings, StaticSettings, Enumerator>
+): ComponentFactory<DiffableSettings, StaticSettings, Enumerator> {
   return (s, p, pos) => {
     return new Obj(s, p, pos);
   };

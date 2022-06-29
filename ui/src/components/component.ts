@@ -6,16 +6,16 @@ interface EventSource<A, B> {
   removeEventListener(a: A, b: B): any;
 }
 
-type SomeComponent = Component<unknown>;
+export type AnyComponent = Component<unknown> | null;
 
-export abstract class Component<T> extends EventTarget {
-  settings: T;
-  parent: Component<unknown> | null;
+export abstract class Component<Settings, Parent extends AnyComponent = AnyComponent> extends EventTarget {
+  settings: Settings;
+  parent: Parent;
   unproxiedElem?: HTMLElement;
   unmountHooks?: (() => void)[];
   children: Fragment[];
 
-  constructor(settings: T, parent: SomeComponent | null, children?: Fragment[]) {
+  constructor(settings: Settings, parent: Parent, children?: Fragment[]) {
     super();
     this.settings = settings;
     this.parent = parent;
@@ -43,7 +43,7 @@ export abstract class Component<T> extends EventTarget {
     oldElem.replaceWith(this.elem);
   }
 
-  firstRender(): Component<T> {
+  firstRender(): this {
     assert(!this.unproxiedElem, "Component was requested to be rerendered as if it was first render");
     this.unproxiedElem = this.createElement();
     return this;
@@ -66,7 +66,7 @@ export abstract class Component<T> extends EventTarget {
     }
   }
 
-  apply(settings: T): void {
+  apply(settings: Settings): void {
     if (settings === this.settings) {
       return;
     }
@@ -79,15 +79,20 @@ export abstract class Component<T> extends EventTarget {
   abstract createElement(): HTMLElement;
 }
 
-type ComponentConstructor<T> = new (a: T, b: SomeComponent | null, c?: Fragment[]) => SomeComponent;
-export type ComponentFactory<T> = (
-  a: { settings: T; parent?: SomeComponent; ref?: boolean },
+type ComponentConstructor<Settings, Parent extends AnyComponent> = new (
+  a: Settings,
+  b: Parent,
+  c?: Fragment[]
+) => Component<Settings, Parent>;
+
+export type ComponentFactory<Settings> = (
+  a: { settings: Settings; parent?: AnyComponent; ref?: boolean },
   b: Fragment[]
 ) => Fragment;
 
-export function createComponentFactory<T>(constructor: ComponentConstructor<T>): ComponentFactory<T> {
+export function createComponentFactory<T>(constructor: ComponentConstructor<T, AnyComponent>): ComponentFactory<T> {
   return (
-    { settings, parent, ref }: { settings: T; parent?: SomeComponent; ref?: boolean },
+    { settings, parent, ref }: { settings: T; parent?: AnyComponent; ref?: boolean },
     children: Fragment[]
   ): Fragment => {
     return Fragment.fromComponent(ref ? { ref: true } : {}, new constructor(settings, parent ?? null, children));

@@ -14,6 +14,10 @@
   text-align: left;
 }
 
+.table-second-col-left tbody td:nth-child(2) {
+  text-align: left;
+}
+
 .table-no-sep > :not(:first-child) {
   border-top: none;
 }
@@ -48,6 +52,10 @@
 
 .column-100px {
   width: 100px;
+}
+
+.column-160px {
+  width: 160px;
 }
 
 .column-200px {

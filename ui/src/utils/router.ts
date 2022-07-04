@@ -1,6 +1,8 @@
 import { toggleLoadingScreen, LoadingReason } from "./common";
+import { PageCategoryUpdateEvent } from "./events";
 import { nonNull } from "./assert";
 
+type PageCategory = "" | "kims" | "tasks" | "standings" | "control";
 type Handler = (params: URLSearchParams) => Promise<void>;
 
 export class RouteNotFoundError extends Error {}
@@ -25,22 +27,32 @@ export abstract class Page {
 
 type PageClass = {
   URL: string;
+  CATEGORY?: PageCategory;
+
   new (params: URLSearchParams): Page;
 };
 
-export class Router {
+export class Router extends EventTarget {
   private static _instance: Router;
-  private publicRoutes: Map<string, Handler>;
+  private publicRoutes: Map<string, [Handler, PageCategory]>;
   private privateRoutes: Map<string, Handler>;
 
   currentURL: string = "";
   currentPage: string = "";
+  currentPageCategory: string = "";
 
   pageInstance?: Page;
 
   private static locationChangeListener(e: Event): void {
     e.preventDefault();
     Router.instance.redirect(location.pathname.substr(1) + location.search, false, true);
+  }
+
+  private setPageCategory(pageCategory: string): void {
+    if (this.currentPageCategory !== pageCategory) {
+      this.currentPageCategory = pageCategory;
+      this.dispatchEvent(new PageCategoryUpdateEvent());
+    }
   }
 
   registerListener(): void {
@@ -57,6 +69,7 @@ export class Router {
   }
 
   private constructor() {
+    super();
     this.publicRoutes = new Map();
     this.privateRoutes = new Map();
   }
@@ -65,11 +78,11 @@ export class Router {
     return this._instance || (this._instance = new Router());
   }
 
-  addRoute(page: string, handler: Handler, isPrivate: boolean = false): void {
-    if (isPrivate) {
+  addRoute(page: string, handler: Handler, pageCategory: PageCategory | true = ""): void {
+    if (pageCategory === true) {
       this.privateRoutes.set(page, handler);
     } else {
-      this.publicRoutes.set(page, handler);
+      this.publicRoutes.set(page, [handler, pageCategory]);
     }
   }
 
@@ -102,13 +115,17 @@ export class Router {
     if (handler && !historyUpdated) {
       history.pushState(undefined, "", "/" + url);
     }
-    if (isPrivate) {
-      handler ??= this.privateRoutes.get(page);
+    if (handler == null && isPrivate) {
+      const privateRoute = this.privateRoutes.get(page);
+      if (privateRoute != null) {
+        handler = [privateRoute, ""];
+      }
     }
     if (handler) {
       this.currentURL = url;
       this.currentPage = page;
-      await handler(new URLSearchParams(params));
+      this.setPageCategory(handler[1]);
+      await handler[0](new URLSearchParams(params));
     } else {
       if (page === "404") {
         throw new RouteNotFoundError(`Route for '${url}' is not found`);
@@ -132,10 +149,14 @@ export class Router {
   }
 
   registerPage<T extends PageClass>(PageClass: T): void {
-    this.addRoute(PageClass.URL, async (params): Promise<void> => {
-      this.pageInstance = new PageClass(params);
-      await this.pageInstance.mount();
-    });
+    this.addRoute(
+      PageClass.URL,
+      async (params): Promise<void> => {
+        this.pageInstance = new PageClass(params);
+        await this.pageInstance.mount();
+      },
+      PageClass.CATEGORY ?? ""
+    );
   }
 }
 

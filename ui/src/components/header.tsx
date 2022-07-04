@@ -1,5 +1,6 @@
 import { Component } from "./component";
-import { Router, createLink } from "../utils/router";
+import { Router, createLink } from "utils/router";
+import { PageCategoryUpdateEvent } from "utils/events";
 
 type HeaderTooltipEntries = {
   text: string;
@@ -180,7 +181,12 @@ export class HeaderComponent extends Component<HeaderSettings> {
       });
     }
 
-    forceHighlightOn(this.settings.highlightedId);
+    this.registerExternalListener(Router.instance, PageCategoryUpdateEvent.NAME, () => {
+      const prev = this.settings.highlightedId;
+      this.settings.highlightedId = Router.instance.currentPageCategory;
+      forceHighlightOff(prev);
+      forceHighlightOn(this.settings.highlightedId);
+    });
     return elem;
   }
 }

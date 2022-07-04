@@ -14,7 +14,7 @@ type Settings = {
 
 class ButtonIconComponent extends Component<Settings> {
   createElement(): HTMLElement {
-    this.settings.enabled ??= true;
+    this.settings.enabled ??= this.settings.onClick !== undefined || this.settings.href !== undefined;
 
     const button = (
       <a class="button-icon" title={this.settings.title} disabledIf={!this.settings.enabled}>

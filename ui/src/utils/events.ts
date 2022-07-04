@@ -27,3 +27,11 @@ export class LengthChangeEvent extends Event {
     this.delta = delta;
   }
 }
+
+export class PageCategoryUpdateEvent extends Event {
+  static NAME = "pagecategoryupdate";
+
+  constructor() {
+    super(PageCategoryUpdateEvent.NAME);
+  }
+}

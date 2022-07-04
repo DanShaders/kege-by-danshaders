@@ -1,8 +1,8 @@
-import { ButtonIcon } from "../../components/button-icon";
-import { Router } from "../../utils/router";
-import { toggleLoadingScreen } from "../../utils/common";
-import { requireAuth } from "../common";
-import * as jsx from "../../utils/jsx";
+import { ButtonIcon } from "components/button-icon";
+import { Router } from "utils/router";
+import { toggleLoadingScreen } from "utils/common";
+import { requireAuth } from "pages/common";
+import * as jsx from "utils/jsx";
 
 async function showTaskListPage(): Promise<void> {
   requireAuth(1);
@@ -27,4 +27,4 @@ async function showTaskListPage(): Promise<void> {
   toggleLoadingScreen(false);
 }
 
-Router.instance.addRoute("admin/tasks", showTaskListPage);
+Router.instance.addRoute("admin/tasks/list", showTaskListPage, "tasks");

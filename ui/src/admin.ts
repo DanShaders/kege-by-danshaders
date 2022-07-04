@@ -1,9 +1,9 @@
-import { requestU } from "./utils/requests";
-import { TaskTypeListResponse } from "./proto/task-types_pb";
+import { requestU } from "utils/requests";
+import { TaskTypeListResponse } from "proto/task-types_pb";
 
-import "./pages/admin/jobs-list";
-import "./pages/admin/tasks";
-import "./pages/admin/tasks-edit";
+import "pages/admin/jobs/list";
+import "pages/admin/tasks/edit";
+import "pages/admin/tasks/list";
 
 export const headerSettings = {
   highlightedId: "",
@@ -17,7 +17,7 @@ export const headerSettings = {
       {
         id: "tasks",
         text: "Задания",
-        url: "admin/tasks",
+        url: "admin/tasks/list",
       },
       {
         id: "standings",
@@ -42,7 +42,7 @@ export const headerSettings = {
           },
           {
             text: "Задачи",
-            url: "admin/jobs",
+            url: "admin/jobs/list",
           },
         ],
       },

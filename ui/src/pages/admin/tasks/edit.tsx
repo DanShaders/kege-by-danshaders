@@ -263,7 +263,8 @@ class TaskEditComponent extends Component<TaskEditSettings> {
 }
 
 class TaskEditPage extends SynchronizablePage<diff.DiffableTask> {
-  static URL = "admin/tasks/edit";
+  static URL = "admin/tasks/edit" as const;
+  static CATEGORY = "tasks" as const;
 
   taskEdit?: TaskEditComponent;
 

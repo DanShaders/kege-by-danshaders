@@ -1,5 +1,6 @@
 /* ==== async::stackful ==== */
 namespace detail {
+/** @private */
 struct stackful_context {
 	uint64_t reserved[20];
 #ifdef KEGE_SANITIZE_ADDRESS

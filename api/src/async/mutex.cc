@@ -2,6 +2,7 @@
 using namespace async;
 
 /* ==== async::mutex::state_t ==== */
+/** @private */
 struct mutex::state_t {
 	enum { UNLOCKED, LOCKED, DESTROYED } status = UNLOCKED;
 	std::forward_list<event_loop_work> queue;

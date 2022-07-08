@@ -1,21 +1,62 @@
+/**
+ * General utilities (mostly related to string)
+ * @file
+ */
 #pragma once
 
 #include "stdafx.h"
 
+/** Utilities */
 namespace utils {
+/** Decodes string in URL-encoded format. */
 std::string url_decode(const std::string_view &);
+
+/** Encodes string to URL-encoded format. */
 std::string url_encode(const std::string_view &);
 
+/**
+ * Parses URL search params.
+ *
+ * @param[in]  <unnamed>  URL search params without leading '?'
+ *
+ * @return     map from parameter name to its values. In case of duplicate parameter names the
+ *             last one is used. Empty names/values are accepted.
+ */
 std::map<std::string, std::string> parse_query_string(const std::string_view &);
+
+/**
+ * Parses cookie header from client.
+ *
+ * @param[in]  s     Header value
+ *
+ * @return     map from cookie name to its values. In case of duplicate parameter names the last one
+ *             is used. Empty names/values are accepted.
+ */
 std::map<std::string, std::string> parse_cookies(const char *s);
 
+/** Encodes string into lowercase hex */
 std::string b16_decode(const std::string_view &);
+
+/** Decodes string from hex, case-insensetive. */
 std::string b16_encode(const std::string_view &);
+
+/** Decodes string from base64 with alphabet `A-Za-z0-9+/` */
 std::string b64_decode(const std::string_view &);
+
+/** Encodes string into base64 with alphabet `A-Za-z0-9+/` */
 std::string b64_encode(const std::string_view &);
 
-std::string replace_all(const std::string_view &, const std::string_view &,
-						const std::string_view &);
+/**
+ * Replaces all occurrences of @p from by @p to in @p s.
+ *
+ * @param[in]  s     Original string
+ * @param[in]  from  String to be replaced by @p to
+ * @param[in]  to    String that replaces @p from
+ *
+ * @return     String with replaced substrings.
+ */
+std::string replace_all(const std::string_view &s, const std::string_view &from,
+						const std::string_view &to);
 
 inline void ensure(bool cond, const std::string &msg, int err = errno) {
 	if (cond) [[unlikely]] {

@@ -6,6 +6,7 @@
 
 namespace async {
 namespace detail {
+	/** @private */
 	class future_base {
 		ONLY_DEFAULT_MOVABLE_CLASS(future_base)
 

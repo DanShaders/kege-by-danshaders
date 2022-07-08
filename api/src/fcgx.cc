@@ -126,6 +126,7 @@ coro<int> fcgx_async_read_str(char *str, int n, FCGX_Stream *stream, socket_stor
 }  // namespace
 
 /* ==== fcgx::server::impl ==== */
+/** @private */
 struct server::impl {
 	int fd;
 	std::function<void(FCGX_Request *)> handler;

@@ -161,10 +161,12 @@ public:
 };
 
 namespace detail {
+	/** @private */
 	template <typename T>
 	void lower_param(T &&param, const char *&values, std::optional<std::string> &buff, int &length,
 					 int &format);
 
+	/** @private */
 	template <typename... Params>
 	struct params_lowerer {
 		static const int SIZE = sizeof...(Params);
@@ -181,22 +183,28 @@ namespace detail {
 		params_lowerer(Params &&...params);
 	};
 
+	/** @private */
 	struct pq_decoder {
 		static std::vector<std::pair<Oid, void *>> map;
 	};
 
+	/** @private */
 	template <typename T>
 	constexpr bool is_optional(T const &) {
 		return false;
 	}
+
+	/** @private */
 	template <typename T>
 	constexpr bool is_optional(std::optional<T> const &) {
 		return true;
 	}
 
+	/** @private */
 	template <typename T>
 	T get_raw_cell_value(PGresult *res, unsigned *oids, int i, int j);
 
+	/** @private */
 	coro<result> exec(connection_storage &conn, const char *command, int size, const char *values[],
 					  int lengths[], int formats[]);
 }  // namespace detail

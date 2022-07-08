@@ -151,6 +151,7 @@ void curl_performer::await_suspend(std::coroutine_handle<> h) noexcept {
 }
 
 /* ==== async::curl_event_source::impl ==== */
+/** @private */
 struct curl_event_source::impl {
 	ev_loop_t *loop;
 

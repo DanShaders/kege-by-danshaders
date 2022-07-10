@@ -96,6 +96,7 @@ export class HeaderComponent extends Component<HeaderSettings> {
     };
 
     const elem = document.createElement("header");
+    elem.classList.add("sticky-top");
     elem.innerHTML = `
 			<a class='page-header-logo page-header-clickable'>
 			</a>

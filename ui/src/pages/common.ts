@@ -20,7 +20,6 @@ export function requireAuth(perms: number = 0): void {
   }
 }
 
-let headerWrap: HTMLElement;
 export let header: HeaderComponent | undefined;
 
 const headerSettingsLoggedOut = {
@@ -35,8 +34,10 @@ const headerSettingsLoggedOut = {
 };
 
 async function updateHeader(): Promise<void> {
+  let shouldInsert = false;
   if (!header) {
     header = new HeaderComponent(headerSettingsLoggedOut, null);
+    shouldInsert = true;
   }
   if (userInfo) {
     let headerSettings: HeaderSettings = {
@@ -59,7 +60,9 @@ async function updateHeader(): Promise<void> {
   } else {
     header.apply(headerSettingsLoggedOut);
   }
-  headerWrap.appendChild(header.elem);
+  if (shouldInsert) {
+    document.body.insertBefore(header.elem, document.body.firstChild);
+  }
 }
 
 async function init(): Promise<void> {
@@ -71,7 +74,6 @@ async function init(): Promise<void> {
       userInfo = result.toObject();
     }
   }
-  headerWrap = document.getElementById("page-header-wrap")!;
   await Router.instance.goTo("#update-header");
   Router.instance.registerListener();
 }

@@ -11,17 +11,10 @@ header hr {
   margin: 0.5em 0;
 }
 
-body {
-  padding-top: 50px;
-}
-
 header {
   display: flex;
 
-  position: fixed;
   user-select: none;
-  top: 0;
-  left: 0;
 
   height: 30px;
   width: 100%;

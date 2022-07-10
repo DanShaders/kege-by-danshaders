@@ -91,6 +91,7 @@ export class HeaderComponent extends Component<HeaderSettings> {
           tooltip.setAttribute("style", `left: ${xc.toFixed(2)}px;`);
           tooltip.setAttribute("shown", "true");
           tooltip.setAttribute("last", id);
+          tooltip.removeAttribute("tabindex");
         }
       });
     };
@@ -118,6 +119,7 @@ export class HeaderComponent extends Component<HeaderSettings> {
         tooltip.setAttribute("style", "left: -1000px;");
         tooltip.setAttribute("last", "none");
         tooltip.setAttribute("shown", "false");
+        tooltip.setAttribute("tabindex", "-1");
       }
     });
 
@@ -136,7 +138,7 @@ export class HeaderComponent extends Component<HeaderSettings> {
 
     // Navigation links
     for (const link of this.settings.nav.items) {
-      const but = document.createElement("a");
+      const but = document.createElement("items" in link ? "button" : "a");
       but.classList.add("page-header-link");
       but.classList.add("page-header-clickable");
       let buttonHTML = link.text;
@@ -145,7 +147,7 @@ export class HeaderComponent extends Component<HeaderSettings> {
         attachTooltip(but, link.id, defaultTooltipFillFunc(link.items));
       } else {
         elemById.set(link.id, but);
-        createLink(but, link.url);
+        createLink(but as HTMLAnchorElement, link.url);
       }
       but.innerHTML = buttonHTML;
       headerLinks.appendChild(but);

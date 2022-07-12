@@ -1,6 +1,6 @@
 docs/doxygen
+tools/diff-proto/bin
+tools/diff-proto/build
 ui/build
 ui/node_modules
 ui/src/proto
-ui/tools/diff-proto/bin
-ui/tools/diff-proto/build

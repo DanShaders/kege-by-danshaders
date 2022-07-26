@@ -2,6 +2,8 @@ import { Component } from "./component";
 import { Router, createLink } from "utils/router";
 import { PageCategoryUpdateEvent } from "utils/events";
 
+import * as jsx from "utils/jsx";
+
 type HeaderTooltipEntries = {
   text: string;
   url: string;
@@ -87,26 +89,28 @@ export class HeaderComponent extends Component<HeaderSettings> {
           forceHighlightOn(id);
           headerLastClickTimestamp = event.timeStamp;
           tooltipFillFunc(event);
+          tooltip.setAttribute("shown", "true");
           const xc = Math.min(elem.offsetLeft, document.documentElement.clientWidth - tooltip.clientWidth - 15);
           tooltip.setAttribute("style", `left: ${xc.toFixed(2)}px;`);
-          tooltip.setAttribute("shown", "true");
           tooltip.setAttribute("last", id);
           tooltip.removeAttribute("tabindex");
         }
       });
     };
 
-    const elem = document.createElement("header");
-    elem.classList.add("sticky-top");
-    elem.innerHTML = `
-			<a class='page-header-logo page-header-clickable'>
-			</a>
-			<nav class='page-header-links'></nav>
-			<div class='page-header-avatar-wrap'></div>
-			<div class='page-tooltip' style='left: -1000px;'></div>`;
+    const refs: HTMLElement[] = [];
+    const elem = (
+      <header class="sticky-top">
+  			<a ref class='page-header-logo page-header-clickable'>
+  			</a>
+  			<nav ref class='page-header-links'></nav>
+  			<div ref class='page-header-avatar-wrap'></div>
+  			<div ref class='page-tooltip' shown='false'></div>
+      </header>
+    ).asElement(refs) as HTMLElement;
 
     // Main code starts here
-    const [headerLogo, headerLinks, avatarWrap, tooltip] = elem.children;
+    const [headerLogo, headerLinks, avatarWrap, tooltip] = refs;
     createLink(headerLogo as HTMLAnchorElement, "");
 
     const elemById = new Map<string, HTMLElement>();
@@ -116,10 +120,8 @@ export class HeaderComponent extends Component<HeaderSettings> {
       // Close tooltip on click
       if (tooltip.getAttribute("shown") === "true" && headerLastClickTimestamp !== event.timeStamp) {
         forceHighlightOff(tooltip.getAttribute("last"));
-        tooltip.setAttribute("style", "left: -1000px;");
         tooltip.setAttribute("last", "none");
         tooltip.setAttribute("shown", "false");
-        tooltip.setAttribute("tabindex", "-1");
       }
     });
 

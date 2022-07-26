@@ -33,7 +33,9 @@ inline void stackful<Func, Args...>::invoke2(std::index_sequence<Is...>) {
 		} else {
 			ret_val = std::move(func(std::get<Is>(args)...));
 		}
-	} catch (...) { exc = std::current_exception(); }
+	} catch (...) {
+		exc = std::current_exception();
+	}
 	ret_ready = true;
 	if (resume_work.has_work()) {
 		event_loop::local->schedule_work(std::move(resume_work));

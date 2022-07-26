@@ -44,8 +44,8 @@ public:
 	mutex();
 
 	/**
-	 * Locks the mutex. Awaiting the result of this call may throw an exception if @ref cancel_all is
-	 * called meanwhile.
+	 * Locks the mutex. Awaiting the result of this call may throw an exception if @ref cancel_all
+	 * is called meanwhile.
 	 *
 	 * @return     Awaitable which locks the mutex when completed.
 	 */

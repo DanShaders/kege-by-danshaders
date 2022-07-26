@@ -17,13 +17,9 @@ namespace job_file_import {
 	};
 
 	inline const char *STATUS[] = {
-		"enqueued",
-		"processing",
-		"stale",
-		"uploading",
-		"done",
+		"enqueued", "processing", "stale", "uploading", "done",
 	};
 
 	inline const int STATUS_LEN = sizeof(STATUS) / sizeof(const char *);
-}
-}
+}  // namespace job_file_import
+}  // namespace routes

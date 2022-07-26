@@ -28,7 +28,9 @@ void event_loop_work::do_work() {
 		} else if (saved_type == DESTROY) {
 			handle.destroy();
 		}
-	} catch (...) { event_loop::local->handle_exception(std::current_exception()); }
+	} catch (...) {
+		event_loop::local->handle_exception(std::current_exception());
+	}
 }
 
 bool event_loop_work::has_work() const {

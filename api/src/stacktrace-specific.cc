@@ -97,7 +97,9 @@ static void log_exception_chain(const T &e, fmtlog::LogLevel log_level, bool is_
 	} catch (const std::exception &next) {
 		print_exception(next.what(), log_level, is_nested);
 		log_exception_chain(next, log_level, true);
-	} catch (...) { print_exception("", log_level, true); }
+	} catch (...) {
+		print_exception("", log_level, true);
+	}
 }
 
 void stacktrace::log_unhandled_exception(const std::exception_ptr &e) {

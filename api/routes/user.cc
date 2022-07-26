@@ -22,7 +22,7 @@ static coro<void> handle_user_login(fcgx::request_t *r) {
 		utils::err(r, api::INVALID_CREDENTIALS);
 	}
 	auto [user_id, username, display_name, perms, salt, password] =
-		q.expect1<int, std::string, std::string, unsigned, std::string, std::string>();
+		q.expect1<int64_t, std::string, std::string, unsigned, std::string, std::string>();
 	if (password != utils::b16_encode(utils::sha3_256(req.password() + utils::b16_decode(salt)))) {
 		utils::err(r, api::INVALID_CREDENTIALS);
 	}

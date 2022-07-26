@@ -3,6 +3,7 @@
 #define _BSD_SOURCE
 #include <endian.h>
 
+#include "KEGE.h"
 #include "async/future.h"
 #include "async/socket.h"
 using namespace async;
@@ -214,20 +215,12 @@ result::result(PGresult *raw) : res({raw, PQclear}) {
 	}
 }
 
-PGresult *result::get_raw_result() {
-	return res.get();
-}
-
 std::size_t result::rows() const {
 	return std::size_t(PQntuples(res.get()));
 }
 
 std::size_t result::columns() const {
 	return std::size_t(PQnfields(res.get()));
-}
-
-char const *result::operator()(std::size_t i, std::size_t j) const {
-	return PQgetvalue(res.get(), int(i), int(j));
 }
 
 void result::expect0() const {
@@ -237,44 +230,6 @@ void result::expect0() const {
 }
 
 /* ==== async::pq::detail ==== */
-bool pq_recv_bool(char const *data, int len) {
-	assert(len == 1);
-	return bool(data[0]);
-}
-
-int64_t pq_recv_int64(char const *data, int len) {
-	assert(len == 8);
-	uint64_t res;
-	memcpy(&res, data, len);
-	res = be64toh(res);
-	return int64_t(res);
-}
-
-int pq_recv_int32(char const *data, int len) {
-	assert(len == 4);
-	uint32_t res;
-	memcpy(&res, data, len);
-	res = be32toh(res);
-	return int(res);
-}
-
-std::string_view pq_recv_text(char const *data, int len) {
-	return {data, (unsigned) len};
-}
-
-double pq_recv_double(char const *data, int len) {
-	assert(len == 8);
-	double res;
-	memcpy(&res, data, len);
-	return res;
-}
-
-std::vector<std::pair<Oid, void *>> pq::detail::pq_decoder::map = {
-	{16, (void *) pq_recv_bool},   {17, (void *) pq_recv_text}, {20, (void *) pq_recv_int64},
-	{23, (void *) pq_recv_int32},  {25, (void *) pq_recv_text}, {701, (void *) pq_recv_double},
-	{1042, (void *) pq_recv_text},
-};
-
 coro<result> pq::detail::exec(connection_storage &c, const char *command, int size,
 							  const char *values[], int lengths[], int formats[]) {
 	c.sock.event_mask = SOCK_ALL;
@@ -318,3 +273,85 @@ coro<result> pq::detail::exec(connection_storage &c, const char *command, int si
 	}
 	co_return {latest};
 }
+
+/* ==== Decoders for PQ binary format ==== */
+#define SIMPLE_PQ_DECODER(T, OID)                                                            \
+	template <>                                                                              \
+	bool pq::detail::oid_decoder<T>::is_valid(int oid) {                                     \
+		return oid == OID;                                                                   \
+	}                                                                                        \
+                                                                                             \
+	template <>                                                                              \
+	T pq::detail::oid_decoder<T>::get([[maybe_unused]] char *data, [[maybe_unused]] int len, \
+									  [[maybe_unused]] int oid)
+
+#define DELEGATE_PQ_DECODER(FROM, TO)                                       \
+	template <>                                                             \
+	bool pq::detail::oid_decoder<FROM>::is_valid(int oid) {                 \
+		return oid_decoder<TO>::is_valid(oid);                              \
+	}                                                                       \
+                                                                            \
+	template <>                                                             \
+	FROM pq::detail::oid_decoder<FROM>::get(char *data, int len, int oid) { \
+		return (FROM){oid_decoder<TO>::get(data, len, oid)};                \
+	}
+
+SIMPLE_PQ_DECODER(bool, 16) {
+	return bool(data[0]);
+}
+
+SIMPLE_PQ_DECODER(int64_t, 20) {
+	assert(len == 8);
+	uint64_t res;
+	memcpy(&res, data, len);
+	res = be64toh(res);
+	return int64_t(res);
+}
+
+SIMPLE_PQ_DECODER(int, 23) {
+	assert(len == 4);
+	uint32_t res;
+	memcpy(&res, data, len);
+	res = be32toh(res);
+	return int(res);
+}
+
+SIMPLE_PQ_DECODER(double, 701) {
+	assert(len == 8);
+	double res;
+	memcpy(&res, data, len);
+	return res;
+}
+
+SIMPLE_PQ_DECODER(timestamp, 1114) {
+	using namespace std::chrono;
+
+	const pq::timestamp PQ_EPOCH = sys_days{January / 1 / 2000};
+
+#if KEGE_PQ_FP_TIMESTAMP
+	auto secs = oid_decoder<double>::get(data, len, oid);
+	return PQ_EPOCH + round<microseconds>(duration<double>(secs));
+#else
+	const int64_t MICRO = 1'000'000;
+	auto secs = oid_decoder<int64_t>::get(data, len, oid);
+	return PQ_EPOCH + seconds{secs / MICRO} + microseconds{secs % MICRO};
+#endif
+}
+
+template <>
+bool pq::detail::oid_decoder<std::string_view>::is_valid(int oid) {
+	return oid == 17 || oid == 25 || oid == 1042;
+}
+
+template <>
+std::string_view pq::detail::oid_decoder<std::string_view>::get(char *data, int len, int) {
+	return {data, (unsigned) len};
+}
+
+DELEGATE_PQ_DECODER(std::string, std::string_view)
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnarrowing"
+DELEGATE_PQ_DECODER(unsigned int, int)
+DELEGATE_PQ_DECODER(uint64_t, int64_t)
+#pragma GCC diagnostic pop

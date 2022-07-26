@@ -40,7 +40,7 @@ coro<psession> routes::_restore_session(const async::pq::connection &db, fcgx::r
 		utils::err(r, api::ACCESS_DENIED);
 	}
 	auto [user_id, username, display_name, perms] =
-		q.expect1<int, std::string, std::string, unsigned>();
+		q.expect1<int64_t, std::string, std::string, unsigned>();
 
 	auto s =
 		std::make_shared<routes::session>(user_id, session_id, username, display_name, perms, false,

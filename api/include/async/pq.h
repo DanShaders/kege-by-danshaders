@@ -11,9 +11,11 @@ using raw_result = std::shared_ptr<PGresult>;
 struct connection_storage;
 class connection;
 class connection_pool;
-template <typename... T>
-class iterable_typed_result;
+template <typename... Ts>
+class typed_result;
 class result;
+
+using timestamp = std::chrono::system_clock::time_point;
 
 struct connection_storage {
 	FIXED_CLASS(connection_storage)
@@ -95,44 +97,46 @@ private:
 public:
 	result(PGresult *raw);
 
-	PGresult *get_raw_result();
 	std::size_t rows() const;
 	std::size_t columns() const;
-	char const *operator()(std::size_t i, std::size_t j) const;
 
-	template <typename... T>
-	iterable_typed_result<T...> iter() const {
+	template <typename... Ts>
+	typed_result<Ts...> as() const {
 		return {res};
 	}
 
+	/** @deprecated */
+	template <typename... Ts>
+	auto iter() const {
+		return as<Ts...>();
+	}
+
 	void expect0() const;
-	template <typename... T>
-	std::tuple<T...> expect1() const;
+
+	template <typename... Ts>
+	std::tuple<Ts...> expect1() const;
 };
 
-template <typename... T>
-class iterable_typed_result {
+template <typename... Ts>
+class typed_result {
 private:
+	const static std::size_t SIZE = sizeof...(Ts);
+
 	raw_result res;
-	Oid oids[sizeof...(T)];
+	int oids[SIZE];
 
 public:
 	template <std::size_t... Is>
 	class iterator {
 	private:
 		std::size_t i;
-		iterable_typed_result<T...> *res;
-
-		template <typename U, std::size_t j>
-		U get_cell_value();
+		const typed_result<Ts...> *res;
 
 	public:
-		iterator(std::size_t i_, iterable_typed_result<T...> *res_, std::index_sequence<Is...>)
+		iterator(std::size_t i_, const typed_result<Ts...> *res_, std::index_sequence<Is...>)
 			: i(i_), res(res_) {}
 
-		std::tuple<T...> operator*() {
-			return {get_cell_value<T, Is>()...};
-		}
+		std::tuple<Ts...> operator*() const;
 
 		iterator &operator++() {
 			++i;
@@ -142,25 +146,32 @@ public:
 		std::strong_ordering operator<=>(const iterator &) const = default;
 	};
 
-	iterable_typed_result(raw_result res_) : res(res_) {
-		if (sizeof...(T) != PQnfields(res.get())) {
-			throw db_error{"Unexpected number of columns"};
-		}
-		for (std::size_t i = 0; i < sizeof...(T); ++i) {
-			oids[i] = PQftype(res.get(), int(i));
-		}
+	typed_result(raw_result res_);
+
+	auto begin() const {
+		return iterator{(std::size_t) 0, this, std::index_sequence_for<Ts...>{}};
 	}
 
-	auto begin() {
-		return iterator{(std::size_t) 0, this, std::index_sequence_for<T...>{}};
-	}
-
-	auto end() {
-		return iterator{(std::size_t) PQntuples(res.get()), this, std::index_sequence_for<T...>{}};
+	auto end() const {
+		return iterator{(std::size_t) PQntuples(res.get()), this, std::index_sequence_for<Ts...>{}};
 	}
 };
 
 namespace detail {
+	/** @private */
+	template <typename T>
+	struct oid_decoder {
+		static bool is_valid(int oid);
+		static T get(char *data, int length, int oid);
+
+		static void check_type(int oid, std::size_t i) {
+			if (!is_valid(oid)) {
+				throw db_error{fmt::format("Oid {} at column {} cannot be converted to {}", oid, i,
+										   typeid(T).name())};
+			}
+		}
+	};
+
 	/** @private */
 	template <typename T>
 	void lower_param(T &&param, const char *&values, std::optional<std::string> &buff, int &length,
@@ -179,30 +190,10 @@ namespace detail {
 		void apply(T &&param);
 
 		template <std::size_t... Is>
-		params_lowerer(std::index_sequence<Is...>, Params &&...params);
-		params_lowerer(Params &&...params);
+		params_lowerer(std::index_sequence<Is...>, Params &&...params) {
+			(apply<Is>(std::forward<Params>(params)), ...);
+		}
 	};
-
-	/** @private */
-	struct pq_decoder {
-		static std::vector<std::pair<Oid, void *>> map;
-	};
-
-	/** @private */
-	template <typename T>
-	constexpr bool is_optional(T const &) {
-		return false;
-	}
-
-	/** @private */
-	template <typename T>
-	constexpr bool is_optional(std::optional<T> const &) {
-		return true;
-	}
-
-	/** @private */
-	template <typename T>
-	T get_raw_cell_value(PGresult *res, unsigned *oids, int i, int j);
 
 	/** @private */
 	coro<result> exec(connection_storage &conn, const char *command, int size, const char *values[],

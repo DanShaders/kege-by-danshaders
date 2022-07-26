@@ -21,6 +21,9 @@
  */
 #define KEGE_FCGI_USE_ASYNC 0
 
+/** Whether the database is using floating-point numbers to store timestamps. */
+#define KEGE_PQ_FP_TIMESTAMP 0
+
 /** FCGI server socket queue size */
 inline const int FCGI_QUEUE_SIZE = 1000;
 

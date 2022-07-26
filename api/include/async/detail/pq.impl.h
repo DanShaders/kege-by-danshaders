@@ -1,35 +1,42 @@
 /* ==== async::pq::connection ==== */
 template <typename... Params>
 inline coro<result> connection::exec(const char *command, Params &&...params) const {
-	detail::params_lowerer<Params...> lowered{std::forward<Params>(params)...};
+	detail::params_lowerer<Params...> lowered{
+		std::index_sequence_for<Params...>{},
+		std::forward<Params>(params)...,
+	};
 	return detail::exec(*conn, command, sizeof...(Params), lowered.values, lowered.lengths,
 						lowered.formats);
 }
 
 /* ==== async::pq::result ==== */
-template <typename... T>
-inline std::tuple<T...> result::expect1() const {
+template <typename... Ts>
+inline std::tuple<Ts...> result::expect1() const {
 	if (rows() != 1) {
 		throw db_error{"Expected 1 row as a result"};
 	}
-	return *(iterable_typed_result<T...>{res}.begin());
+	return *(typed_result<Ts...>{res}.begin());
 }
 
 /* ==== async::pq::iterable_typed_result ==== */
-template <typename... T>
+template <typename... Ts>
 template <std::size_t... Is>
-template <typename U, std::size_t j>
-inline U iterable_typed_result<T...>::iterator<Is...>::get_cell_value() {
-	bool is_null = PQgetisnull(res->res.get(), int(i), int(j));
-	if (is_null) {
-		return {};
+std::tuple<Ts...> typed_result<Ts...>::iterator<Is...>::operator*() const {
+	return {(PQgetisnull(res->res.get(), int(i), int(Is))
+				 ? Ts{}
+				 : detail::oid_decoder<Ts>::get(PQgetvalue(res->res.get(), int(i), int(Is)),
+												PQgetlength(res->res.get(), int(i), int(Is)),
+												res->oids[Is]))...};
+}
+
+template <typename... Ts>
+typed_result<Ts...>::typed_result(raw_result res_) : res(res_) {
+	if (PQnfields(res.get()) != SIZE) {
+		throw db_error{"Unexpected number of columns"};
 	}
-	if constexpr (detail::is_optional(U{})) {
-		return {detail::get_raw_cell_value<typename U::value_type>(res->res.get(), res->oids,
-																   int(i), int(j))};
-	} else {
-		return detail::get_raw_cell_value<U>(res->res.get(), res->oids, int(i), int(j));
-	}
+	std::size_t i = 0;
+	((oids[i] = PQftype(res.get(), int(i)), detail::oid_decoder<Ts>::check_type(oids[i], i), ++i),
+	 ...);
 }
 
 /* ==== async::pq::detail::params_lowerer ==== */
@@ -56,34 +63,4 @@ inline void detail::params_lowerer<Params...>::apply(T &&param) {
 	} else {
 		lower_param(std::forward<T>(param), values[idx], lengths[idx], formats[idx], buff[idx]);
 	}
-}
-
-template <typename... Params>
-template <std::size_t... Is>
-inline detail::params_lowerer<Params...>::params_lowerer(std::index_sequence<Is...>,
-														 Params &&...params) {
-	(apply<Is>(std::forward<Params>(params)), ...);
-}
-
-template <typename... Params>
-inline detail::params_lowerer<Params...>::params_lowerer(Params &&...params)
-	: params_lowerer(std::index_sequence_for<Params...>{}, std::forward<Params>(params)...) {}
-
-template <typename T>
-inline T detail::get_raw_cell_value(PGresult *res, unsigned *oids, int i, int j) {
-	if constexpr (std::same_as<T, std::string>) {
-		return std::string(get_raw_cell_value<std::string_view>(res, oids, i, j));
-	}
-
-	using func = T (*)(char const *, int);
-
-	unsigned oid = oids[j];
-	std::pair key{oid, (void *) nullptr};
-	auto it = std::ranges::lower_bound(detail::pq_decoder::map, key);
-	if (it == detail::pq_decoder::map.end() || it->first != oid) {
-		throw pq::db_error("unknown oid " + std::to_string(oid) + " at column " +
-						   std::to_string(j));
-	}
-
-	return ((func) it->second)(PQgetvalue(res, i, j), PQgetlength(res, i, j));
 }

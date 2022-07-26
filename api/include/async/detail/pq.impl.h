@@ -35,8 +35,7 @@ typed_result<Ts...>::typed_result(raw_result res_) : res(res_) {
 		throw db_error{"Unexpected number of columns"};
 	}
 	std::size_t i = 0;
-	((oids[i] = PQftype(res.get(), int(i)), detail::oid_decoder<Ts>::check_type(oids[i], i), ++i),
-	 ...);
+	((oids[i] = PQftype(res.get(), int(i)), detail::check_type<Ts>(oids[i], i), ++i), ...);
 }
 
 /* ==== async::pq::detail::params_lowerer ==== */

@@ -163,14 +163,27 @@ namespace detail {
 	struct oid_decoder {
 		static bool is_valid(int oid);
 		static T get(char *data, int length, int oid);
+	};
 
-		static void check_type(int oid, std::size_t i) {
-			if (!is_valid(oid)) {
-				throw db_error{fmt::format("Oid {} at column {} cannot be converted to {}", oid, i,
-										   typeid(T).name())};
-			}
+	template <typename T>
+	struct oid_decoder<std::optional<T>> {
+		static bool is_valid(int oid) {
+			return oid_decoder<T>::is_valid(oid);
+		}
+
+		static T get(char *data, int length, int oid) {
+			return oid_decoder<T>::get(data, length, oid);
 		}
 	};
+
+	/** @private */
+	template <typename T>
+	void check_type(int oid, std::size_t i) {
+		if (!oid_decoder<T>::is_valid(oid)) {
+			throw db_error{fmt::format("Oid {} at column {} cannot be converted to {}", oid, i,
+									   typeid(T).name())};
+		}
+	}
 
 	/** @private */
 	template <typename T>

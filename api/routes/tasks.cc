@@ -17,7 +17,7 @@ coro<void> handle_get(fcgx::request_t *r) {
 	co_await routes::require_auth(db, r, routes::PERM_VIEW_TASKS);
 
 	auto q = co_await db.exec(
-		"SELECT * FROM tasks WHERE id = $1::bigint AND NOT coalesce(deleted, false)",
+		"SELECT * FROM tasks WHERE id = $1::bigint",
 		r->params["id"]);
 	if (!q.rows()) {
 		utils::ok<api::Task>(r, {});
@@ -27,6 +27,10 @@ coro<void> handle_get(fcgx::request_t *r) {
 	auto [id, task_type, parent, task, tag, answer_rows, answer_cols, answer, deleted] =
 		q.expect1<int64_t, int64_t, int64_t, std::string_view, std::string_view, int, int,
 				  std::string_view, bool>();
+
+	if (deleted) {
+		utils::err(r, api::INVALID_QUERY);
+	}
 
 	api::Task msg{{
 		.id = id,

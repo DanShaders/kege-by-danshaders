@@ -36,6 +36,10 @@ a {
   outline: auto;
 }
 
+.no-glow {
+  box-shadow: none !important;
+}
+
 .fw-600 {
   font-weight: 600;
 }

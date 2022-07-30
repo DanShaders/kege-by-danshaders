@@ -16,7 +16,11 @@ class ButtonIconComponent extends Component<Settings> {
   createElement(): HTMLElement {
     this.settings.enabled ??= this.settings.onClick !== undefined || this.settings.href !== undefined;
 
-    const icon = <svg><use xlink:href={"#" + this.settings.icon}></use></svg>;
+    const icon = (
+      <svg>
+        <use xlink:href={"#" + this.settings.icon}></use>
+      </svg>
+    );
     let button: HTMLAnchorElement | HTMLButtonElement;
 
     if (typeof this.settings.href === "string") {

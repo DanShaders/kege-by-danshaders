@@ -96,7 +96,7 @@ endif()
 ExternalProject_Add(
 	CPP_PROTOC_INITIALIZERS
 	GIT_REPOSITORY "https://github.com/DanShaders/cpp-protoc-initializers.git"
-	GIT_TAG "f20750cd7721c2d3b2b464057ab0015e37faaf2b"
+	GIT_TAG "1e9148ddc1748f6f74378d04dbce2f71d813ac71"
 	CMAKE_ARGS
 		-DCMAKE_BUILD_TYPE=Release
 		-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>

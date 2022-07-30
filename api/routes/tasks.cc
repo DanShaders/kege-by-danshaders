@@ -241,7 +241,7 @@ coro<void> handle_update(fcgx::request_t *r) {
 							  attachment.mime_type(), attachment.has_mime_type(),
 							  attachment.shown_to_user(), attachment.has_shown_to_user(),
 							  attachment.deleted(), attachment.has_deleted(), hash))
-				.expect1<int>();
+				.expect1<bool>();
 		if (is_inserted) {
 			files.push_back({hash, attachment.contents()});
 		}
@@ -257,7 +257,45 @@ coro<void> handle_update(fcgx::request_t *r) {
 	}
 	utils::ok(r, utils::empty_payload{});
 }
+
+coro<void> handle_list(fcgx::request_t *r) {
+	auto db = co_await async::pq::connection_pool::local->get_connection();
+	co_await routes::require_auth(db, r, routes::PERM_VIEW_TASKS);
+
+	api::TaskListResponse msg{{
+		.page_count = 1,
+		.has_more_pages = false,
+	}};
+	
+	auto q = co_await db.exec("SELECT id, task_type, tag FROM tasks WHERE NOT coalesce(deleted, false) ORDER BY id");
+	for (auto [id, task_type, tag] : q.iter<int64_t, int64_t, std::string_view>()) {
+		*msg.add_tasks() = {{
+			.id = id,
+			.task_type = task_type,
+			.tag = std::string(tag),
+		}};
+	}
+
+	utils::ok(r, msg);
+}
+
+coro<void> handle_bulk_delete(fcgx::request_t *r) {
+	auto req = utils::expect<api::TaskBulkDeleteRequest>(r);
+	
+	auto db = co_await async::pq::connection_pool::local->get_connection();
+	co_await routes::require_auth(db, r, routes::PERM_WRITE_TASKS);
+
+	co_await db.transaction();
+	for (auto id : req.tasks()) {
+		co_await db.exec("UPDATE tasks SET deleted=true WHERE id=$1", id);
+	}
+	co_await db.commit();
+
+	utils::ok<utils::empty_payload>(r, {});
+}
 }  // namespace
 
 ROUTE_REGISTER("/tasks/$id", handle_get)
 ROUTE_REGISTER("/tasks/update", handle_update)
+ROUTE_REGISTER("/tasks/list", handle_list)
+ROUTE_REGISTER("/tasks/bulk-delete", handle_bulk_delete)

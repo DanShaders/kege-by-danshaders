@@ -101,11 +101,10 @@ export class HeaderComponent extends Component<HeaderSettings> {
     const refs: HTMLElement[] = [];
     const elem = (
       <header class="sticky-top">
-  			<a ref class='page-header-logo page-header-clickable'>
-  			</a>
-  			<nav ref class='page-header-links'></nav>
-  			<div ref class='page-header-avatar-wrap'></div>
-  			<div ref class='page-tooltip' shown='false'></div>
+        <a ref class="page-header-logo page-header-clickable"></a>
+        <nav ref class="page-header-links"></nav>
+        <div ref class="page-header-avatar-wrap"></div>
+        <div ref class="page-tooltip" shown="false"></div>
       </header>
     ).asElement(refs) as HTMLElement;
 

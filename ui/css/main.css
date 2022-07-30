@@ -14,4 +14,5 @@
 @import "./components/tab-select";
 @import "./components/text-editor";
 
+@import "./pages/admin/tasks/list";
 @import "./pages/login";

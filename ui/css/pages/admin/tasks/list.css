@@ -1,0 +1,34 @@
+.filter-group {
+  border: 1px solid #ced4da;
+}
+
+.filter-group input {
+  border: none !important;
+}
+
+.filter-group button {
+  display: flex;
+  z-index: 3 !important;
+  border: none !important;
+  background-color: white !important;
+  padding-left: 0px;
+}
+
+.filter-group svg {
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0 1px;
+}
+
+.filter-group .icon-hover-circle {
+  position: absolute;
+  margin: -4px 0 0 -4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+}
+
+.filter-group button:hover .icon-hover-circle,
+.filter-group button:focus-visible .icon-hover-circle {
+  background-color: #00000020;
+}

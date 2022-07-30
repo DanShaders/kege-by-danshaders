@@ -177,7 +177,9 @@ class TaskEditComponent extends Component<TaskEditSettings> {
 
           <label class={S_LABEL}>Комментарий</label>
           <div class={S_INPUT}>
-            <textarea ref class="form-control" rows="1" />
+            <textarea ref class="form-control" rows="1">
+              {this.settings.tag}
+            </textarea>
           </div>
 
           <label class={S_LABEL}>Текст</label>

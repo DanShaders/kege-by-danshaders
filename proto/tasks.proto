@@ -29,3 +29,26 @@ message Task {
 	}
 	repeated Attachment attachments = 8;
 }
+
+// Route /tasks/list
+message TaskListRequest {
+	string filter = 1;
+	int32 page = 2;
+}
+
+message TaskListResponse {
+	int32 page_count = 1;
+	bool has_more_pages = 2;
+
+	message TaskEntry {
+		int64 id = 1;
+		int64 task_type = 2;
+		string tag = 3;
+	}
+	repeated TaskEntry tasks = 3;
+}
+
+// Route /tasks/bulk-delete
+message TaskBulkDeleteRequest {
+	repeated int64 tasks = 1;
+}

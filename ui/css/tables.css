@@ -18,6 +18,10 @@
   text-align: left;
 }
 
+.table-forth-col-left tbody td:nth-child(4) {
+  text-align: left;
+}
+
 .table-no-sep > :not(:first-child) {
   border-top: none;
 }
@@ -38,12 +42,26 @@
   background-color: #0000000a;
 }
 
+tr .tr-hover-visible {
+  opacity: 0;
+  transition: 0.15s opacity ease-in-out;
+}
+
+tr:hover .tr-hover-visible,
+.tr-hover-visible:focus-within {
+  opacity: 1;
+}
+
 .column-min {
   width: 0.1%;
 }
 
 .column-norm {
   width: auto;
+}
+
+.column-40px {
+  width: 40px;
 }
 
 .column-80px {

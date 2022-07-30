@@ -103,7 +103,6 @@ export class Router extends EventTarget {
     if (this.pageInstance) {
       if (!(await this.pageInstance.unmount())) {
         toggleLoadingScreen(false);
-        location.hash = this.currentURL;
         return;
       }
       this.pageInstance = undefined;

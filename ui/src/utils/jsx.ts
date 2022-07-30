@@ -1,5 +1,6 @@
-import { Component, ComponentFactory } from "../components/component";
-import { assert, nonNull } from "./assert";
+import { assert, nonNull } from "utils/assert";
+
+import { Component, ComponentFactory } from "components/component";
 
 export declare namespace JSX {
   type Element = Fragment;

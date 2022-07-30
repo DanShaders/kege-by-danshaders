@@ -1,5 +1,6 @@
-import { assert } from "../utils/assert";
-import { Fragment } from "../utils/jsx";
+import { Fragment } from "jsx";
+
+import { assert } from "utils/assert";
 
 interface EventSource<A, B> {
   addEventListener(a: A, b: B): any;

@@ -1,6 +1,6 @@
-import { toggleLoadingScreen, LoadingReason } from "./common";
-import { PageCategoryUpdateEvent } from "./events";
-import { nonNull } from "./assert";
+import { nonNull } from "utils/assert";
+import { LoadingReason, toggleLoadingScreen } from "utils/common";
+import { PageCategoryUpdateEvent } from "utils/events";
 
 type PageCategory = "" | "kims" | "tasks" | "standings" | "control";
 type Handler = (params: URLSearchParams) => Promise<void>;

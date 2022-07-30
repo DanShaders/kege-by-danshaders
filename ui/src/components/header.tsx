@@ -1,8 +1,9 @@
-import { Component } from "./component";
-import { Router, createLink } from "utils/router";
-import { PageCategoryUpdateEvent } from "utils/events";
+import * as jsx from "jsx";
 
-import * as jsx from "utils/jsx";
+import { PageCategoryUpdateEvent } from "utils/events";
+import { createLink, Router } from "utils/router";
+
+import { Component } from "components/component";
 
 type HeaderTooltipEntries = {
   text: string;

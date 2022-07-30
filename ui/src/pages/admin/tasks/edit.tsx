@@ -1,23 +1,27 @@
-import { Component } from "components/component";
-import { SetEntry, SetComponent, listProviderOf, factoryOf } from "components/lists";
-import { requireAuth } from "pages/common";
-import { Task } from "proto/tasks_pb";
-import * as diff from "proto/tasks_pb_diff";
-import { TaskTypeListResponse } from "proto/task-types_pb";
 import { getTaskTypes } from "admin";
-import { dbId } from "utils/common";
-import BidirectionalMap from "utils/bidirectional-map";
-import { Router } from "utils/router";
-import { SyncController, SynchronizablePage } from "utils/sync-controller";
-import { requestU } from "utils/requests";
-import { toggleLoadingScreen } from "utils/common";
-import { ButtonIcon } from "components/button-icon";
-import { FileSelectComponent, FileSelect } from "components/file-select";
-import { AnswerTable } from "components/answer-table";
-import { TextEditor, TextEditorComponent } from "components/text-editor";
-import { LengthChangeEvent } from "utils/events";
 
 import * as jsx from "jsx";
+
+import BidirectionalMap from "utils/bidirectional-map";
+import { dbId } from "utils/common";
+import { toggleLoadingScreen } from "utils/common";
+import { LengthChangeEvent } from "utils/events";
+import { requestU } from "utils/requests";
+import { Router } from "utils/router";
+import { SyncController, SynchronizablePage } from "utils/sync-controller";
+
+import { TaskTypeListResponse } from "proto/task-types_pb";
+import { Task } from "proto/tasks_pb";
+import * as diff from "proto/tasks_pb_diff";
+
+import { AnswerTable } from "components/answer-table";
+import { ButtonIcon } from "components/button-icon";
+import { Component } from "components/component";
+import { FileSelect, FileSelectComponent } from "components/file-select";
+import { factoryOf, listProviderOf, SetComponent, SetEntry } from "components/lists";
+import { TextEditor, TextEditorComponent } from "components/text-editor";
+
+import { requireAuth } from "pages/common";
 
 type TaskEditSettings = diff.DiffableTask & {
   taskTypes: TaskTypeListResponse.AsObject;

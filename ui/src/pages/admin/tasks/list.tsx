@@ -1,15 +1,19 @@
 import { Modal } from "bootstrap";
 
-import { AnyComponent } from "components/component";
-import { ButtonIcon } from "components/button-icon";
-import { FileSelect } from "components/file-select";
-import { Router } from "utils/router";
+import * as jsx from "jsx";
+
 import { toggleLoadingScreen } from "utils/common";
+import { EmptyPayload, requestU } from "utils/requests";
+import { Router } from "utils/router";
+
+import { TaskBulkDeleteRequest, TaskListResponse } from "proto/tasks_pb";
+
+import { ButtonIcon } from "components/button-icon";
+import { AnyComponent } from "components/component";
+import { FileSelect } from "components/file-select";
+import { factoryOf, ListComponent, ListEntry, listProviderOf } from "components/lists";
+
 import { requireAuth } from "pages/common";
-import { TaskListResponse, TaskBulkDeleteRequest } from "proto/tasks_pb";
-import { ListEntry, ListComponent, factoryOf, listProviderOf } from "components/lists";
-import { requestU, EmptyPayload } from "utils/requests";
-import * as jsx from "utils/jsx";
 
 class TaskEntry extends ListEntry<TaskListResponse.TaskEntry.AsObject> {
   createElement(): HTMLTableRowElement {

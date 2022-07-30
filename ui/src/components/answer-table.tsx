@@ -1,9 +1,9 @@
 import { Modal } from "bootstrap";
 
-import { Component } from "components/component";
-import { ButtonIcon } from "components/button-icon";
-
 import * as jsx from "jsx";
+
+import { ButtonIcon } from "components/button-icon";
+import { Component } from "components/component";
 
 type AnswerSettings = {
   answerRows: number;

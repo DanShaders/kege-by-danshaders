@@ -1,4 +1,4 @@
-import { ErrorCode, Response } from "../proto/api_pb";
+import { ErrorCode, Response } from "proto/api_pb";
 
 interface BinaryDeserializable<T> {
   deserializeBinary(bytes: Uint8Array): T;

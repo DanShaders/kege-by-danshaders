@@ -1,6 +1,7 @@
-import { Component, AnyComponent } from "./component";
-import { IDiffableOf, DiffableSetOf } from "utils/diff";
+import { DiffableSetOf, IDiffableOf } from "utils/diff";
 import { LengthChangeEvent, ListPosition, PositionUpdateEvent } from "utils/events";
+
+import { AnyComponent, Component } from "components/component";
 
 interface ListProvider {
   elem: HTMLElement;

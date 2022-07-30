@@ -1,6 +1,8 @@
-import { createLink } from "../utils/router";
-import { Component, createComponentFactory } from "./component";
-import * as jsx from "../utils/jsx";
+import * as jsx from "jsx";
+
+import { createLink } from "utils/router";
+
+import { Component, createComponentFactory } from "components/component";
 
 type Settings = {
   title: string;

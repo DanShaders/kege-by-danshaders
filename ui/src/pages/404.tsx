@@ -1,6 +1,7 @@
-import { Router, createLink } from "../utils/router";
-import { toggleLoadingScreen } from "../utils/common";
-import * as jsx from "../utils/jsx";
+import * as jsx from "jsx";
+
+import { toggleLoadingScreen } from "utils/common";
+import { createLink, Router } from "utils/router";
 
 async function show404(params: URLSearchParams): Promise<void> {
   const [link] = (

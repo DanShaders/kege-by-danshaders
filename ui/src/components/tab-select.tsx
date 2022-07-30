@@ -1,5 +1,6 @@
-import { Component, createComponentFactory } from "./component";
-import * as jsx from "../utils/jsx";
+import * as jsx from "jsx";
+
+import { Component, createComponentFactory } from "components/component";
 
 export type TabSelectSettings = {
   selectedTab: number;

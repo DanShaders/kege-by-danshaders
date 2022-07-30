@@ -1,6 +1,7 @@
-import { Router } from "../utils/router";
-import { requireAuth } from "./common";
-import { toggleLoadingScreen } from "../utils/common";
+import { toggleLoadingScreen } from "utils/common";
+import { Router } from "utils/router";
+
+import { requireAuth } from "pages/common";
 
 async function showMainPage(): Promise<void> {
   requireAuth();

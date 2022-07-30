@@ -1,9 +1,9 @@
-import { toggleLoadingScreen } from "./common";
-import { IDiffable } from "./diff";
-import { requestU, EmptyPayload } from "./requests";
-import { BinarySerializable } from "./requests";
-import { Future } from "./future";
-import { Page } from "./router";
+import { toggleLoadingScreen } from "utils/common";
+import { IDiffable } from "utils/diff";
+import { Future } from "utils/future";
+import { EmptyPayload, requestU } from "utils/requests";
+import { BinarySerializable } from "utils/requests";
+import { Page } from "utils/router";
 
 type SyncControllerParams<Diffable> = {
   statusElem: HTMLSpanElement;

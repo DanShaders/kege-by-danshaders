@@ -1,14 +1,15 @@
+import katex from "katex";
 import Quill, { RangeStatic } from "quill";
 import Delta from "quill-delta";
 import Op from "quill-delta/dist/Op";
-import katex from "katex";
+
+import * as jsx from "jsx";
 
 import BidirectionalMap from "utils/bidirectional-map";
 import * as transforms from "utils/editor-transforms";
-import { Component, createComponentFactory } from "./component";
-import { TabSelect, TabSelectSettings } from "./tab-select";
 
-import * as jsx from "../utils/jsx";
+import { Component, createComponentFactory } from "components/component";
+import { TabSelect, TabSelectSettings } from "components/tab-select";
 
 enum EditorTabs {
   QUILL = 0,

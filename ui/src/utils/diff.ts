@@ -1,4 +1,4 @@
-import { nonNull } from "./assert";
+import { nonNull } from "utils/assert";
 
 export type DeltaChangeCallback = (fields: number, fieldsDelta: number) => void;
 

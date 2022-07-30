@@ -1,8 +1,10 @@
-import { Router } from "utils/router";
-import { HeaderComponent, HeaderSettings } from "components/header";
-import { UserInfo, ErrorCode } from "proto/api_pb";
-import { request } from "utils/requests";
 import { toggleLoadingScreen } from "utils/common";
+import { request } from "utils/requests";
+import { Router } from "utils/router";
+
+import { ErrorCode, UserInfo } from "proto/api_pb";
+
+import { HeaderComponent, HeaderSettings } from "components/header";
 
 export let userInfo: UserInfo.AsObject | undefined | null;
 

@@ -1,11 +1,15 @@
-import { ListComponent, ListEntry, listProviderOf, factoryOf } from "components/lists";
-import { ButtonIcon } from "components/button-icon";
-import { Router } from "utils/router";
+import * as jsx from "jsx";
+
 import { toggleLoadingScreen } from "utils/common";
-import { requireAuth } from "pages/common";
 import { requestU } from "utils/requests";
+import { Router } from "utils/router";
+
 import { Jobs } from "proto/jobs_pb";
-import * as jsx from "utils/jsx";
+
+import { ButtonIcon } from "components/button-icon";
+import { factoryOf, ListComponent, ListEntry, listProviderOf } from "components/lists";
+
+import { requireAuth } from "pages/common";
 
 class Job extends ListEntry<Jobs.Desc.AsObject> {
   createElement(): HTMLTableRowElement {

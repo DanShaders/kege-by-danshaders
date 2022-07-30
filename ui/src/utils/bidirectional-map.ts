@@ -1,4 +1,4 @@
-import { nonNull } from "./assert";
+import { nonNull } from "utils/assert";
 
 export default class BidirectionalMap<T, U> {
   private forward: Map<T, U>;

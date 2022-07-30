@@ -1,11 +1,15 @@
-import { Router } from "../utils/router";
-import { toggleLoadingScreen } from "../utils/common";
-import { request, requestU, EmptyPayload } from "../utils/requests";
-import { userInfo, setGlobalUserInfo } from "./common";
-import { Notice, NoticeComponent, NoticeSettings } from "../components/notice";
-import { ErrorCode, UserInfo } from "../proto/api_pb";
-import { LoginRequest, LogoutRequest } from "../proto/user_pb";
-import * as jsx from "../utils/jsx";
+import * as jsx from "jsx";
+
+import { toggleLoadingScreen } from "utils/common";
+import { EmptyPayload, request, requestU } from "utils/requests";
+import { Router } from "utils/router";
+
+import { ErrorCode, UserInfo } from "proto/api_pb";
+import { LoginRequest, LogoutRequest } from "proto/user_pb";
+
+import { Notice, NoticeComponent, NoticeSettings } from "components/notice";
+
+import { setGlobalUserInfo, userInfo } from "pages/common";
 
 async function showLoginPage(params: URLSearchParams): Promise<void> {
   if (userInfo) {

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import BidirectionalMap from "utils/bidirectional-map";
-import { TraverseElement, TraverseHandler, TraverseTextHandler, TraverseRules, traverse } from "utils/traverse";
+import { traverse, TraverseElement, TraverseHandler, TraverseRules, TraverseTextHandler } from "utils/traverse";
 
 export type TextEditorContext = {
   color: string[];

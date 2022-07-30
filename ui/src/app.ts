@@ -1,9 +1,9 @@
-import { Router, RouteNotFoundError } from "./utils/router";
+import { RouteNotFoundError, Router } from "utils/router";
 
-import "./pages/404";
-import "./pages/common";
-import "./pages/login";
-import "./pages/main";
+import "pages/404";
+import "pages/common";
+import "pages/login";
+import "pages/main";
 
 async function initApplication(): Promise<void> {
   await Router.instance.goTo("#init");

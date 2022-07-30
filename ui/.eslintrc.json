@@ -9,14 +9,23 @@
     "ecmaVersion": 12,
     "sourceType": "module"
   },
-  "plugins": ["@typescript-eslint"],
+  "plugins": ["@typescript-eslint", "simple-import-sort"],
   "rules": {
     "require-jsdoc": "off",
     "max-len": ["error", { "code": 120 }],
-    "no-unused-vars": "off",
-    "no-shadow": "off",
+
     "@typescript-eslint/explicit-function-return-type": "error",
+    "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": ["error", { "varsIgnorePattern": "^jsx$" }],
-    "@typescript-eslint/no-shadow": ["error"]
+    "no-shadow": "off",
+    "@typescript-eslint/no-shadow": ["error"],
+
+    "simple-import-sort/imports": [
+      "error",
+      {
+        "groups": [[""], ["^jsx$"], ["^utils/.+"], ["^proto/.+"], ["^components/.+"], ["^pages/.+"], ["^\\u0000.+"]]
+      }
+    ],
+    "simple-import-sort/exports": "error"
   }
 }

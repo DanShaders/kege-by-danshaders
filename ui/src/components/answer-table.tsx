@@ -11,8 +11,8 @@ type AnswerSettings = {
   answer: Uint8Array;
 };
 
-const textDecoder = new TextDecoder(),
-  textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
+const textEncoder = new TextEncoder();
 
 export class AnswerTable extends Component<AnswerSettings> {
   parsedAnswer?: string[][];
@@ -85,7 +85,7 @@ export class AnswerTable extends Component<AnswerSettings> {
           settings={{
             title: "Изменить размер",
             icon: "icon-grid-resize",
-            onClick: () => {
+            onClick: (): void => {
               rowInput.value = this.settings.answerRows.toString();
               colInput.value = this.settings.answerCols.toString();
               dimsModal.show();

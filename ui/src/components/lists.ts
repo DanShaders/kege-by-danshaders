@@ -131,7 +131,7 @@ class BasicSetComponent<
     this.provider = provider;
     this.provider.eventTarget = this;
     this.factory = factory as any;
-    this.comps = Array.from(this.settings.entries()).map(([id, obj], index) =>
+    this.comps = Array.from(this.settings.entries()).map(([, obj], index) =>
       factory(settingsMap(obj), this, this.positionOf(index, this.settings.length))
     ) as any;
     for (const comp of this.comps) {

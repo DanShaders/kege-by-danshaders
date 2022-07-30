@@ -37,7 +37,7 @@ class TaskEntry extends ListEntry<TaskListResponse.TaskEntry.AsObject> {
               title: "Удалить",
               icon: "icon-delete",
               hoverColor: "red",
-              onClick: async () => {
+              onClick: async (): Promise<void> => {
                 refs[0]!.unproxiedElem!.blur();
                 await requestU(
                   EmptyPayload,
@@ -73,7 +73,7 @@ async function showTaskListPage(): Promise<void> {
             settings={{
               title: "Импортировать",
               icon: "icon-import",
-              onClick: () => {
+              onClick: (): void => {
                 importModalClass.show();
               },
             }}

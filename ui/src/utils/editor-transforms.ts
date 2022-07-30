@@ -99,7 +99,7 @@ function cloneTag(elem: HTMLElement, children: TraverseElement[]): HTMLElement {
 function useTag(): EditorHandler {
   return [
     () => {},
-    (elem, children, ctx): [HTMLElement] => {
+    (elem, children): [HTMLElement] => {
       const res = cloneTag(elem, children);
       for (const attr of elem.attributes) res.setAttribute(attr.name, attr.value);
       return [res];
@@ -110,7 +110,7 @@ function useTag(): EditorHandler {
 function useTagWithoutAttributes(): EditorHandler {
   return [
     () => {},
-    (elem, children, ctx): [HTMLElement] => {
+    (elem, children): [HTMLElement] => {
       return [cloneTag(elem, children)];
     },
   ];
@@ -119,7 +119,7 @@ function useTagWithoutAttributes(): EditorHandler {
 function useTagWithAttributes(attrs: string[]): EditorHandler {
   return [
     () => {},
-    (elem, children, ctx): [HTMLElement] => {
+    (elem, children): [HTMLElement] => {
       const res = cloneTag(elem, children);
       for (const attr of attrs) {
         const value = elem.getAttribute(attr);
@@ -150,7 +150,7 @@ function isElementCreatingBr(elem: any): boolean {
 function useBrInPreview(): EditorHandler {
   return [
     () => {},
-    (elem, children, ctx): HTMLElement[] => {
+    (elem): HTMLElement[] => {
       // don't want <br> tag in situations like "</div> <ENTER> 123"
       if (isElementCreatingBr(elem.previousSibling)) return [];
       return [document.createElement("br")];
@@ -161,7 +161,7 @@ function useBrInPreview(): EditorHandler {
 function useDivInCode(): EditorHandler {
   return [
     () => {},
-    (elem, children, ctx): TraverseElement[] => {
+    (elem, children): TraverseElement[] => {
       const res = cloneTag(elem, children);
       for (const attr of elem.attributes) res.setAttribute(attr.name, attr.value);
       if (isElementCreatingBr(elem)) return [res, new Text("\n")];
@@ -209,7 +209,7 @@ function useImageInCode(): EditorHandler {
 function useFontInPreview(): EditorHandler {
   return [
     () => {},
-    (elem, children, ctx): HTMLElement[] => {
+    (elem, children): HTMLElement[] => {
       const res = cloneTag(elem, children);
       const color = elem.getAttribute("color");
       if (color) res.setAttribute("color", color);
@@ -221,7 +221,7 @@ function useFontInPreview(): EditorHandler {
 }
 
 function useText(): EditorTextHandler {
-  return [() => {}, (elem, children, ctx): [Text] => [elem.cloneNode(true) as Text]];
+  return [() => {}, (elem): [Text] => [elem.cloneNode(true) as Text]];
 }
 
 function useFontInQuill(): EditorHandler {
@@ -269,7 +269,7 @@ function useTextInQuill(): EditorTextHandler {
 function useAlignInQuill(): EditorHandler {
   return [
     () => {},
-    (elem, children, ctx): [HTMLElement] => {
+    (elem, children): [HTMLElement] => {
       const res = document.createElement("div");
       const calign = elem.getAttribute("align")!;
       const nalign = PREVIEW_TO_QUILL_ALIGN.get(calign);
@@ -285,7 +285,7 @@ function useAlignInQuill(): EditorHandler {
 function wrapInto(tag: string, attrs: [string, string][]): EditorHandler {
   return [
     () => {},
-    (elem, children, ctx): TraverseElement[] => {
+    (elem, children): TraverseElement[] => {
       const res = document.createElement(tag);
       for (const child of children) res.appendChild(child);
       for (const attr of attrs) res.setAttribute(attr[0], attr[1]);
@@ -315,7 +315,7 @@ function getColorFromStyle(style: string): string | null {
 function useStyleInCode(): EditorHandler {
   return [
     () => {},
-    (elem, children, ctx): TraverseElement[] => {
+    (elem, children): TraverseElement[] => {
       const color = getColorFromStyle(elem.getAttribute("style")!);
       if (color && color !== "black" && color !== "#000000") {
         const res = document.createElement("font");
@@ -332,7 +332,7 @@ function useStyleInCode(): EditorHandler {
 function insertNewLine(): EditorHandler {
   return [
     () => {},
-    (elem, children, ctx): TraverseElement[] => {
+    (elem, children): TraverseElement[] => {
       children.push(new Text("\n"));
       return children;
     },
@@ -344,7 +344,7 @@ const FORMULA_MAGIC = "H16YohxG="; // our Quill fork identifies formulas by this
 function useFormulaInQuill(): EditorHandler {
   return [
     () => {},
-    (elem, children, ctx): [HTMLElement] => {
+    (elem): [HTMLElement] => {
       const res = document.createElement("formula");
       res.setAttribute("data-value", FORMULA_MAGIC + elem.innerText);
       return [res];
@@ -355,7 +355,7 @@ function useFormulaInQuill(): EditorHandler {
 function useFormulaInCode(): EditorHandler {
   return [
     () => {},
-    (elem, children, ctx): [HTMLElement] => {
+    (elem): [HTMLElement] => {
       const res = document.createElement("formula");
       res.innerText = elem.getAttribute("data-value")!.substr(FORMULA_MAGIC.length);
       return [res];

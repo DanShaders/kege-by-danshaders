@@ -11,12 +11,12 @@ export class FileSelectComponent extends Component<Settings> {
   private spanElem?: HTMLSpanElement;
   private buttonElem?: HTMLButtonElement;
 
-  private getTextForEmpty() {
+  private getTextForEmpty(): string {
     return this.settings.multiple ? "Файлы не выбраны" : "Файл не выбран";
   }
 
   createElement(): HTMLDivElement {
-    let refs: HTMLElement[] = [];
+    const refs: HTMLElement[] = [];
     const elem = (
       <div class="input-group d-inline-flex file-select focusable" role="button">
         <span class="input-group-text">
@@ -48,7 +48,7 @@ export class FileSelectComponent extends Component<Settings> {
     return elem;
   }
 
-  onChange() {
+  onChange(): void {
     let filename = "";
     let totalSize = 0;
     for (const file of this.inputElem!.files ?? []) {
@@ -71,7 +71,7 @@ export class FileSelectComponent extends Component<Settings> {
     return this.inputElem!.files;
   }
 
-  clear() {
+  clear(): void {
     this.inputElem!.value = "";
     this.onChange();
   }

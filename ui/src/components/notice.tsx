@@ -30,7 +30,7 @@ export class NoticeComponent extends Component<NoticeSettings> {
         <button
           type="button"
           class="btn-close btn-no-shadow"
-          onclick={() => {
+          onclick={(): void => {
             this.setVisibility(false);
           }}
         />

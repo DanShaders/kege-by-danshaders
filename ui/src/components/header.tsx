@@ -124,7 +124,7 @@ export class HeaderComponent extends Component<HeaderSettings> {
       }
     });
 
-    this.registerExternalListener(window, "resize", (event: UIEvent) => {
+    this.registerExternalListener(window, "resize", () => {
       // Move tooltip on resize
       const currentId = tooltip.getAttribute("last");
       const shown = tooltip.getAttribute("shown") === "true";
@@ -172,7 +172,7 @@ export class HeaderComponent extends Component<HeaderSettings> {
       avatarElem.innerHTML = `
 				<svg class='page-header-avatar-icon'><use xlink:href='#avatar-icon'></use></svg>
 				<svg class='page-header-avatar-arrow page-header-icon-big'><use xlink:href='#angle-down'></use></svg>`;
-      attachTooltip(avatarElem, "profile", (event) => {
+      attachTooltip(avatarElem, "profile", () => {
         tooltip.innerHTML = `<div class='page-header-pr-info'>
 						<b>${this.settings.profile.name}</b><br>
 						@${this.settings.profile.username}

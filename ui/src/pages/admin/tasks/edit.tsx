@@ -9,7 +9,7 @@ import { dbId } from "utils/common";
 import BidirectionalMap from "utils/bidirectional-map";
 import { Router } from "utils/router";
 import { SyncController, SynchronizablePage } from "utils/sync-controller";
-import { requestU, EmptyPayload } from "utils/requests";
+import { requestU } from "utils/requests";
 import { toggleLoadingScreen } from "utils/common";
 import { ButtonIcon } from "components/button-icon";
 import { FileSelectComponent, FileSelect } from "components/file-select";
@@ -36,7 +36,7 @@ type AttachmentSettings = {
 
 class Attachment extends SetEntry<diff.Task.DiffableAttachment, AttachmentSettings> {
   createElement(): HTMLElement {
-    const setVisibility = (e: Event) => {
+    const setVisibility = (e: Event): void => {
       this.settings.shownToUser = (e.target as HTMLInputElement).checked;
     };
 
@@ -66,11 +66,11 @@ class Attachment extends SetEntry<diff.Task.DiffableAttachment, AttachmentSettin
     ).asElement() as HTMLElement;
   }
 
-  open() {
+  open(): void {
     window.open(this.settings.realLink);
   }
 
-  delete() {
+  delete(): void {
     delete this.settings.contents;
     if (this.settings.isBlob) {
       URL.revokeObjectURL(this.settings.realLink);
@@ -101,8 +101,8 @@ class TaskEditComponent extends Component<TaskEditSettings> {
       listProviderOf("tbody"),
       factoryOf(Attachment),
       (obj): diff.Task.DiffableAttachment & AttachmentSettings => {
-        const realLink = "/api/attachment/" + obj.hash,
-          fakeLink = getLink();
+        const realLink = "/api/attachment/" + obj.hash;
+        const fakeLink = getLink();
         this.settings.realMap.add(obj.id, realLink);
         this.settings.fakeMap.add(obj.id, fakeLink);
         return Object.assign(obj, {
@@ -116,8 +116,8 @@ class TaskEditComponent extends Component<TaskEditSettings> {
     );
 
     const addFile = async (id: number, file: File | Blob, filename: string, shownToUser: boolean): Promise<void> => {
-      const realLink = URL.createObjectURL(file),
-        fakeLink = getLink();
+      const realLink = URL.createObjectURL(file);
+      const fakeLink = getLink();
       this.settings.realMap.add(id, realLink);
       this.settings.fakeMap.add(id, fakeLink);
 
@@ -138,7 +138,7 @@ class TaskEditComponent extends Component<TaskEditSettings> {
       });
     };
 
-    const uploadFile = async () => {
+    const uploadFile = async (): Promise<void> => {
       const files = fileInput.getFiles() ?? [];
       if (files.length === 0) {
         fileInput.forceFocus();
@@ -151,15 +151,15 @@ class TaskEditComponent extends Component<TaskEditSettings> {
 
     this.settings.uploadImage = (file: File | Blob): number => {
       const id = dbId();
-      (async () => {
+      (async (): Promise<void> => {
         await addFile(id, file, file instanceof File ? file.name : "Image", false);
       })();
       return id;
     };
 
-    const S_ROW = "row gy-2",
-      S_LABEL = "col-md-2 text-md-end fw-600 gx-2 gx-lg-3 align-self-start",
-      S_INPUT = "col-md-10 gy-0 gy-md-2 gx-2 gx-lg-3";
+    const S_ROW = "row gy-2";
+    const S_LABEL = "col-md-2 text-md-end fw-600 gx-2 gx-lg-3 align-self-start";
+    const S_INPUT = "col-md-10 gy-0 gy-md-2 gx-2 gx-lg-3";
 
     const elem = (
       <div class="container-fluid">
@@ -167,9 +167,9 @@ class TaskEditComponent extends Component<TaskEditSettings> {
           <label class={S_LABEL}>Тип задания</label>
           <div class={S_INPUT}>
             <select ref class="form-select">
-              {this.settings.taskTypes.typeList.map((elem) => (
-                <option value={elem.id} selectedIf={elem.id === this.settings.taskType}>
-                  {elem.fullName}
+              {this.settings.taskTypes.typeList.map((entry) => (
+                <option value={entry.id} selectedIf={entry.id === this.settings.taskType}>
+                  {entry.fullName}
                 </option>
               ))}
             </select>
@@ -259,7 +259,7 @@ class TaskEditComponent extends Component<TaskEditSettings> {
     return elem;
   }
 
-  flush() {
+  flush(): void {
     this.textEditor?.flush();
   }
 }

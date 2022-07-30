@@ -1,7 +1,6 @@
 import Quill, { RangeStatic } from "quill";
 import Delta from "quill-delta";
 import Op from "quill-delta/dist/Op";
-import AttributeMap from "quill-delta/dist/AttributeMap";
 import katex from "katex";
 
 import BidirectionalMap from "utils/bidirectional-map";
@@ -226,7 +225,7 @@ export class TextEditorComponent extends Component<TextEditorSettings> {
     }
   }
 
-  onTabSwitch(index: number, oldIndex: number) {
+  onTabSwitch(index: number, oldIndex: number): void {
     if (oldIndex === EditorTabs.CODE) {
       const code = this.codeContainer.value;
       if (this.textHtml[oldIndex] !== code) {

@@ -36,7 +36,7 @@ export class TabSelectComponent extends Component<TabSelectSettings> {
     return elem;
   }
 
-  selectTab(index: number) {
+  selectTab(index: number): void {
     const oldIndex = this.settings.selectedTab;
 
     this.controls[oldIndex].removeAttribute("disabled");

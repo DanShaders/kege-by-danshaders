@@ -1,7 +1,6 @@
 import { Component, ComponentFactory } from "../components/component";
 import { assert, nonNull } from "./assert";
 
-/* eslint-disable no-unused-vars */
 export declare namespace JSX {
   type Element = Fragment;
   interface IntrinsicElements extends IntrinsicElementMap {}
@@ -14,7 +13,6 @@ export declare namespace JSX {
 
   type Tag = keyof JSX.IntrinsicElements;
 }
-/* eslint-enable no-unused-vars */
 
 type Attributes = { [key: string]: string | boolean | ((e: Event) => void) };
 

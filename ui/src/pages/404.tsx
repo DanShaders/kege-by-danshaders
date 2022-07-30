@@ -1,5 +1,4 @@
 import { Router, createLink } from "../utils/router";
-import { requireAuth } from "./common";
 import { toggleLoadingScreen } from "../utils/common";
 import * as jsx from "../utils/jsx";
 

@@ -14,6 +14,8 @@ std::string url_decode(const std::string_view &);
 /** Encodes string to URL-encoded format. */
 std::string url_encode(const std::string_view &);
 
+using parameters_map = std::map<std::string, std::string, std::less<>>;
+
 /**
  * Parses URL search params.
  *
@@ -22,7 +24,7 @@ std::string url_encode(const std::string_view &);
  * @return     map from parameter name to its values. In case of duplicate parameter names the
  *             last one is used. Empty names/values are accepted.
  */
-std::map<std::string, std::string> parse_query_string(const std::string_view &);
+parameters_map parse_query_string(const std::string_view &);
 
 /**
  * Parses cookie header from client.
@@ -32,7 +34,7 @@ std::map<std::string, std::string> parse_query_string(const std::string_view &);
  * @return     map from cookie name to its values. In case of duplicate parameter names the last one
  *             is used. Empty names/values are accepted.
  */
-std::map<std::string, std::string> parse_cookies(const char *s);
+parameters_map parse_cookies(const char *s);
 
 /** Encodes string into lowercase hex */
 std::string b16_decode(const std::string_view &);

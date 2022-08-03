@@ -54,8 +54,8 @@ std::string utils::url_encode(const std::string_view &str) {
 	return ret;
 }
 
-std::map<std::string, std::string> utils::parse_query_string(const std::string_view &qs) {
-	std::map<std::string, std::string> data;
+parameters_map utils::parse_query_string(const std::string_view &qs) {
+	parameters_map data;
 	std::string key, value;
 	bool on_key = true;
 	for (char c : qs) {
@@ -75,11 +75,11 @@ std::map<std::string, std::string> utils::parse_query_string(const std::string_v
 	return data;
 }
 
-std::map<std::string, std::string> utils::parse_cookies(const char *s) {
+parameters_map utils::parse_cookies(const char *s) {
 	if (!s) {
 		return {};
 	}
-	std::map<std::string, std::string> data;
+	parameters_map data;
 	std::string key, value;
 	bool on_key = true;
 	for (char c : std::string_view{s}) {

@@ -71,7 +71,8 @@ public:
 		n->current = route;
 	}
 
-	route_t get_route(std::string_view path, std::map<std::string, std::string> &vars) {
+	route_t get_route(std::string_view path,
+					  std::map<std::string, std::string, std::less<>> &vars) {
 		auto n = root.get();
 
 		for (auto part_v : std::views::split(path.substr(1), DELIM)) {

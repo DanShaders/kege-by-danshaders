@@ -30,9 +30,9 @@ void utils::err_nothrow(fcgx::request_t *r, api::ErrorCode code) {
 	send_raw(r, code, "");
 }
 
-void utils::send_raw(fcgx::request_t *r, api::ErrorCode code, const std::string &data) {
+void utils::send_raw(fcgx::request_t *r, api::ErrorCode code, std::string_view data) {
 	api::Response response;
 	response.set_code(code);
-	response.set_response(data);
+	response.set_response(std::string(data));
 	response.SerializeToOstream(&r->out);
 }

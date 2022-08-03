@@ -275,29 +275,45 @@ coro<result> pq::detail::exec(connection_storage &c, const char *command, int si
 }
 
 /* ==== Decoders for PQ binary format ==== */
-#define SIMPLE_PQ_DECODER(T, OID)                                                            \
-	template <>                                                                              \
-	bool pq::detail::oid_decoder<T>::is_valid(int oid) {                                     \
-		return oid == OID;                                                                   \
-	}                                                                                        \
-                                                                                             \
-	template <>                                                                              \
-	T pq::detail::oid_decoder<T>::get([[maybe_unused]] char *data, [[maybe_unused]] int len, \
-									  [[maybe_unused]] int oid)
+#define SIMPLE_PQ_DECODER(T, OID)                                          \
+	template <>                                                            \
+	bool pq::detail::pq_binary_converter<T>::is_valid(int oid) {           \
+		return oid == OID;                                                 \
+	}                                                                      \
+                                                                           \
+	template <>                                                            \
+	T pq::detail::pq_binary_converter<T>::get([[maybe_unused]] char *data, \
+											  [[maybe_unused]] int len, [[maybe_unused]] int oid)
 
-#define DELEGATE_PQ_DECODER(FROM, TO)                                       \
-	template <>                                                             \
-	bool pq::detail::oid_decoder<FROM>::is_valid(int oid) {                 \
-		return oid_decoder<TO>::is_valid(oid);                              \
-	}                                                                       \
-                                                                            \
-	template <>                                                             \
-	FROM pq::detail::oid_decoder<FROM>::get(char *data, int len, int oid) { \
-		return (FROM){oid_decoder<TO>::get(data, len, oid)};                \
+#define SIMPLE_PQ_ENCODER(T)                                                 \
+	template <>                                                              \
+	std::optional<std::string_view> pq::detail::pq_binary_converter<T>::set( \
+		const T &obj, [[maybe_unused]] std::string &buff)
+
+#define DELEGATE_PQ_CONVERSION(FROM, TO)                                            \
+	template <>                                                                     \
+	bool pq::detail::pq_binary_converter<FROM>::is_valid(int oid) {                 \
+		return pq_binary_converter<TO>::is_valid(oid);                              \
+	}                                                                               \
+                                                                                    \
+	template <>                                                                     \
+	FROM pq::detail::pq_binary_converter<FROM>::get(char *data, int len, int oid) { \
+		return (FROM){pq_binary_converter<TO>::get(data, len, oid)};                \
+	}                                                                               \
+                                                                                    \
+	template <>                                                                     \
+	std::optional<std::string_view> pq::detail::pq_binary_converter<FROM>::set(     \
+		const FROM &obj, std::string &buff) {                                       \
+		return pq_binary_converter<TO>::set((TO){obj}, buff);                       \
 	}
 
 SIMPLE_PQ_DECODER(bool, 16) {
 	return bool(data[0]);
+}
+
+SIMPLE_PQ_ENCODER(bool) {
+	static char VALUES[] = {0, 1};
+	return std::string_view(VALUES + obj, 1);
 }
 
 SIMPLE_PQ_DECODER(int64_t, 20) {
@@ -308,12 +324,24 @@ SIMPLE_PQ_DECODER(int64_t, 20) {
 	return int64_t(res);
 }
 
+SIMPLE_PQ_ENCODER(int64_t) {
+	uint64_t res = htobe64(static_cast<uint64_t>(obj));
+	buff.append(reinterpret_cast<char *>(&res), 8);
+	return {};
+}
+
 SIMPLE_PQ_DECODER(int, 23) {
 	assert(len == 4);
 	uint32_t res;
 	memcpy(&res, data, len);
 	res = be32toh(res);
 	return int(res);
+}
+
+SIMPLE_PQ_ENCODER(int) {
+	uint32_t res = htobe32(static_cast<uint32_t>(obj));
+	buff.append(reinterpret_cast<char *>(&res), 4);
+	return {};
 }
 
 SIMPLE_PQ_DECODER(double, 701) {
@@ -329,29 +357,35 @@ SIMPLE_PQ_DECODER(timestamp, 1114) {
 	const pq::timestamp PQ_EPOCH = sys_days{January / 1 / 2000};
 
 #if KEGE_PQ_FP_TIMESTAMP
-	auto secs = oid_decoder<double>::get(data, len, oid);
+	auto secs = pq_binary_converter<double>::get(data, len, oid);
 	return PQ_EPOCH + round<microseconds>(duration<double>(secs));
 #else
 	const int64_t MICRO = 1'000'000;
-	auto secs = oid_decoder<int64_t>::get(data, len, oid);
+	auto secs = pq_binary_converter<int64_t>::get(data, len, oid);
 	return PQ_EPOCH + seconds{secs / MICRO} + microseconds{secs % MICRO};
 #endif
 }
 
 template <>
-bool pq::detail::oid_decoder<std::string_view>::is_valid(int oid) {
+bool pq::detail::pq_binary_converter<std::string_view>::is_valid(int oid) {
 	return oid == 17 || oid == 25 || oid == 1042;
 }
 
 template <>
-std::string_view pq::detail::oid_decoder<std::string_view>::get(char *data, int len, int) {
+std::string_view pq::detail::pq_binary_converter<std::string_view>::get(char *data, int len, int) {
 	return {data, (unsigned) len};
 }
 
-DELEGATE_PQ_DECODER(std::string, std::string_view)
+SIMPLE_PQ_ENCODER(std::string_view) {
+	return obj;
+}
+
+DELEGATE_PQ_CONVERSION(std::string, std::string_view)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnarrowing"
-DELEGATE_PQ_DECODER(unsigned int, int)
-DELEGATE_PQ_DECODER(uint64_t, int64_t)
+DELEGATE_PQ_CONVERSION(unsigned int, int)
+DELEGATE_PQ_CONVERSION(uint64_t, int64_t)
+DELEGATE_PQ_CONVERSION(long long, int64_t)
+DELEGATE_PQ_CONVERSION(unsigned long long, uint64_t)
 #pragma GCC diagnostic pop

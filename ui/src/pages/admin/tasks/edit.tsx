@@ -296,6 +296,7 @@ class TaskEditPage extends SynchronizablePage<diff.DiffableTask> {
     });
 
     const settings = this.syncController.getLocal();
+    settings.taskType ||= (await getTaskTypes()).typeList[0].id;
     settings.answerRows ||= 1;
     settings.answerCols ||= 1;
     this.syncController.supressSave = false;

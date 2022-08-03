@@ -21,7 +21,7 @@ message Response {
 }
 
 message UserInfo {
-	int32 user_id = 1;
+	int64 user_id = 1;
 	string username = 2;
 	string display_name = 3;
 	uint32 perms = 4; 

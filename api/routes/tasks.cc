@@ -16,9 +16,9 @@ coro<void> handle_get(fcgx::request_t *r) {
 	auto db = co_await async::pq::connection_pool::local->get_connection();
 	co_await routes::require_auth(db, r, routes::PERM_VIEW_TASKS);
 
-	auto q = co_await db.exec(
-		"SELECT * FROM tasks WHERE id = $1::bigint",
-		r->params["id"]);
+	int64_t task_id = utils::expect<int64_t>(r, "id");
+
+	auto q = co_await db.exec("SELECT * FROM tasks WHERE id = $1", task_id);
 	if (!q.rows()) {
 		utils::ok<api::Task>(r, {});
 		co_return;
@@ -45,8 +45,8 @@ coro<void> handle_get(fcgx::request_t *r) {
 
 	auto q2 = co_await db.exec(
 		"SELECT id, filename, mime_type, hash, shown_to_user FROM task_attachments WHERE task_id = "
-		"$1::bigint AND NOT coalesce(deleted, false)",
-		r->params["id"]);
+		"$1 AND NOT coalesce(deleted, false)",
+		task_id);
 	for (auto [attachment_id, filename, mime_type, hash, shown_to_user] :
 		 q2.iter<int64_t, std::string_view, std::string_view, std::string_view, bool>()) {
 		*msg.add_attachments() = {{
@@ -113,6 +113,27 @@ const char ATTACHMENT_UPDATE_SQL[] =
 	"WHERE "
 	  "task_attachments.task_id = excluded.task_id "
 	"RETURNING (xmax = 0)";
+
+const char TASK_LIST_SQL[] =
+	"SELECT "
+	  "tasks.id, task_types.short_name, tasks.tag "
+	"FROM "
+	  "tasks "
+	  "INNER JOIN task_types ON tasks.task_type = task_types.id "
+	"WHERE "
+	  "NOT coalesce(tasks.deleted, false)"
+	"ORDER BY "
+	  "id";
+
+const char TASK_BULK_DELETE_SQL[] =
+	"UPDATE "
+	"  tasks "
+	"SET "
+	"  deleted = true "
+	"FROM "
+	"  unnest($1::bigint[]) as ids "
+	"WHERE "
+	"  tasks.id = ids";
 // clang-format on
 
 const lxb_char_t *operator"" _u(const char *str, size_t) {
@@ -270,9 +291,9 @@ coro<void> handle_list(fcgx::request_t *r) {
 		.page_count = 1,
 		.has_more_pages = false,
 	}};
-	
-	auto q = co_await db.exec("SELECT id, task_type, tag FROM tasks WHERE NOT coalesce(deleted, false) ORDER BY id");
-	for (auto [id, task_type, tag] : q.iter<int64_t, int64_t, std::string_view>()) {
+
+	auto q = co_await db.exec(TASK_LIST_SQL);
+	for (auto [id, task_type, tag] : q.iter<int64_t, int, std::string_view>()) {
 		*msg.add_tasks() = {{
 			.id = id,
 			.task_type = task_type,
@@ -284,16 +305,11 @@ coro<void> handle_list(fcgx::request_t *r) {
 }
 
 coro<void> handle_bulk_delete(fcgx::request_t *r) {
-	auto req = utils::expect<api::TaskBulkDeleteRequest>(r);
-	
 	auto db = co_await async::pq::connection_pool::local->get_connection();
 	co_await routes::require_auth(db, r, routes::PERM_WRITE_TASKS);
 
-	co_await db.transaction();
-	for (auto id : req.tasks()) {
-		co_await db.exec("UPDATE tasks SET deleted=true WHERE id=$1", id);
-	}
-	co_await db.commit();
+	auto req = utils::expect<api::TaskBulkDeleteRequest>(r);
+	co_await db.exec(TASK_BULK_DELETE_SQL, req.tasks());
 
 	utils::ok<utils::empty_payload>(r, {});
 }

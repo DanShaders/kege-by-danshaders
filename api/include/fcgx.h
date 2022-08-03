@@ -62,7 +62,7 @@ public:
 	request_streambuf *_rsb;
 
 	std::string remote_ip, method, request_uri, raw_params;
-	std::map<std::string, std::string> params, cookies;
+	std::map<std::string, std::string, std::less<>> params, cookies;
 
 	body_type_t body_type = BODY_UNINITIALIZED;
 	json body;

@@ -76,7 +76,7 @@ public:
 
 	struct creation_info {
 		std::string_view db_path;
-		std::size_t connections = 1;
+		size_t connections = 1;
 		clock::duration creation_cooldown;
 	};
 
@@ -97,8 +97,8 @@ private:
 public:
 	result(PGresult *raw);
 
-	std::size_t rows() const;
-	std::size_t columns() const;
+	size_t rows() const;
+	size_t columns() const;
 
 	template <typename... Ts>
 	typed_result<Ts...> as() const {
@@ -120,20 +120,20 @@ public:
 template <typename... Ts>
 class typed_result {
 private:
-	const static std::size_t SIZE = sizeof...(Ts);
+	const static size_t SIZE = sizeof...(Ts);
 
 	raw_result res;
 	int oids[SIZE];
 
 public:
-	template <std::size_t... Is>
+	template <size_t... Is>
 	class iterator {
 	private:
-		std::size_t i;
+		size_t i;
 		const typed_result<Ts...> *res;
 
 	public:
-		iterator(std::size_t i_, const typed_result<Ts...> *res_, std::index_sequence<Is...>)
+		iterator(size_t i_, const typed_result<Ts...> *res_, std::index_sequence<Is...>)
 			: i(i_), res(res_) {}
 
 		std::tuple<Ts...> operator*() const;
@@ -149,62 +149,109 @@ public:
 	typed_result(raw_result res_);
 
 	auto begin() const {
-		return iterator{(std::size_t) 0, this, std::index_sequence_for<Ts...>{}};
+		return iterator{(size_t) 0, this, std::index_sequence_for<Ts...>{}};
 	}
 
 	auto end() const {
-		return iterator{(std::size_t) PQntuples(res.get()), this, std::index_sequence_for<Ts...>{}};
+		return iterator{(size_t) PQntuples(res.get()), this, std::index_sequence_for<Ts...>{}};
 	}
 };
 
 namespace detail {
 	/** @private */
 	template <typename T>
-	struct oid_decoder {
+	struct pq_binary_converter {
 		static bool is_valid(int oid);
 		static T get(char *data, int length, int oid);
+		static std::optional<std::string_view> set(const T &obj, std::string &buff);
 	};
 
 	template <typename T>
-	struct oid_decoder<std::optional<T>> {
+	struct pq_binary_converter<std::optional<T>> {
 		static bool is_valid(int oid) {
-			return oid_decoder<T>::is_valid(oid);
+			return pq_binary_converter<T>::is_valid(oid);
 		}
 
 		static T get(char *data, int length, int oid) {
-			return oid_decoder<T>::get(data, length, oid);
+			return pq_binary_converter<T>::get(data, length, oid);
+		}
+	};
+
+	template <std::ranges::sized_range T>
+	requires(!std::same_as<T, std::string_view> &&
+			 !std::same_as<T, std::string>) struct pq_binary_converter<T> {
+		static std::optional<std::string_view> set(const T &obj, std::string &buff) {
+			assert(obj.size() <= std::numeric_limits<int>::max());
+
+			pq_binary_converter<int>::set(1, buff);  // number of dimensions
+			pq_binary_converter<int>::set(0, buff);  // unused
+			pq_binary_converter<Oid>::set(std::numeric_limits<Oid>::max(),
+										  buff);  // force to infer Oid
+			pq_binary_converter<int>::set(static_cast<int>(obj.size()), buff);  // size
+			pq_binary_converter<int>::set(1, buff);                             // starting index
+
+			for (auto &&elem : obj) {
+				buff.append(4, (char) 0);
+
+				size_t pos = buff.size();
+				auto result = pq_binary_converter<std::decay_t<decltype(elem)>>::set(elem, buff);
+				if (result) {
+					buff.append(result->begin(), result->end());
+				}
+				size_t sz = buff.size() - pos;
+				assert(sz <= std::numeric_limits<int>::max());
+
+				uint32_t to_write = htobe32(static_cast<uint32_t>(sz));
+				std::copy_n(reinterpret_cast<char *>(&to_write), 4, buff.begin() + pos - 4);
+			}
+			return {};
 		}
 	};
 
 	/** @private */
 	template <typename T>
-	void check_type(int oid, std::size_t i) {
-		if (!oid_decoder<T>::is_valid(oid)) {
+	void check_type(int oid, size_t i) {
+		if (!pq_binary_converter<T>::is_valid(oid)) {
 			throw db_error{fmt::format("Oid {} at column {} cannot be converted to {}", oid, i,
 									   typeid(T).name())};
 		}
 	}
 
 	/** @private */
-	template <typename T>
-	void lower_param(T &&param, const char *&values, std::optional<std::string> &buff, int &length,
-					 int &format);
-
-	/** @private */
-	template <typename... Params>
+	template <size_t SIZE>
 	struct params_lowerer {
-		static const int SIZE = sizeof...(Params);
-
 		const char *values[SIZE];
-		std::optional<std::string> buff[SIZE];
+		size_t start_idx[SIZE];
 		int lengths[SIZE], formats[SIZE];
+		std::string buff;
 
-		template <std::size_t idx, typename T>
-		void apply(T &&param);
+		template <typename T>
+		void apply(size_t i, T &&param) {
+			start_idx[i] = buff.size();
+			size_t len;
+			auto result = pq_binary_converter<std::decay_t<T>>::set(param, buff);
+			if (result) {
+				values[i] = result->data();
+				len = result->size();
+				start_idx[i] = std::string::npos;
+			} else {
+				len = buff.size() - start_idx[i];
+			}
+			assert(len <= std::numeric_limits<int>::max());
+			lengths[i] = static_cast<int>(len);
+		}
 
-		template <std::size_t... Is>
+		template <size_t... Is, typename... Params>
 		params_lowerer(std::index_sequence<Is...>, Params &&...params) {
-			(apply<Is>(std::forward<Params>(params)), ...);
+			static_assert(sizeof...(Is) == sizeof...(Params) && sizeof...(Is) == SIZE);
+
+			(apply(Is, std::forward<Params>(params)), ...);
+			for (size_t i = 0; i < SIZE; ++i) {
+				formats[i] = 1;
+				if (start_idx[i] != std::string::npos) {
+					values[i] = buff.data() + start_idx[i];
+				}
+			}
 		}
 	};
 

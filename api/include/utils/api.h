@@ -16,18 +16,48 @@ struct empty_payload {
 	void SerializeToString(const std::string *) const {}
 };
 
-template <typename T>
-T expect(fcgx::request_t *r);
+void send_raw(fcgx::request_t *r, api::ErrorCode code, std::string_view data);
 
 template <typename T>
-void ok(fcgx::request_t *r, const typename T::initializable_type &response);
+void ok(fcgx::request_t *r, const typename T::initializable_type &response) {
+	std::string data;
+	T{response}.SerializeToString(&data);
+	send_raw(r, api::OK, data);
+}
 
 template <typename T>
-void ok(fcgx::request_t *r, const T &response);
+void ok(fcgx::request_t *r, const T &response) {
+	std::string data;
+	response.SerializeToString(&data);
+	send_raw(r, api::OK, data);
+}
 
-void send_raw(fcgx::request_t *r, api::ErrorCode code, const std::string &data);
 [[noreturn]] void err(fcgx::request_t *r, api::ErrorCode code);
+
 void err_nothrow(fcgx::request_t *r, api::ErrorCode code);
+
+template <typename T>
+T expect(fcgx::request_t *r) {
+	T result;
+	if (!result.ParseFromString(r->raw_body)) {
+		err(r, api::INVALID_QUERY);
+	}
+	return result;
+}
+
+template <typename T>
+T expect(fcgx::request_t *r, std::string_view s) {
+	auto param_it = r->params.find(s);
+	if (param_it == r->params.end()) {
+		err(r, api::INVALID_QUERY);
+	}
+	const auto &param = param_it->second;
+	T result;
+	if (std::from_chars(param.data(), param.data() + param.size(), result).ec != std::errc()) {
+		err(r, api::INVALID_QUERY);
+	}
+	return result;
+}
 
 #if KEGE_LOG_DEBUG_ENABLED
 class expected_error : public std::runtime_error {
@@ -48,6 +78,4 @@ public:
 	expected_error(const std::string &) : exception() {}
 };
 #endif
-
-#include "detail/api.impl.h"
 }  // namespace utils

@@ -14,7 +14,7 @@ inline session_clock::duration LOGOUT_TIME = std::chrono::hours(5);
 // threads at the same time. We do not have locks here, so all of the fields should be either const
 // or atomic.
 struct session {
-	const int user_id;
+	const int64_t user_id;
 	const std::string session_id;
 	const std::string username;
 	const std::string display_name;

@@ -9,7 +9,10 @@ interface EventSource<A, B> {
 
 export type AnyComponent = Component<unknown> | null;
 
-export abstract class Component<Settings, Parent extends AnyComponent = AnyComponent> extends EventTarget {
+export abstract class Component<
+  Settings,
+  Parent extends AnyComponent = AnyComponent
+> extends EventTarget {
   settings: Settings;
   parent: Parent;
   unproxiedElem?: HTMLElement;
@@ -45,12 +48,19 @@ export abstract class Component<Settings, Parent extends AnyComponent = AnyCompo
   }
 
   firstRender(): this {
-    assert(!this.unproxiedElem, "Component was requested to be rerendered as if it was first render");
+    assert(
+      !this.unproxiedElem,
+      "Component was requested to be rerendered as if it was first render"
+    );
     this.unproxiedElem = this.createElement();
     return this;
   }
 
-  registerExternalListener<T extends EventSource<A, B>, A, B>(source: T, event: A, handler: B): void {
+  registerExternalListener<T extends EventSource<A, B>, A, B>(
+    source: T,
+    event: A,
+    handler: B
+  ): void {
     source.addEventListener(event, handler);
     this.unmountHooks ??= [];
     this.unmountHooks.push(() => {
@@ -91,11 +101,16 @@ export type ComponentFactory<Settings> = (
   b: Fragment[]
 ) => Fragment;
 
-export function createComponentFactory<T>(constructor: ComponentConstructor<T, AnyComponent>): ComponentFactory<T> {
+export function createComponentFactory<T>(
+  constructor: ComponentConstructor<T, AnyComponent>
+): ComponentFactory<T> {
   return (
     { settings, parent, ref }: { settings: T; parent?: AnyComponent; ref?: boolean },
     children: Fragment[]
   ): Fragment => {
-    return Fragment.fromComponent(ref ? { ref: true } : {}, new constructor(settings, parent ?? null, children));
+    return Fragment.fromComponent(
+      ref ? { ref: true } : {},
+      new constructor(settings, parent ?? null, children)
+    );
   };
 }

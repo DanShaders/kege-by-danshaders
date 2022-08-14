@@ -87,7 +87,11 @@ interface ArrayLike<T> {
   entries(): IterableIterator<[number, T]>;
 }
 
-type EnumerableConstructor<DiffableSettings, StaticSettings, Enumerator extends AnyComponent> = new (
+type EnumerableConstructor<
+  DiffableSettings,
+  StaticSettings,
+  Enumerator extends AnyComponent
+> = new (
   s: DiffableSettings & StaticSettings,
   p: Enumerator,
   pos: ListPosition
@@ -175,13 +179,21 @@ export class SetComponent<
     settings: DiffableSetOf<Diffable>,
     parent: Parent,
     provider: ListProvider,
-    factory: ComponentFactory<Diffable, StaticSettings, SetComponent<Diffable, StaticSettings, Parent>>,
+    factory: ComponentFactory<
+      Diffable,
+      StaticSettings,
+      SetComponent<Diffable, StaticSettings, Parent>
+    >,
     settingsMap: (obj: Diffable) => Diffable & StaticSettings
   ) {
     super(settings, parent, provider, factory as any, settingsMap);
   }
 
-  push(remote: Diffable, additional: StaticSettings, initializeLocal: (local: Diffable) => void): void {
+  push(
+    remote: Diffable,
+    additional: StaticSettings,
+    initializeLocal: (local: Diffable) => void
+  ): void {
     const local = remote.clone();
     this.settings.add(local, remote, initializeLocal);
     this.pushComponent(Object.assign(local, additional));
@@ -192,11 +204,10 @@ export class SetComponent<
   }
 }
 
-export class ListComponent<Settings, Parent extends AnyComponent = AnyComponent> extends BasicSetComponent<
+export class ListComponent<
   Settings,
-  {},
-  Settings[]
-> {
+  Parent extends AnyComponent = AnyComponent
+> extends BasicSetComponent<Settings, {}, Settings[]> {
   constructor(
     settings: Settings[],
     parent: Parent,
@@ -217,13 +228,16 @@ export class ListComponent<Settings, Parent extends AnyComponent = AnyComponent>
   }
 }
 
-export abstract class SetEntry<Diffable extends IDiffableOf<Diffable>, StaticSettings> extends EnumerableComponent<
-  Diffable,
-  StaticSettings,
-  SetComponent<Diffable, StaticSettings>
-> {}
+export abstract class SetEntry<
+  Diffable extends IDiffableOf<Diffable>,
+  StaticSettings
+> extends EnumerableComponent<Diffable, StaticSettings, SetComponent<Diffable, StaticSettings>> {}
 
-export abstract class ListEntry<Settings> extends EnumerableComponent<Settings, {}, ListComponent<Settings>> {}
+export abstract class ListEntry<Settings> extends EnumerableComponent<
+  Settings,
+  {},
+  ListComponent<Settings>
+> {}
 
 export function listProviderOf(tag: string, classList: string[] = []): ListProvider {
   const elem = document.createElement(tag);

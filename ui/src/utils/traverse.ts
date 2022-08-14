@@ -1,11 +1,19 @@
 export type TraverseElement = HTMLElement | Text;
 
 type TraverseInHandler<Ctx> = (elem: HTMLElement, ctx: Ctx) => boolean | void;
-type TraverseOutHandler<Ctx> = (elem: HTMLElement, children: TraverseElement[], ctx: Ctx) => TraverseElement[];
+type TraverseOutHandler<Ctx> = (
+  elem: HTMLElement,
+  children: TraverseElement[],
+  ctx: Ctx
+) => TraverseElement[];
 export type TraverseHandler<Ctx> = [TraverseInHandler<Ctx>, TraverseOutHandler<Ctx>];
 
 type TraverseTextInHandler<Ctx> = (elem: Text, ctx: Ctx) => boolean | void;
-type TraverseTextOutHandler<Ctx> = (elem: Text, children: TraverseElement[], ctx: Ctx) => TraverseElement[];
+type TraverseTextOutHandler<Ctx> = (
+  elem: Text,
+  children: TraverseElement[],
+  ctx: Ctx
+) => TraverseElement[];
 export type TraverseTextHandler<Ctx> = [TraverseTextInHandler<Ctx>, TraverseTextOutHandler<Ctx>];
 
 type TraverseRule<Ctx> =
@@ -14,8 +22,16 @@ type TraverseRule<Ctx> =
   | [0, TraverseTextHandler<Ctx>];
 export type TraverseRules<Ctx> = TraverseRule<Ctx>[];
 
-export function traverse<Ctx>(elem: DocumentFragment, rules: TraverseRules<Ctx>, ctx: Ctx): [HTMLTemplateElement];
-export function traverse<Ctx>(elem: TraverseElement, rules: TraverseRules<Ctx>, ctx: Ctx): TraverseElement[];
+export function traverse<Ctx>(
+  elem: DocumentFragment,
+  rules: TraverseRules<Ctx>,
+  ctx: Ctx
+): [HTMLTemplateElement];
+export function traverse<Ctx>(
+  elem: TraverseElement,
+  rules: TraverseRules<Ctx>,
+  ctx: Ctx
+): TraverseElement[];
 export function traverse<Ctx>(
   elem: TraverseElement | DocumentFragment,
   rules: TraverseRules<Ctx>,

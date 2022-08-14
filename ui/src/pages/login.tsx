@@ -65,7 +65,13 @@ async function showLoginPage(params: URLSearchParams): Promise<void> {
                 <label for="passwordField">Пароль</label>
               </div>
 
-              <input ref class="w-100 btn btn-primary btn-floating p-1" id="button-login" type="submit" value="Войти" />
+              <input
+                ref
+                class="w-100 btn btn-primary btn-floating p-1"
+                id="button-login"
+                type="submit"
+                value="Войти"
+              />
             </form>
           </div>
         </div>

@@ -32,7 +32,9 @@ class TaskEntry extends ListEntry<TaskListResponse.TaskEntry.AsObject> {
             settings={{
               title: "Открыть",
               icon: "icon-open",
-              href: `admin/tasks/edit?id=${this.settings.id}&back=` + encodeURIComponent(Router.instance.currentURL),
+              href:
+                `admin/tasks/edit?id=${this.settings.id}&back=` +
+                encodeURIComponent(Router.instance.currentURL),
             }}
           />
           <ButtonIcon
@@ -105,7 +107,10 @@ async function showTaskListPage(): Promise<void> {
       </div>
 
       <div class="border rounded mt-2">
-        <table class="table table-fixed table-no-sep table-forth-col-left table-external-border mb-0">
+        <table
+          class="table table-fixed table-no-sep table-forth-col-left table-external-border
+          mb-0"
+        >
           <thead>
             <tr>
               <td class="column-40px ps-3">
@@ -128,7 +133,10 @@ async function showTaskListPage(): Promise<void> {
           <tbody ref>
             <tr>
               <td colspan="5">
-                <span style="border-width: 2px;" class="spinner-border spinner-border-sm m-2"></span>
+                <span
+                  style="border-width: 2px;"
+                  class="spinner-border spinner-border-sm m-2"
+                ></span>
               </td>
             </tr>
           </tbody>
@@ -140,7 +148,11 @@ async function showTaskListPage(): Promise<void> {
           <div class="modal-content">
             <div class="modal-header">
               <h4 class="modal-title">Импортировать задания</h4>
-              <button type="button" class="btn-close btn-no-shadow" data-bs-dismiss="modal"></button>
+              <button
+                type="button"
+                class="btn-close btn-no-shadow"
+                data-bs-dismiss="modal"
+              ></button>
             </div>
             <div class="modal-body p-0">
               <div class="accordion accordion-flush" id="import-accordion">
@@ -155,11 +167,21 @@ async function showTaskListPage(): Promise<void> {
                       PDF / изображение
                     </button>
                   </h2>
-                  <div id="import-pdf" class="accordion-collapse collapse show" data-bs-parent="#import-accordion">
+                  <div
+                    id="import-pdf"
+                    class="accordion-collapse collapse show"
+                    data-bs-parent="#import-accordion"
+                  >
                     <div class="accordion-body">
                       <FileSelect ref settings={{}} />
                       <div class="form-check mt-3">
-                        <input class="form-check-input" type="checkbox" value="" id="import-pdf-smart" checked />
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          value=""
+                          id="import-pdf-smart"
+                          checked
+                        />
                         <label class="form-check-label" for="import-pdf-smart">
                           Использовать эвристику для разделения на задания
                         </label>
@@ -178,10 +200,18 @@ async function showTaskListPage(): Promise<void> {
                       kompege.ru
                     </button>
                   </h2>
-                  <div id="import-kompege" class="accordion-collapse collapse" data-bs-parent="#import-accordion">
+                  <div
+                    id="import-kompege"
+                    class="accordion-collapse collapse"
+                    data-bs-parent="#import-accordion"
+                  >
                     <div class="accordion-body">
                       <label class="form-label fw-600">ID заданий</label>
-                      <input type="text" class="form-control" placeholder="напр.: task:1-5, kim:25004839" />
+                      <input
+                        type="text"
+                        class="form-control"
+                        placeholder="напр.: task:1-5, kim:25004839"
+                      />
                       <label class="form-label mt-3 fw-600">Комментарий</label>
                       <input type="text" class="form-control" placeholder="" />
                     </div>

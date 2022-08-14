@@ -113,10 +113,16 @@ export class TextEditorComponent extends Component<TextEditorSettings> {
   private ctx: transforms.TextEditorContext;
   private tabsSettings: TabSelectSettings;
 
-  constructor(settings: TextEditorSettings, parent: Component<unknown> | null, children?: jsx.Fragment[]) {
+  constructor(
+    settings: TextEditorSettings,
+    parent: Component<unknown> | null,
+    children?: jsx.Fragment[]
+  ) {
     super(settings, parent, children);
 
-    const fileInput = (<input type="file" hidden accept="image/*" />).asElement() as HTMLInputElement;
+    const fileInput = (
+      <input type="file" hidden accept="image/*" />
+    ).asElement() as HTMLInputElement;
 
     this.ctx = {
       color: [],
@@ -176,7 +182,9 @@ export class TextEditorComponent extends Component<TextEditorSettings> {
         },
         clipboard: {
           onConvert: (delta: Delta): Delta => {
-            return new Delta(delta.map(sanitizeQuillOp).filter((value): value is Op => value !== null));
+            return new Delta(
+              delta.map(sanitizeQuillOp).filter((value): value is Op => value !== null)
+            );
           },
         },
         keyboard: {
@@ -232,20 +240,31 @@ export class TextEditorComponent extends Component<TextEditorSettings> {
       if (this.textHtml[oldIndex] !== code) {
         this.textHtml[oldIndex] = code;
         ++this.textVersion;
-        const preview = (this.textHtml[EditorTabs.PREVIEW] = transforms.codeToPreview(code, this.ctx));
+        const preview = (this.textHtml[EditorTabs.PREVIEW] = transforms.codeToPreview(
+          code,
+          this.ctx
+        ));
         this.settings.text = preview;
         this.textHtml[EditorTabs.QUILL] = transforms.previewToQuill(preview, this.ctx);
       }
     } else if (oldIndex === EditorTabs.QUILL) {
       let quill = (this.quill as any).getSemanticHTML() as string;
-      if (quill.startsWith('<div class="ql-editor" contenteditable="true">') && quill.endsWith("</div>")) {
+      if (
+        quill.startsWith('<div class="ql-editor" contenteditable="true">') &&
+        quill.endsWith("</div>")
+      ) {
         quill = quill.substr(46, quill.length - 52);
       }
       if (this.textHtml[oldIndex] !== quill) {
         this.textHtml[oldIndex] = quill;
         ++this.textVersion;
-        const code = (this.textHtml[EditorTabs.CODE] = transforms.quillToCode(quill, this.ctx).trimEnd());
-        this.settings.text = this.textHtml[EditorTabs.PREVIEW] = transforms.codeToPreview(code, this.ctx);
+        const code = (this.textHtml[EditorTabs.CODE] = transforms
+          .quillToCode(quill, this.ctx)
+          .trimEnd());
+        this.settings.text = this.textHtml[EditorTabs.PREVIEW] = transforms.codeToPreview(
+          code,
+          this.ctx
+        );
       }
     }
     this.domVersions[oldIndex] = this.textVersion;
@@ -257,10 +276,14 @@ export class TextEditorComponent extends Component<TextEditorSettings> {
       } else if (index === EditorTabs.PREVIEW) {
         this.previewContainer.innerHTML = this.textHtml[index];
         for (const elem of this.previewContainer.querySelectorAll("formula")) {
-          katex.render((elem as HTMLElement).innerText, elem as HTMLElement, { throwOnError: false });
+          katex.render((elem as HTMLElement).innerText, elem as HTMLElement, {
+            throwOnError: false,
+          });
         }
       } else if (index === EditorTabs.QUILL) {
-        this.quill.setContents(this.quill.clipboard.convert({ html: this.textHtml[index], text: "\n" }));
+        this.quill.setContents(
+          this.quill.clipboard.convert({ html: this.textHtml[index], text: "\n" })
+        );
       }
     }
 

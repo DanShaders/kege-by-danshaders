@@ -1,6 +1,12 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import BidirectionalMap from "utils/bidirectional-map";
-import { traverse, TraverseElement, TraverseHandler, TraverseRules, TraverseTextHandler } from "utils/traverse";
+import {
+  traverse,
+  TraverseElement,
+  TraverseHandler,
+  TraverseRules,
+  TraverseTextHandler,
+} from "utils/traverse";
 
 export type TextEditorContext = {
   color: string[];
@@ -14,7 +20,21 @@ type EditorRules = TraverseRules<TextEditorContext>;
 type EditorHandler = TraverseHandler<TextEditorContext>;
 type EditorTextHandler = TraverseTextHandler<TextEditorContext>;
 
-const ALLOWED_TAGS = ["a", "b", "i", "s", "u", "div", "img", "font", "sub", "sup", "br", "formula", "pre"];
+const ALLOWED_TAGS = [
+  "a",
+  "b",
+  "i",
+  "s",
+  "u",
+  "div",
+  "img",
+  "font",
+  "sub",
+  "sup",
+  "br",
+  "formula",
+  "pre",
+];
 const ALLOWED_CLOSE_TAGS = new Set(ALLOWED_TAGS.map((elem) => "/" + elem));
 ALLOWED_CLOSE_TAGS.delete("/img");
 
@@ -25,7 +45,10 @@ const CODE_TO_PREVIEW_RULES: EditorRules = [
   ["a", useTagWithAttributes(["href"])],
   ["font", useFontInPreview()],
   ["img", useImageInPreview()],
-  ["div[align=center], div[align=left], div[align=right], div[align=justify]", useTagWithAttributes(["align"])],
+  [
+    "div[align=center], div[align=left], div[align=right], div[align=justify]",
+    useTagWithAttributes(["align"]),
+  ],
   ["formula", useTagWithoutAttributes()],
 ];
 
@@ -64,7 +87,8 @@ const PREVIEW_TO_QUILL_ALIGN = new Map([
 
 const QUILL_TO_CODE_RULES: EditorRules = [
   [0, useText()],
-  [".ql-size-xsmall", wrapInto("font", [["size", "1"]]), 1], // last `1` means that we want to go on applying rules
+  // last `1` means that we want to go on applying rules
+  [".ql-size-xsmall", wrapInto("font", [["size", "1"]]), 1],
   [".ql-size-small", wrapInto("font", [["size", "2"]]), 1],
   [".ql-size-large", wrapInto("font", [["size", "4"]]), 1],
   [".ql-size-xlarge", wrapInto("font", [["size", "5"]]), 1],
@@ -415,7 +439,8 @@ export function codeToPreview(data: string, ctx: TextEditorContext): string {
   }
   const sanitizedDataStr = sanitizedData.join("").trim();
 
-  // Ensuring XML/HTML structure by creating template element (note it won't cause JS listeners to be run)
+  // Ensuring XML/HTML structure by creating template element
+  // (note it won't cause JS listeners to be run)
   const template = document.createElement("template");
   template.innerHTML = sanitizedDataStr.replaceAll("\n", "<br>");
 
@@ -429,7 +454,8 @@ export function previewToQuill(data: string, ctx: TextEditorContext): string {
 
   ctx = Object.assign(ctx, { size: ["3"], color: ["black"] });
 
-  // Actually, we are not creating 100% compatible HTML here but hope that Quill is smart enough to handle it
+  // Actually, we are not creating 100% compatible HTML here
+  // but hope that Quill is smart enough to handle it
   return traverse(template.content, PREVIEW_TO_QUILL_RULES, ctx)[0].innerHTML;
 }
 

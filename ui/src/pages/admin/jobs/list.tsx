@@ -54,7 +54,10 @@ async function showTaskListPage(): Promise<void> {
       <h2>Фоновые задачи</h2>
 
       <div class="border rounded">
-        <table class="table table-fixed table-no-sep table-second-col-left table-external-border mb-0">
+        <table
+          class="table table-fixed table-no-sep table-second-col-left table-external-border
+          mb-0"
+        >
           <thead>
             <tr>
               <td class="column-160px">ID</td>

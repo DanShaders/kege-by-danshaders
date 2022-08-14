@@ -20,7 +20,9 @@ export interface IDiffable<Diffable, Delta, Transport> {
 }
 
 type SetDelta<Delta> = Map<number, Delta>;
-type SetContext<Set> = Set extends DiffableSet<any, infer Delta, any> ? IContext<Set, SetDelta<Delta>> : never;
+type SetContext<Set> = Set extends DiffableSet<any, infer Delta, any>
+  ? IContext<Set, SetDelta<Delta>>
+  : never;
 
 export class DiffableSet<Diffable extends IDiffable<Diffable, Delta, Transport>, Delta, Transport> {
   private factory: (msg: Transport) => Diffable;

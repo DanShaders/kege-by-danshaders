@@ -63,13 +63,31 @@ export class AnswerTable extends Component<AnswerSettings> {
               <div class="modal-body">
                 <form ref novalidate>
                   <div class="input-group has-validation mb-2">
-                    <input ref class="form-control" type="number" min="1" max="10" step="1" required />
+                    <input
+                      ref
+                      class="form-control"
+                      type="number"
+                      min="1"
+                      max="10"
+                      step="1"
+                      required
+                    />
                     <span class="input-group-text">&times;</span>
-                    <input ref class="form-control" type="number" min="1" max="10" step="1" required />
+                    <input
+                      ref
+                      class="form-control"
+                      type="number"
+                      min="1"
+                      max="10"
+                      step="1"
+                      required
+                    />
                     <button type="submit" class="btn btn-primary">
                       Изменить
                     </button>
-                    <div class="invalid-feedback">Размерность должна быть натуральным числом, не превосходящим 10.</div>
+                    <div class="invalid-feedback">
+                      Размерность должна быть натуральным числом, не превосходящим 10.
+                    </div>
                   </div>
                 </form>
               </div>

@@ -137,7 +137,12 @@ export class Router extends EventTarget {
     }
   }
 
-  redirect(url: string, isPrivate: boolean = true, historyUpdated = false, reason: LoadingReason = "loading"): void {
+  redirect(
+    url: string,
+    isPrivate: boolean = true,
+    historyUpdated = false,
+    reason: LoadingReason = "loading"
+  ): void {
     setTimeout(async () => {
       await this.goTo(url, isPrivate, historyUpdated, reason);
     }, 0);

@@ -58,7 +58,10 @@ export class HeaderComponent extends Component<HeaderSettings> {
       }
     };
 
-    const defaultTooltipFillFunc = (items: HeaderTooltipEntries, clearTooltip: boolean = true): TooltipFiller => {
+    const defaultTooltipFillFunc = (
+      items: HeaderTooltipEntries,
+      clearTooltip: boolean = true
+    ): TooltipFiller => {
       return () => {
         if (clearTooltip) tooltip.innerHTML = "";
         for (const item of items) {
@@ -91,7 +94,10 @@ export class HeaderComponent extends Component<HeaderSettings> {
           headerLastClickTimestamp = event.timeStamp;
           tooltipFillFunc(event);
           tooltip.setAttribute("shown", "true");
-          const xc = Math.min(elem.offsetLeft, document.documentElement.clientWidth - tooltip.clientWidth - 15);
+          const xc = Math.min(
+            elem.offsetLeft,
+            document.documentElement.clientWidth - tooltip.clientWidth - 15
+          );
           tooltip.setAttribute("style", `left: ${xc.toFixed(2)}px;`);
           tooltip.setAttribute("last", id);
           tooltip.removeAttribute("tabindex");
@@ -118,7 +124,10 @@ export class HeaderComponent extends Component<HeaderSettings> {
 
     this.registerExternalListener(document, "click", (event: MouseEvent) => {
       // Close tooltip on click
-      if (tooltip.getAttribute("shown") === "true" && headerLastClickTimestamp !== event.timeStamp) {
+      if (
+        tooltip.getAttribute("shown") === "true" &&
+        headerLastClickTimestamp !== event.timeStamp
+      ) {
         forceHighlightOff(tooltip.getAttribute("last"));
         tooltip.setAttribute("last", "none");
         tooltip.setAttribute("shown", "false");
@@ -168,11 +177,15 @@ export class HeaderComponent extends Component<HeaderSettings> {
 
     // "Avatar" button
     if (this.settings.profile.show) {
-      avatarWrap.innerHTML = `<button class='page-header-avatar-but page-header-clickable'></button>`;
+      avatarWrap.innerHTML = `
+        <button class='page-header-avatar-but page-header-clickable'></button>
+      `;
       const avatarElem = avatarWrap.children[0] as HTMLElement;
       avatarElem.innerHTML = `
 				<svg class='page-header-avatar-icon'><use xlink:href='#avatar-icon'></use></svg>
-				<svg class='page-header-avatar-arrow page-header-icon-big'><use xlink:href='#angle-down'></use></svg>`;
+				<svg class='page-header-avatar-arrow page-header-icon-big'>
+          <use xlink:href='#angle-down'></use>
+        </svg>`;
       attachTooltip(avatarElem, "profile", () => {
         tooltip.innerHTML = `<div class='page-header-pr-info'>
 						<b>${this.settings.profile.name}</b><br>

@@ -58,9 +58,16 @@ class Attachment extends SetEntry<diff.Task.DiffableAttachment, AttachmentSettin
               checkedIf={this.settings.shownToUser}
             />
           </div>
-          <ButtonIcon settings={{ title: "Открыть", icon: "icon-open", onClick: this.open.bind(this) }} />
           <ButtonIcon
-            settings={{ title: "Удалить", icon: "icon-delete", hoverColor: "red", onClick: this.delete.bind(this) }}
+            settings={{ title: "Открыть", icon: "icon-open", onClick: this.open.bind(this) }}
+          />
+          <ButtonIcon
+            settings={{
+              title: "Удалить",
+              icon: "icon-delete",
+              hoverColor: "red",
+              onClick: this.delete.bind(this),
+            }}
           />
         </td>
         <td role="button" class="user-select-all">
@@ -119,7 +126,12 @@ class TaskEditComponent extends Component<TaskEditSettings> {
       }
     );
 
-    const addFile = async (id: number, file: File | Blob, filename: string, shownToUser: boolean): Promise<void> => {
+    const addFile = async (
+      id: number,
+      file: File | Blob,
+      filename: string,
+      shownToUser: boolean
+    ): Promise<void> => {
       const realLink = URL.createObjectURL(file);
       const fakeLink = getLink();
       this.settings.realMap.add(id, realLink);
@@ -204,7 +216,10 @@ class TaskEditComponent extends Component<TaskEditSettings> {
             <label class={S_LABEL}>Файлы</label>
             <div class={S_INPUT}>
               <div class="border rounded">
-                <table class="table table-fixed table-first-col-left table-no-sep table-external-border mb-0">
+                <table
+                  class="table table-fixed table-first-col-left table-no-sep
+                  table-external-border mb-0"
+                >
                   <thead>
                     <tr>
                       <td class="column-norm">Описание</td>

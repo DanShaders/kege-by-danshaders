@@ -12,7 +12,10 @@ const LOADING_REASONS = {
 
 export type LoadingReason = keyof typeof LOADING_REASONS;
 
-export function toggleLoadingScreen(shown: boolean = true, reason: LoadingReason = "loading"): void {
+export function toggleLoadingScreen(
+  shown: boolean = true,
+  reason: LoadingReason = "loading"
+): void {
   if (!loadingScreenElem || !loadingScreenText) {
     loadingScreenElem = document.getElementById("loadingScreen") as HTMLDivElement;
     loadingScreenText = document.getElementById("loadingScreenText") as HTMLDivElement;

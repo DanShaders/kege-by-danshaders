@@ -16,7 +16,8 @@ type Settings = {
 
 class ButtonIconComponent extends Component<Settings> {
   createElement(): HTMLElement {
-    this.settings.enabled ??= this.settings.onClick !== undefined || this.settings.href !== undefined;
+    this.settings.enabled ??=
+      this.settings.onClick !== undefined || this.settings.href !== undefined;
 
     const icon = (
       <svg>

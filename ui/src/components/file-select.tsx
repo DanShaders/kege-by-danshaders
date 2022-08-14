@@ -25,13 +25,23 @@ export class FileSelectComponent extends Component<Settings> {
             {this.getTextForEmpty()}
           </span>
         </span>
-        <input ref type="file" requiredIf={this.settings.required} multipleIf={this.settings.multiple} hidden />
+        <input
+          ref
+          type="file"
+          requiredIf={this.settings.required}
+          multipleIf={this.settings.multiple}
+          hidden
+        />
         <button ref type="button" class="btn btn-primary">
           Выбрать
         </button>
       </div>
     ).asElement(refs) as HTMLDivElement;
-    [this.spanElem, this.inputElem, this.buttonElem] = refs as [HTMLSpanElement, HTMLInputElement, HTMLButtonElement];
+    [this.spanElem, this.inputElem, this.buttonElem] = refs as [
+      HTMLSpanElement,
+      HTMLInputElement,
+      HTMLButtonElement
+    ];
 
     this.inputElem.addEventListener("change", () => {
       this.onChange();

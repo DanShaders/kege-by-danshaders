@@ -103,7 +103,7 @@ type ComponentFactory<DiffableSettings, StaticSettings, Enumerator extends AnyCo
   pos: ListPosition
 ) => EnumerableComponent<DiffableSettings, StaticSettings, Enumerator>;
 
-class BasicSetComponent<
+export class BasicSetComponent<
   DiffableSettings,
   StaticSettings,
   Settings extends ArrayLike<DiffableSettings>,
@@ -137,8 +137,8 @@ class BasicSetComponent<
     this.provider.eventTarget = this;
     this.factory = factory as any;
     this.comps = Array.from(this.settings.entries()).map(([, obj], index) =>
-      factory(settingsMap(obj), this, this.positionOf(index, this.settings.length))
-    ) as any;
+      this.factory(settingsMap(obj), this, this.positionOf(index, this.settings.length))
+    );
     for (const comp of this.comps) {
       this.provider.push(comp.elem);
     }
@@ -146,6 +146,10 @@ class BasicSetComponent<
 
   createElement(): HTMLElement {
     return this.provider.elem;
+  }
+
+  entries(): IterableIterator<[number, typeof this.comps[0]]> {
+    return this.comps.entries();
   }
 
   protected pushComponent(settings: DiffableSettings & StaticSettings): void {
@@ -207,7 +211,7 @@ export class SetComponent<
 export class ListComponent<
   Settings,
   Parent extends AnyComponent = AnyComponent
-> extends BasicSetComponent<Settings, {}, Settings[]> {
+> extends BasicSetComponent<Settings, {}, Settings[], Parent> {
   constructor(
     settings: Settings[],
     parent: Parent,

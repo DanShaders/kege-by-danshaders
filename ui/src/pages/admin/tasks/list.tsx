@@ -12,6 +12,7 @@ import { ButtonIcon } from "components/button-icon";
 import { AnyComponent } from "components/component";
 import { FileSelect } from "components/file-select";
 import { factoryOf, ListComponent, ListEntry, listProviderOf } from "components/lists";
+import { TaskSelect, TaskSelectComponent } from "components/task-select";
 
 import { requireAuth } from "pages/common";
 
@@ -63,7 +64,7 @@ class TaskEntry extends ListEntry<TaskListResponse.TaskEntry.AsObject> {
 async function showTaskListPage(): Promise<void> {
   requireAuth(1);
 
-  const [tableBody, importModal] = (
+  const [taskSelect, importModal] = (
     <>
       <h2 class="d-flex justify-content-between">
         Задания
@@ -107,40 +108,7 @@ async function showTaskListPage(): Promise<void> {
       </div>
 
       <div class="border rounded mt-2">
-        <table
-          class="table table-fixed table-no-sep table-forth-col-left table-external-border
-          mb-0"
-        >
-          <thead>
-            <tr>
-              <td class="column-40px ps-3">
-                <input class="form-check-input" type="checkbox" />
-              </td>
-              <td class="column-80px">ID</td>
-              <td class="column-80px">Тип</td>
-              <td class="column-norm">Комментарий</td>
-              <td class="column-80px">
-                <div style="width: 31px; display: inline-block;"></div>
-                <ButtonIcon
-                  settings={{
-                    title: "Удалить выбранные",
-                    icon: "icon-delete",
-                  }}
-                />
-              </td>
-            </tr>
-          </thead>
-          <tbody ref>
-            <tr>
-              <td colspan="5">
-                <span
-                  style="border-width: 2px;"
-                  class="spinner-border spinner-border-sm m-2"
-                ></span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <TaskSelect ref settings={{}} />
       </div>
 
       <div ref class="modal" tabindex="-1">
@@ -226,13 +194,9 @@ async function showTaskListPage(): Promise<void> {
         </div>
       </div>
     </>
-  ).replaceContentsOf("main") as [HTMLDivElement, HTMLTableSectionElement];
+  ).replaceContentsOf("main") as [TaskSelectComponent, HTMLTableSectionElement];
 
-  requestU(TaskListResponse, "/api/tasks/list").then((response) => {
-    const tasks = response.toObject().tasksList;
-    const tasksSet = new ListComponent(tasks, null, listProviderOf("tbody"), factoryOf(TaskEntry));
-    tableBody.replaceWith(tasksSet.elem);
-  });
+  taskSelect.setFilter("");
 
   const importModalClass = new Modal(importModal);
   toggleLoadingScreen(false);

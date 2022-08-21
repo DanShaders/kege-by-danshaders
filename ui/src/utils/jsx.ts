@@ -48,6 +48,9 @@ export class Fragment {
   }
 
   insertInto(elem: Element | null, inSvg: boolean = false, refs: any[] = []): any[] {
+    if (this.attributes["removedIf"] === true) {
+      return refs;
+    }
     if (this.comp) {
       if (this.isRef) {
         refs.push(this.comp);

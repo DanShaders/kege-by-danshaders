@@ -9,7 +9,7 @@ type Settings = {
   icon: string;
   enabled?: boolean;
   href?: string;
-  onClick?: () => void;
+  onClick?: (self: ButtonIconComponent) => void;
   hoverColor?: string;
   margins?: [number, number, number, number];
 };
@@ -40,7 +40,12 @@ class ButtonIconComponent extends Component<Settings> {
         </button>
       ).asElement() as HTMLButtonElement;
       if (this.settings.onClick) {
-        button.addEventListener("click", this.settings.onClick);
+        button.addEventListener("click", () => this.settings.onClick!(this));
+        button.addEventListener("keyup", (e) => {
+          if (e.keyCode === 13) {
+            this.settings.onClick!(this);
+          }
+        });
       }
     }
 

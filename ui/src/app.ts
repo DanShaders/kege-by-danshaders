@@ -5,6 +5,10 @@ import "pages/common";
 import "pages/login";
 import "pages/main";
 
+import "pages/list";
+import "pages/solve";
+import "pages/watch";
+
 async function initApplication(): Promise<void> {
   await Router.instance.goTo("#init");
   try {

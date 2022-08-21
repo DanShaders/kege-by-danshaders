@@ -1,0 +1,18 @@
+.kim-header-clock {
+  display: inline-flex;
+  font-size: 20px;
+}
+
+.kim-header-number {
+  display: inline-flex;
+  font-size: 20px;
+  margin-left: 50px;
+}
+
+.kim-header-finish {
+  display: inline-flex;
+  font-size: 20px;
+  margin: auto;
+  margin-right: 50px;
+  cursor: pointer;
+}

@@ -39,6 +39,8 @@ CREATE TABLE task_attachments (
 
 CREATE TABLE kims (
 	id bigint NOT NULL PRIMARY KEY,
+	name text,
+	comment text,
 	duration integer,
 	virtual boolean,
 	exam boolean,
@@ -53,7 +55,6 @@ CREATE TABLE kims_tasks (
 	kim_id bigint,
 	task_id bigint,
 	pos integer,
-	name text,
 
 	FOREIGN KEY (kim_id) REFERENCES kims(id) ON DELETE CASCADE,
 	FOREIGN KEY (task_id) REFERENCES tasks(id),
@@ -105,6 +106,7 @@ CREATE TABLE users_kims (
 	kim_id bigint,
 	start_time timestamp,
 	end_time timestamp,
+	state int,
 
 	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
 	FOREIGN KEY (kim_id) REFERENCES kims(id) ON DELETE CASCADE

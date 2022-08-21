@@ -48,6 +48,7 @@ set(
 	routes/_wrap.cc
 	routes/attachment.cc
 	routes/jobs.cc
+	routes/kims.cc
 	routes/task-types.cc
 	routes/tasks.cc
 	routes/user.cc
@@ -64,6 +65,7 @@ set(
 	../proto/api.proto
 	../proto/diff.proto
 	../proto/jobs.proto
+	../proto/kims.proto
 	../proto/task-types.proto
 	../proto/tasks.proto
 	../proto/user.proto

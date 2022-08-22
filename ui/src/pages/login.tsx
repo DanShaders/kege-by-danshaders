@@ -92,7 +92,7 @@ async function showLoginPage(params: URLSearchParams): Promise<void> {
     const data = new LoginRequest().setUsername(loginField.value).setPassword(passwordField.value);
     const [code, result] = await request(UserInfo, "/api/user/login", data);
 
-    if (code !== ErrorCode.OK || !result) {
+    if (code !== ErrorCode.OK || !(result instanceof UserInfo)) {
       if (code === ErrorCode.INVALID_CREDENTIALS) {
         notice.setMessage("Неверный логин или пароль");
       } else {

@@ -35,3 +35,14 @@ export class PageCategoryUpdateEvent extends Event {
     super(PageCategoryUpdateEvent.NAME);
   }
 }
+
+export class BulkSelectionChangeEvent extends Event {
+  static NAME = "bulkselectionchangeevent";
+
+  isDOMReflected: boolean;
+
+  constructor(isDOMReflected: boolean) {
+    super(BulkSelectionChangeEvent.NAME);
+    this.isDOMReflected = isDOMReflected;
+  }
+}

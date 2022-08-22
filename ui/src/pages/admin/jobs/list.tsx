@@ -7,7 +7,6 @@ import { Router } from "utils/router";
 import { Jobs } from "proto/jobs_pb";
 
 import { ButtonIcon } from "components/button-icon";
-import { AnyComponent } from "components/component";
 import { factoryOf, ListComponent, ListEntry, listProviderOf } from "components/lists";
 
 import { requireAuth } from "pages/common";

@@ -28,18 +28,25 @@ export async function request<T>(
   resType: BinaryDeserializable<T>,
   url: string,
   req?: BinarySerializable
-): Promise<[number, T?]> {
-  const result = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-protobuf" },
-    body: req?.serializeBinary(),
-  });
-  const buffer = new Uint8Array(await result.arrayBuffer());
-  const response = Response.deserializeBinary(buffer);
-  if (result.status !== 200 && response.getCode() === 0) {
-    return [-result.status];
-  } else {
-    return [response.getCode(), resType.deserializeBinary(response.getResponse_asU8())];
+): Promise<[number, (T | Uint8Array)?]> {
+  try {
+    const result = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-protobuf" },
+      body: req?.serializeBinary(),
+    });
+    const buffer = new Uint8Array(await result.arrayBuffer());
+    if (result.status !== 200) {
+      return [-result.status];
+    }
+    const response = Response.deserializeBinary(buffer);
+    if (response.getCode() !== ErrorCode.OK) {
+      return [response.getCode() || -result.status, response.getResponse_asU8()];
+    } else {
+      return [ErrorCode.OK, resType.deserializeBinary(response.getResponse_asU8())];
+    }
+  } catch (e) {
+    return [-1000];
   }
 }
 
@@ -52,6 +59,6 @@ export async function requestU<T>(
   if (code !== ErrorCode.OK || res === undefined) {
     throw new Error(`Failed to request ${url}, got code=${code}`);
   } else {
-    return res;
+    return res as T;
   }
 }

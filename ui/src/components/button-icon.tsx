@@ -14,7 +14,7 @@ type Settings = {
   margins?: [number, number, number, number];
 };
 
-class ButtonIconComponent extends Component<Settings> {
+export class ButtonIconComponent extends Component<Settings> {
   createElement(): HTMLElement {
     this.settings.enabled ??=
       this.settings.onClick !== undefined || this.settings.href !== undefined;
@@ -56,6 +56,14 @@ class ButtonIconComponent extends Component<Settings> {
       button.style.margin = this.settings.margins.join("px ") + "px";
     }
     return button;
+  }
+
+  setEnabled(isEnabled: boolean): void {
+    if ((this.settings.enabled = isEnabled)) {
+      this.elem.removeAttribute("disabled");
+    } else {
+      this.elem.setAttribute("disabled", "");
+    }
   }
 }
 

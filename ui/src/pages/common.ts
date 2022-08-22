@@ -72,7 +72,7 @@ async function init(): Promise<void> {
     const [code, result] = await request(UserInfo, "/api/user/info");
     if (code === ErrorCode.ACCESS_DENIED) {
       userInfo = null;
-    } else if (code === ErrorCode.OK && result) {
+    } else if (code === ErrorCode.OK && result instanceof UserInfo) {
       userInfo = result.toObject();
     }
   }

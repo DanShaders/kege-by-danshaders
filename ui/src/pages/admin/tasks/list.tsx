@@ -3,68 +3,23 @@ import { Modal } from "bootstrap";
 import * as jsx from "jsx";
 
 import { toggleLoadingScreen } from "utils/common";
-import { EmptyPayload, requestU } from "utils/requests";
+import { BulkSelectionChangeEvent } from "utils/events";
 import { Router } from "utils/router";
 
-import { TaskBulkDeleteRequest, TaskListResponse } from "proto/tasks_pb";
-
 import { ButtonIcon } from "components/button-icon";
-import { AnyComponent } from "components/component";
 import { FileSelect } from "components/file-select";
-import { factoryOf, ListComponent, ListEntry, listProviderOf } from "components/lists";
 import { TaskSelect, TaskSelectComponent } from "components/task-select";
 
 import { requireAuth } from "pages/common";
 
-class TaskEntry extends ListEntry<TaskListResponse.TaskEntry.AsObject> {
-  createElement(): HTMLTableRowElement {
-    const refs: AnyComponent[] = [];
-
-    return (
-      <tr>
-        <td class="ps-3">
-          <input class="form-check-input" type="checkbox" />
-        </td>
-        <td>{this.settings.id.toString()}</td>
-        <td>{this.settings.taskType.toString()}</td>
-        <td>{this.settings.tag}</td>
-        <td class="tr-hover-visible">
-          <ButtonIcon
-            settings={{
-              title: "Открыть",
-              icon: "icon-open",
-              href:
-                `admin/tasks/edit?id=${this.settings.id}&back=` +
-                encodeURIComponent(Router.instance.currentURL),
-            }}
-          />
-          <ButtonIcon
-            ref
-            settings={{
-              title: "Удалить",
-              icon: "icon-delete",
-              hoverColor: "red",
-              onClick: async (): Promise<void> => {
-                refs[0]!.unproxiedElem!.blur();
-                await requestU(
-                  EmptyPayload,
-                  "/api/tasks/bulk-delete",
-                  new TaskBulkDeleteRequest().addTasks(this.settings.id)
-                );
-                this.parent.pop(this.i);
-              },
-            }}
-          />
-        </td>
-      </tr>
-    ).asElement(refs) as HTMLTableRowElement;
-  }
-}
-
 async function showTaskListPage(): Promise<void> {
   requireAuth(1);
 
-  const [taskSelect, importModal] = (
+  const setFilter = (): void => {
+    taskSelect.setFilter(filterInput.value);
+  };
+
+  const [filterInput, createKIMButton, taskSelect, importModal] = (
     <>
       <h2 class="d-flex justify-content-between">
         Задания
@@ -91,8 +46,15 @@ async function showTaskListPage(): Promise<void> {
       <div class="row mt-3">
         <div class="col-8">
           <div class="input-group rounded focusable filter-group">
-            <input class="form-control no-glow" type="text" placeholder="Фильтр" />
-            <button class="btn btn-outline-primary no-glow">
+            <input
+              ref
+              style="font-size: .9rem;"
+              class="form-control no-glow font-monospace"
+              type="text"
+              placeholder="Фильтр"
+              onchange={setFilter}
+            />
+            <button class="btn btn-outline-primary no-glow" onclick={setFilter}>
               <svg>
                 <use xlink:href="#icon-search" />
               </svg>
@@ -101,7 +63,7 @@ async function showTaskListPage(): Promise<void> {
           </div>
         </div>
         <div class="col-4 text-end">
-          <button class="btn btn-outline-secondary" disabled>
+          <button ref class="btn btn-outline-secondary" disabled>
             Создать КИМ
           </button>
         </div>
@@ -194,9 +156,23 @@ async function showTaskListPage(): Promise<void> {
         </div>
       </div>
     </>
-  ).replaceContentsOf("main") as [TaskSelectComponent, HTMLTableSectionElement];
+  ).replaceContentsOf("main") as [
+    HTMLInputElement,
+    HTMLButtonElement,
+    TaskSelectComponent,
+    HTMLTableSectionElement
+  ];
 
   taskSelect.setFilter("");
+
+  const controller = taskSelect.selectionController;
+  controller.addEventListener(BulkSelectionChangeEvent.NAME, () => {
+    if (controller.getSelection().size) {
+      createKIMButton.removeAttribute("disabled");
+    } else {
+      createKIMButton.setAttribute("disabled", "");
+    }
+  });
 
   const importModalClass = new Modal(importModal);
   toggleLoadingScreen(false);

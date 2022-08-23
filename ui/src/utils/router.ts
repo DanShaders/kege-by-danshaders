@@ -108,6 +108,9 @@ export class Router extends EventTarget {
       this.pageInstance = undefined;
     }
 
+    const elem = document.getElementById("main")!;
+    while (elem.lastChild && elem.removeChild(elem.lastChild));
+
     const [page, params] = url.split("?", 2);
     let handler = this.publicRoutes.get(page);
 

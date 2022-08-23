@@ -55,22 +55,24 @@ a {
 }
 
 #loadingScreen {
-  display: flex;
-  flex-direction: column;
-  place-content: center;
+  display: inline-flex;
   align-items: center;
   color: var(--bs-dark-blue);
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: white;
   position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  padding: 10px;
+  border-radius: 22px;
+  box-shadow: #00000060 0 0 5px 2px;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 20000;
 }
 
 #loadingScreen .spinner-border {
   align-self: center;
-  width: 5rem;
-  height: 5rem;
+  border-width: 3px;
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
 }

@@ -16,7 +16,7 @@ void utils::err(fcgx::request_t *r, api::ErrorCode code) {
 
 void utils::err_nothrow(fcgx::request_t *r, api::ErrorCode code) {
 	static const std::map<api::ErrorCode, int> HTTP_REMAP = {
-		{api::INTERNAL_ERROR, 500}, {api::ACCESS_DENIED, 403},       {api::INVALID_SERVICE, 400},
+		{api::INTERNAL_ERROR, 500}, {api::ACCESS_DENIED, 403},       {api::INVALID_SERVICE, 404},
 		{api::INVALID_QUERY, 400},  {api::INVALID_CREDENTIALS, 403}, {api::EXTREMELY_SORRY, 400}};
 
 	if (!r->is_meta_fixed) {

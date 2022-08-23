@@ -89,7 +89,8 @@ const char TASK_UPDATE_SQL[] =
 	  "answer_rows = (CASE WHEN $9 THEN excluded ELSE tasks END).answer_rows, "
 	  "answer_cols = (CASE WHEN $11 THEN excluded ELSE tasks END).answer_cols, "
 	  "answer = (CASE WHEN $13 THEN excluded ELSE tasks END).answer, "
-	  "tag = (CASE WHEN $15 THEN excluded ELSE tasks END).tag";
+	  "tag = (CASE WHEN $15 THEN excluded ELSE tasks END).tag "
+	"RETURNING (xmax = 0)";
 
 const char ATTACHMENT_UPDATE_SQL[] =
 	"INSERT INTO task_attachments ("
@@ -217,7 +218,7 @@ std::atomic<utils::transform_rules> TRANSFORM_SANITIZE = nullptr;
 
 coro<void> handle_update(fcgx::request_t *r) {
 	auto db = co_await async::pq::connection_pool::local->get_connection();
-	co_await routes::require_auth(db, r, routes::PERM_WRITE_TASKS);
+	auto session = co_await routes::require_auth(db, r, routes::PERM_WRITE_TASKS);
 
 	auto task = utils::expect<api::Task>(r);
 	if (!task.id()) {
@@ -253,11 +254,18 @@ coro<void> handle_update(fcgx::request_t *r) {
 		task.set_text(text.get_html());
 	}
 
-	co_await db.exec(TASK_UPDATE_SQL, task.id(), task.task_type(), task.has_task_type(),
-					 task.parent(), task.has_parent(), task.text(), task.has_text(),
-					 task.answer_rows(), task.has_answer_rows(), task.answer_cols(),
-					 task.has_answer_cols(), task.answer(), task.has_answer(), task.tag(),
-					 task.has_tag());
+	auto [is_task_inserted] =
+		(co_await db.exec(TASK_UPDATE_SQL, task.id(), task.task_type(), task.has_task_type(),
+						  task.parent(), task.has_parent(), task.text(), task.has_text(),
+						  task.answer_rows(), task.has_answer_rows(), task.answer_cols(),
+						  task.has_answer_cols(), task.answer(), task.has_answer(), task.tag(),
+						  task.has_tag()))
+			.expect1<bool>();
+
+	if (is_task_inserted && !is_id_owned_by(session, task.id())) {
+		// Either we are f*cked up or somebody is trying to fool us.
+		utils::err(r, api::EXTREMELY_SORRY);
+	}
 
 	for (const auto &attachment : task.attachments()) {
 		auto hash = id_map[attachment.id()];
@@ -269,6 +277,9 @@ coro<void> handle_update(fcgx::request_t *r) {
 							  attachment.deleted(), attachment.has_deleted(), hash))
 				.expect1<bool>();
 		if (is_inserted) {
+			if (!is_id_owned_by(session, attachment.id())) {
+				utils::err(r, api::EXTREMELY_SORRY);
+			}
 			files.push_back({hash, attachment.contents()});
 		}
 	}

@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@ungap/structured-clone": "^1.0.1",
+    "async-mutex": "^0.3.2",
     "bootstrap": "^5.2.0",
     "google-protobuf": "^3.21.0",
     "quill": "github:DanShaders/quill#develop"

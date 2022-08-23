@@ -10,7 +10,8 @@
 #include "utils/crypto.h"
 using async::coro;
 
-static coro<void> handle_user_login(fcgx::request_t *r) {
+namespace {
+coro<void> handle_user_login(fcgx::request_t *r) {
 	auto req = utils::expect<api::LoginRequest>(r);
 	auto db = co_await async::pq::connection_pool::local->get_connection();
 
@@ -35,14 +36,14 @@ static coro<void> handle_user_login(fcgx::request_t *r) {
 	utils::ok<api::UserInfo>(r, s->serialize());
 }
 
-static coro<void> handle_user_info(fcgx::request_t *r) {
+coro<void> handle_user_info(fcgx::request_t *r) {
 	auto db = co_await async::pq::connection_pool::local->get_connection();
 	auto s = co_await routes::require_auth(db, r);
 
 	utils::ok<api::UserInfo>(r, s->serialize());
 }
 
-static coro<void> handle_user_logout(fcgx::request_t *r) {
+coro<void> handle_user_logout(fcgx::request_t *r) {
 	auto req = utils::expect<api::LogoutRequest>(r);
 	auto db = co_await async::pq::connection_pool::local->get_connection();
 	auto s = co_await routes::require_auth(db, r);
@@ -55,12 +56,57 @@ static coro<void> handle_user_logout(fcgx::request_t *r) {
 	utils::ok<utils::empty_payload>(r, {});
 }
 
-static coro<void> handle_check_admin(fcgx::request_t *r) {
+coro<void> handle_check_admin(fcgx::request_t *r) {
 	auto db = co_await async::pq::connection_pool::local->get_connection();
 	co_await routes::require_auth(db, r, routes::PERM_NOT_STUDENT);
 }
+
+coro<void> handle_request_id_range(fcgx::request_t *r) {
+	const static int64_t MAX_IDS = 20;
+
+	auto try_reserve = [&](auto range) {
+		if (range->ptr < range->end) {
+			auto result = range->ptr.fetch_add(MAX_IDS);
+			if (result < range->end) {
+				utils::ok<api::IdRangeResponse>(r,
+												{
+													.start = result,
+													.end = std::min(result + MAX_IDS, range->end),
+												});
+				return true;
+			}
+		}
+		return false;
+	};
+
+	auto db = co_await async::pq::connection_pool::local->get_connection();
+	auto s = co_await routes::require_auth(db, r, routes::PERM_NOT_STUDENT);
+
+	int64_t block_len = 2;
+	auto where = &s->id_ranges;
+	while (auto current = where->load()) {
+		if (try_reserve(current)) {
+			co_return;
+		}
+		block_len = 2 * (current->end - current->start);
+		where = &current->next;
+	}
+
+	auto [end] = (co_await db.exec("UPDATE api_id_sequence SET value = value + $1 RETURNING value",
+								   block_len))
+					 .expect1<int64_t>();
+	auto start = end - block_len;
+	auto owned = std::make_shared<routes::session::owned_id_range>(start, end, start, nullptr);
+	where->store(owned);
+	if (!try_reserve(owned)) {
+		// Extremely sorry for the guy who is calling us concurrently (no).
+		utils::err(r, api::EXTREMELY_SORRY);
+	}
+}
+}  //  namespace
 
 ROUTE_REGISTER("/user/info", handle_user_info)
 ROUTE_REGISTER("/user/login", handle_user_login)
 ROUTE_REGISTER("/user/logout", handle_user_logout)
 ROUTE_REGISTER("/user/nginx_auth_only_admins", handle_check_admin)
+ROUTE_REGISTER("/user/request-id-range", handle_request_id_range)

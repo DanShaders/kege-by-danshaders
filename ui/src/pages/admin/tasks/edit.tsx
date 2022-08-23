@@ -25,7 +25,7 @@ import { requireAuth } from "pages/common";
 
 type TaskEditSettings = diff.DiffableTask & {
   taskTypes: TaskTypeListResponse.AsObject;
-  uploadImage: (file: File | Blob) => number;
+  uploadImage: (file: File | Blob) => Promise<number>;
   realMap: BidirectionalMap<number, string>;
   fakeMap: BidirectionalMap<number, string>;
 };
@@ -161,12 +161,12 @@ class TaskEditComponent extends Component<TaskEditSettings> {
         return;
       }
       const file = files[0];
-      await addFile(dbId(), file, filenameInput.value || file.name, true);
+      await addFile(await dbId(), file, filenameInput.value || file.name, true);
       fileInput.clear();
     };
 
-    this.settings.uploadImage = (file: File | Blob): number => {
-      const id = dbId();
+    this.settings.uploadImage = async (file: File | Blob): Promise<number> => {
+      const id = await dbId();
       (async (): Promise<void> => {
         await addFile(id, file, file instanceof File ? file.name : "Image", false);
       })();
@@ -294,7 +294,7 @@ class TaskEditPage extends SynchronizablePage<diff.DiffableTask> {
 
     let raw = new Task();
     if (!this.params.has("id")) {
-      this.params.set("id", dbId().toString());
+      this.params.set("id", (await dbId()).toString());
       Router.instance.updateUrl();
     } else {
       raw = await requestU(Task, "/api/tasks/" + this.params.get("id"));
@@ -318,7 +318,7 @@ class TaskEditPage extends SynchronizablePage<diff.DiffableTask> {
 
     const pageSettings = Object.assign(settings, {
       taskTypes: await getTaskTypes(),
-      uploadImage: () => 0,
+      uploadImage: async () => 0,
       realMap: new BidirectionalMap<number, string>(),
       fakeMap: new BidirectionalMap<number, string>(),
     });

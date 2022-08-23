@@ -22,6 +22,13 @@ struct session {
 	std::atomic<bool> logged_out;
 	std::atomic<int64_t> last_activity;
 
+	struct owned_id_range {
+		const int64_t start, end;
+		std::atomic<int64_t> ptr;
+		std::atomic<std::shared_ptr<owned_id_range>> next;
+	};
+	std::atomic<std::shared_ptr<owned_id_range>> id_ranges;
+
 	api::UserInfo::initializable_type serialize() const;
 };
 
@@ -40,4 +47,6 @@ coro<psession> require_auth(const async::pq::connection &db, fcgx::request_t *r,
 							unsigned perms = 0);
 coro<void> session_store(const async::pq::connection &db, fcgx::request_t *r, psession s);
 coro<void> session_logout(const async::pq::connection &db, psession s);
+
+bool is_id_owned_by(psession s, int64_t id);
 }  // namespace routes

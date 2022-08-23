@@ -11,7 +11,7 @@ import {
 export type TextEditorContext = {
   color: string[];
   size: string[];
-  uploadImage?: (file: File) => number;
+  uploadImage?: (file: File) => Promise<number>;
   realMap?: BidirectionalMap<number, string>;
   fakeMap?: BidirectionalMap<number, string>;
 };

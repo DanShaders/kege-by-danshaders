@@ -12,6 +12,8 @@ enum ErrorCode {
 	INVALID_CREDENTIALS = 5;
 
 	SESSION_ALREADY_IN_USE = 6;
+
+	EXTREMELY_SORRY = 7;
 }
 
 message Response {

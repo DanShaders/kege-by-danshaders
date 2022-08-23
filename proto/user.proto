@@ -12,3 +12,9 @@ message LoginRequest {
 message LogoutRequest {
 	int64 user_id = 1;
 }
+
+// Route /user/request-id-range
+message IdRangeResponse {
+	int64 start = 1;
+	int64 end = 2;
+}

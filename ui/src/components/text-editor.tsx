@@ -19,7 +19,7 @@ enum EditorTabs {
 
 type TextEditorSettings = {
   text: string;
-  uploadImage: (file: File) => number;
+  uploadImage: (file: File) => Promise<number>;
   realMap: BidirectionalMap<number, string>;
   fakeMap: BidirectionalMap<number, string>;
 };
@@ -170,10 +170,10 @@ export class TextEditorComponent extends Component<TextEditorSettings> {
           ],
         },
         uploader: {
-          handler: (range: RangeStatic, files: File[]): void => {
+          handler: async (range: RangeStatic, files: File[]): Promise<void> => {
             const delta = new Delta().retain(range.index).delete(range.length);
             for (const file of files) {
-              const id = this.settings.uploadImage(file);
+              const id = await this.settings.uploadImage(file);
               delta.insert({ image: this.settings.realMap?.getSecondary(id) });
             }
             this.quill.updateContents(delta, "user");

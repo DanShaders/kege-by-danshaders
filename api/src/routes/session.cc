@@ -84,3 +84,14 @@ coro<void> routes::session_logout(const async::pq::connection &db, psession s) {
 		cache.erase(s->session_id);
 	}
 }
+
+bool routes::is_id_owned_by(psession s, int64_t id) {
+	auto current_range = s->id_ranges.load();
+	while (current_range) {
+		if (current_range->start <= id && id < current_range->ptr && id < current_range->end) {
+			return true;
+		}
+		current_range = current_range->next.load();
+	}
+	return false;
+}

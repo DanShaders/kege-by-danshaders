@@ -1,6 +1,6 @@
 import * as jsx from "jsx";
 
-import { toggleLoadingScreen } from "utils/common";
+import { clearDbIdCache, toggleLoadingScreen } from "utils/common";
 import { EmptyPayload, request, requestU } from "utils/requests";
 import { Router } from "utils/router";
 
@@ -120,6 +120,7 @@ async function logout(): Promise<void> {
   const data = new LogoutRequest().setUserId(userInfo.userId);
   await requestU(EmptyPayload, "/api/user/logout", data);
   setGlobalUserInfo(null);
+  clearDbIdCache();
   await Router.instance.goTo("#update-header");
   Router.instance.redirect("login?logged_out");
 }

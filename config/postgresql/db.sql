@@ -1,7 +1,12 @@
-CREATE SEQUENCE seq_id;
+CREATE SEQUENCE builtin_id_sequence MAXVALUE 999999;
+
+CREATE TABLE api_id_sequence (
+	value bigint
+);
+INSERT INTO api_id_sequence VALUES (1000000);
 
 CREATE TABLE task_types (
-	id bigint DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY,
+	id bigint DEFAULT nextval('builtin_id_sequence') NOT NULL PRIMARY KEY,
 	obsolete bool,
 	short_name integer,
 	full_name text,
@@ -11,7 +16,7 @@ CREATE TABLE task_types (
 );
 
 CREATE TABLE tasks (
-	id bigint DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY,
+	id bigint DEFAULT nextval('builtin_id_sequence') NOT NULL PRIMARY KEY,
 	task_type bigint,
 	parent bigint,
 	task text,
@@ -26,7 +31,7 @@ CREATE TABLE tasks (
 );
 
 CREATE TABLE task_attachments (
-	id bigint DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY,
+	id bigint DEFAULT nextval('builtin_id_sequence') NOT NULL PRIMARY KEY,
 	task_id bigint,
 	filename text,
 	hash text,
@@ -38,7 +43,7 @@ CREATE TABLE task_attachments (
 );
 
 CREATE TABLE kims (
-	id bigint DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY,
+	id bigint DEFAULT nextval('builtin_id_sequence') NOT NULL PRIMARY KEY,
 	name text,
 	start_time timestamp,
 	end_time timestamp,
@@ -59,7 +64,7 @@ CREATE TABLE kims_tasks (
 );
 
 CREATE TABLE users (
-	id bigint DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY, 
+	id bigint DEFAULT nextval('builtin_id_sequence') NOT NULL PRIMARY KEY,
 	username text,
 	display_name text,
 	permissions integer,
@@ -78,7 +83,7 @@ CREATE TABLE sessions (
 );
 
 CREATE TABLE groups (
-	id bigint DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY,
+	id bigint DEFAULT nextval('builtin_id_sequence') NOT NULL PRIMARY KEY,
 	display_name text
 );
 

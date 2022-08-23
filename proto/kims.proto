@@ -1,43 +1,54 @@
 syntax = "proto3";
 
 package api;
-import "tasks.proto";
+import "diff.proto";
+// import "tasks.proto";
 
-// Route /kim/info
 message Kim {
+	option (diffable) = true;
+
 	int64 id = 1;
 
-	string name = 2;
-	int32 duration = 3;
-	int64 start_time = 4;
-	int64 end_time = 5;
-	string comment = 6;
+	optional string name = 2;
+	optional int64 duration = 3;
+	optional bool is_virtual = 4;
+	optional bool is_exam = 5;
+	optional int64 start_time = 6;
+	optional int64 end_time = 7;
 
-	int32 state = 7;
+	message TaskEntry {
+		int64 id = 1;
+		int32 pos = 2;
+		int32 npos = 3;
+
+		int64 task_type = 4 [(in) = true];
+		string tag = 5 [(in) = true];
+	}
+	repeated TaskEntry tasks = 8;
 }
 
-message KimTask {
-	Task task = 1;
-	int64 pos = 2;
-}
+// message KimTask {
+// 	Task task = 1;
+// 	int64 pos = 2;
+// }
 
-// Route /kim/tasks
-message KimTaskListResponse {
-	repeated KimTask tasks = 1;
+// Route /kim/list
+message KimListResponse {
+	repeated Kim kims = 1;
 }
 
 // Route /kim/list
-message UserKimListResponse {
-	repeated Kim kim = 1;
-}
+// message UserKimListResponse {
+// 	repeated Kim kim = 1;
+// }
 
-message TaskAnswer {
-	int64 pos = 1;
-	bytes answer = 2;
-	int64 submit_time = 3;
-}
+// message TaskAnswer {
+// 	int64 pos = 1;
+// 	bytes answer = 2;
+// 	int64 submit_time = 3;
+// }
 
 // Route /kim/user/answers
-message KimUserAnswerListResponse {
-	repeated TaskAnswer	answers = 1;
-}
+// message KimUserAnswerListResponse {
+// 	repeated TaskAnswer	answers = 1;
+// }

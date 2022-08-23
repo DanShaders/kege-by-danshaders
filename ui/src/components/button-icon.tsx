@@ -41,11 +41,6 @@ export class ButtonIconComponent extends Component<Settings> {
       ).asElement() as HTMLButtonElement;
       if (this.settings.onClick) {
         button.addEventListener("click", () => this.settings.onClick!(this));
-        button.addEventListener("keyup", (e) => {
-          if (e.keyCode === 13) {
-            this.settings.onClick!(this);
-          }
-        });
       }
     }
 

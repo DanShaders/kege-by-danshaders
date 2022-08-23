@@ -34,6 +34,7 @@ message Task {
 message TaskListRequest {
 	string filter = 1;
 	int32 page = 2;
+	bool request_all_ids = 3;
 }
 
 message TaskListResponse {
@@ -46,6 +47,7 @@ message TaskListResponse {
 		string tag = 3;
 	}
 	repeated TaskEntry tasks = 3;
+	repeated int64 ids = 4;
 }
 
 // Route /tasks/bulk-delete

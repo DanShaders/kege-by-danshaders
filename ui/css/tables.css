@@ -18,6 +18,10 @@
   text-align: left;
 }
 
+.table-third-col-left tbody td:nth-child(3) {
+  text-align: left;
+}
+
 .table-forth-col-left tbody td:nth-child(4) {
   text-align: left;
 }

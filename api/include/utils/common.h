@@ -78,4 +78,9 @@ public:
 		func();
 	}
 };
+
+template <typename T>
+auto millis_since_epoch(T timepoint) {
+	return timepoint.time_since_epoch() / std::chrono::milliseconds(1);
+}
 }  // namespace utils

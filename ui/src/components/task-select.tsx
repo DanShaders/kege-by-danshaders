@@ -54,6 +54,10 @@ class TaskEntry extends EnumerableComponent<
               icon: "icon-delete",
               hoverColor: "red",
               onClick: async (): Promise<void> => {
+                if (!confirm("Вы уверены, что хотите удалить задание?")) {
+                  return;
+                }
+
                 this.parent.pop(this.i);
                 controller.pop(this.settings.id);
                 await requestU(

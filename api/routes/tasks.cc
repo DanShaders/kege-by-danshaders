@@ -8,6 +8,7 @@
 #include "utils/api.h"
 #include "utils/common.h"
 #include "utils/crypto.h"
+#include "utils/filter.h"
 #include "utils/html.h"
 using async::coro;
 
@@ -287,6 +288,24 @@ coro<void> handle_list(fcgx::request_t *r) {
 	auto db = co_await async::pq::connection_pool::local->get_connection();
 	co_await routes::require_auth(db, r, routes::PERM_VIEW_TASKS);
 
+	auto req = utils::expect<api::TaskListRequest>(r);
+
+	// clang-format off
+	// !refs && (type == 19 || type == 20 || type == 21) && parent_included && type_count <= 4
+	utils::filter filter(req.filter(), {
+		{"id", utils::T_INTEGER},
+		{"type", utils::T_INTEGER},
+		// refs - number of reference in KIMs
+		// parent_included - does this filter have parent
+		// filtered already type_count - number of tasks with the
+		// same type filtered already tag - comment
+	});
+	// clang-format on
+	if (auto compile_error = filter.get_error()) {
+		utils::send_raw(r, api::INVALID_QUERY, *compile_error);
+		throw utils::expected_error("unable to compile filter");
+	}
+
 	api::TaskListResponse msg{{
 		.page_count = 1,
 		.has_more_pages = false,
@@ -294,6 +313,9 @@ coro<void> handle_list(fcgx::request_t *r) {
 
 	auto q = co_await db.exec(TASK_LIST_SQL);
 	for (auto [id, task_type, tag] : q.iter<int64_t, int, std::string_view>()) {
+		if (!filter.matches({id, task_type})) {
+			continue;
+		}
 		*msg.add_tasks() = {{
 			.id = id,
 			.task_type = task_type,

@@ -38,17 +38,14 @@ CREATE TABLE task_attachments (
 );
 
 CREATE TABLE kims (
-	id bigint NOT NULL PRIMARY KEY,
+	id bigint DEFAULT nextval('seq_id') NOT NULL PRIMARY KEY,
 	name text,
-	comment text,
-	duration integer,
-	virtual boolean,
-	exam boolean,
-
 	start_time timestamp,
 	end_time timestamp,
-
-	CHECK ((end_time IS NULL) != (virtual = true))
+	duration bigint,
+	virtual bool,
+	exam bool,
+	deleted bool
 );
 
 CREATE TABLE kims_tasks (
@@ -211,3 +208,14 @@ INSERT INTO tasks (task_type, task, tag, answer_rows, answer_cols, answer, delet
 	'127127\000399762080'::bytea,
 	false
 );
+
+INSERT INTO kims (name, duration, virtual, exam, start_time, end_time) VALUES (
+	'Тестовый вариант',
+	235 * 60,
+	false,
+	false,
+	'2022-08-22 14:00:00',
+	'2022-08-22 18:55:00'
+);
+
+INSERT INTO kims_tasks VALUES (34, 33, 0);

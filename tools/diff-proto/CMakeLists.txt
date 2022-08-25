@@ -14,6 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(
 	CXX_SOURCES
 	src/fields-id.cc
+	src/fields-pos.cc
 	src/fields-scalar.cc
 	src/fields-set.cc
 	src/fields-unwired.cc

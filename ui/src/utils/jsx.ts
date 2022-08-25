@@ -123,6 +123,12 @@ export class Fragment {
     this.insertInto(null, false, refs);
     return nonNull(this.elem);
   }
+
+  create(): [HTMLElement, ...any] {
+    const refs: any[] = [];
+    const elem = this.asElement(refs) as HTMLElement;
+    return [elem, ...refs];
+  }
 }
 
 export function jsx(

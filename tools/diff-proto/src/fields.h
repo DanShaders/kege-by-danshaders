@@ -74,3 +74,10 @@ public:
   void generate_commit() override;
   void generate_serialize() override;
 };
+
+class PosFieldCodeGenerator : public ScalarFieldCodeGenerator {
+public:
+  using ScalarFieldCodeGenerator::ScalarFieldCodeGenerator;
+
+  void generate_serialize() override;
+};

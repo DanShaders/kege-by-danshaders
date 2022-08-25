@@ -18,8 +18,13 @@ public:
     string scope = get_scope(msg->containing_type());
     vars["transport"] = "defs." + scope + msg->name();
     vars["scope"] = scope.size() ? scope.substr(0, scope.size() - 1) : "";
+
     for_all_fields(msg, [&](const FieldDescriptor *field) {
-      if (field->name() == "id") {
+      if (field->name() == "curr_pos") {
+        fields.push_back(std::make_unique<PosFieldCodeGenerator>(c, field));
+      } else if (field->name() == "swap_pos") {
+        // All of the logic in curr_pos
+      } else if (field->name() == "id") {
         fields.push_back(std::make_unique<IDFieldCodeGenerator>(c, field));
       } else if (field->type() != FieldDescriptor::TYPE_MESSAGE) {
         if (field->containing_oneof()) {
@@ -188,20 +193,20 @@ public:
 };
 
 void FileContext::generate_header() const {
-  p->Print(
-      "/* eslint-disable */\n"
-      "import structuredClone from \"@ungap/structured-clone\";\n"
-      "import * as defs from \"./$name$_pb\";\n"
-      "import { assert, nonNull } from \"utils/assert\";\n"
-      "import {\n"
-      "  DeltaChangeCallback,\n"
-      "  DiffableSet,\n"
-      "  IContext,\n"
-      "  IDiffable,\n"
-      "  areBuffersEqual,\n"
-      "} from \"utils/diff\";\n"
-      "\n",
-      "name", compiler::StripProto(file->name()));
+  p->Print(R"(/* eslint-disable */
+import structuredClone from "@ungap/structured-clone";
+import * as defs from "./$name$_pb";
+import { assert, nonNull } from "utils/assert";
+import {
+  DeltaChangeCallback,
+  DiffableSet,
+  IContext,
+  IDiffable,
+  areBuffersEqual,
+} from "utils/diff";
+
+)",
+           "name", compiler::StripProto(file->name()));
 }
 
 void FileContext::generate_message(const Descriptor *msg) const {

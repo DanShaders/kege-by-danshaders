@@ -198,6 +198,10 @@ export class SetComponent<
     additional: StaticSettings,
     initializeLocal: (local: Diffable) => void
   ): void {
+    // [Dan Klishch, literally 2 months after writing this code]
+    // Genially, no idea why using clone() here, why passing initializeLocal to DiffableSet.add
+    // Absence of tests and documentation only exacerbates the situation.
+    // It works and I'm not intending on fixing/rewriting this shit.
     const local = remote.clone();
     this.settings.add(local, remote, initializeLocal);
     this.pushComponent(Object.assign(local, additional));
@@ -205,6 +209,77 @@ export class SetComponent<
 
   pop(i: number): void {
     this.popComponent(i);
+  }
+}
+
+export class OrderedSetComponent<
+  Diffable extends IDiffableOf<Diffable> & { currPos: number },
+  StaticSettings,
+  Parent extends AnyComponent = AnyComponent
+> extends SetComponent<Diffable, StaticSettings, Parent> {
+  private nextFreePos = 0;
+
+  constructor(
+    settings: DiffableSetOf<Diffable>,
+    parent: Parent,
+    provider: ListProvider,
+    factory: ComponentFactory<
+      Diffable,
+      StaticSettings,
+      OrderedSetComponent<Diffable, StaticSettings, Parent>
+    >,
+    settingsMap: (obj: Diffable) => Diffable & StaticSettings
+  ) {
+    super(settings, parent, provider, factory as any, settingsMap);
+    this.nextFreePos = this.comps.length;
+  }
+
+  push(
+    remote: Diffable,
+    additional: StaticSettings,
+    initializeLocal: (local: Diffable) => void
+  ): void {
+    const local = remote.clone();
+    // Next 2 lines are kinda initializeLocal, see SetComponent::push
+    remote.currPos = -1;
+    // Cannot use this.comps.length because of holes from this::pop.
+    local.currPos = this.nextFreePos++;
+
+    this.settings.add(local, remote, initializeLocal);
+    this.pushComponent(Object.assign(local, additional));
+  }
+
+  pop(i: number): void {
+    // This creates a hole in the indexation but I never promised anybody that currPos will be
+    // sequential.
+    this.comps[i].settings.currPos = -1;
+    this.popComponent(i);
+  }
+
+  swap(i: number, j: number): void {
+    // First of all, deal with DOM
+    const a = this.provider.get(i);
+    const b = this.provider.get(j);
+    const afterB = b.nextElementSibling;
+    const parent = b.parentNode!;
+    if (a === b) {
+      parent.insertBefore(a, b);
+    } else {
+      a.replaceWith(b);
+      parent.insertBefore(a, afterB);
+    }
+
+    // Then with this.comps and components' positions
+    [this.comps[i], this.comps[j]] = [this.comps[j], this.comps[i]];
+    this.settings.asAtomicChange(() => {
+      const sa = this.comps[i].settings;
+      const sb = this.comps[j].settings;
+      [sa.currPos, sb.currPos] = [sb.currPos, sa.currPos];
+    });
+
+    // Issue position updates to them
+    this.dispatchPositionUpdate(i);
+    this.dispatchPositionUpdate(j);
   }
 }
 

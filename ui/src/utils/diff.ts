@@ -30,6 +30,7 @@ export class DiffableSet<Diffable extends IDiffable<Diffable, Delta, Transport>,
   private ctx?: SetContext<this>;
   private fields = 0;
   private supressPropagation = false;
+  private deltaCalled = 0;
 
   constructor(msgs: Iterable<Transport>, factory: (msg: Transport) => Diffable) {
     this.factory = factory;
@@ -52,19 +53,29 @@ export class DiffableSet<Diffable extends IDiffable<Diffable, Delta, Transport>,
     return this.elements.entries();
   }
 
-  add(local: Diffable, remote: Diffable, initializeLocal: (local: Diffable) => void): void {
+  asAtomicChange(fn: () => void): void {
+    if (this.supressPropagation) {
+      fn();
+      return;
+    }
+
+    const deltaEpoch = this.deltaCalled;
     const saveFields = this.fields;
     this.supressPropagation = true;
-
-    this.ctx!.remote.elements.set(remote.id, remote);
-    this.elements.set(local.id, local);
-    this.mountSingle(local.id, local);
-    initializeLocal(local);
-
+    fn();
     this.supressPropagation = false;
-    if (this.fields !== saveFields) {
+    if (this.deltaCalled !== deltaEpoch) {
       this.ctx!.onDeltaChange(this.fields, this.fields - saveFields);
     }
+  }
+
+  add(local: Diffable, remote: Diffable, initializeLocal: (local: Diffable) => void): void {
+    this.asAtomicChange(() => {
+      this.ctx!.remote.elements.set(remote.id, remote);
+      this.elements.set(local.id, local);
+      this.mountSingle(local.id, local);
+      initializeLocal(local);
+    });
   }
 
   private mountSingle(id: number, elem: Diffable): void {
@@ -74,6 +85,7 @@ export class DiffableSet<Diffable extends IDiffable<Diffable, Delta, Transport>,
       remote: nonNull(ctx.remote.elements.get(id)!),
       delta: delta,
       onDeltaChange: (fields: number, fieldsDelta: number): void => {
+        ++this.deltaCalled;
         if (!fields && fieldsDelta < 0) {
           ctx.delta.delete(id);
           --this.fields;

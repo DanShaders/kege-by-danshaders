@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package api;
 import "diff.proto";
-// import "tasks.proto";
 
 message Kim {
 	option (diffable) = true;
@@ -18,8 +17,8 @@ message Kim {
 
 	message TaskEntry {
 		int64 id = 1;
-		int32 pos = 2;
-		int32 npos = 3;
+		int32 curr_pos = 2;
+		int32 swap_pos = 3;
 
 		int64 task_type = 4 [(in) = true];
 		string tag = 5 [(in) = true];

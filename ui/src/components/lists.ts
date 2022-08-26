@@ -262,7 +262,7 @@ export class OrderedSetComponent<
     const b = this.provider.get(j);
     const afterB = b.nextElementSibling;
     const parent = b.parentNode!;
-    if (a === b) {
+    if (afterB === a) {
       parent.insertBefore(a, b);
     } else {
       a.replaceWith(b);
@@ -311,6 +311,15 @@ export abstract class SetEntry<
   Diffable extends IDiffableOf<Diffable>,
   StaticSettings
 > extends EnumerableComponent<Diffable, StaticSettings, SetComponent<Diffable, StaticSettings>> {}
+
+export abstract class OrderedSetEntry<
+  Diffable extends IDiffableOf<Diffable> & { currPos: number },
+  StaticSettings
+> extends EnumerableComponent<
+  Diffable,
+  StaticSettings,
+  OrderedSetComponent<Diffable, StaticSettings>
+> {}
 
 export abstract class ListEntry<Settings> extends EnumerableComponent<
   Settings,

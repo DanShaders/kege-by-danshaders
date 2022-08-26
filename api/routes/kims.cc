@@ -44,19 +44,173 @@ coro<void> handle_kim_get_editable(fcgx::request_t *r) {
 	}};
 
 	auto q2 = co_await db.exec(
-		"SELECT task_id, pos, task_type, tag FROM (kims_tasks JOIN tasks ON tasks.id = "
-		"kims_tasks.task_id) WHERE kim_id = $1");
-	for (auto [task_id, pos, task_type, tag] : q2.iter<int64_t, int, int64_t, std::string_view>()) {
+		"SELECT task_id, task_type, tag FROM (kims_tasks JOIN tasks ON tasks.id = "
+		"kims_tasks.task_id) WHERE kim_id = $1 ORDER BY pos",
+		kim_id);
+	int task_index = 0;
+	for (auto [task_id, task_type, tag] : q2.iter<int64_t, int64_t, std::string_view>()) {
 		*msg.add_tasks() = {{
 			.id = task_id,
-			.pos = pos,
-			.npos = pos,
+			.curr_pos = task_index,
+			.swap_pos = task_index,
 			.task_type = task_type,
 			.tag = std::string(tag),
 		}};
+		// pos from database is not required to be consecutive
+		++task_index;
 	}
 
 	utils::ok(r, msg);
+}
+
+// clang-format off
+const char KIM_UPDATE_SQL[] =
+	"INSERT INTO kims ("
+	  "id, name, start_time, end_time, "
+	  "duration, virtual, exam"
+	") "
+	"VALUES "
+	  "("
+	    "$1, "
+	    "(CASE WHEN $3 THEN $2::text ELSE NULL END), "
+	    "(CASE WHEN $5 THEN $4::timestamp ELSE NULL END), "
+	    "(CASE WHEN $7 THEN $6::timestamp ELSE NULL END), "
+	    "(CASE WHEN $9 THEN $8::bigint ELSE NULL END), "
+	    "(CASE WHEN $11 THEN $10::bool ELSE NULL END), "
+	    "(CASE WHEN $13 THEN $12::bool ELSE NULL END)"
+	  ")"
+	"ON CONFLICT (id) DO UPDATE SET "
+	  "name = (CASE WHEN $3 THEN excluded ELSE kims END).name, "
+	  "start_time = (CASE WHEN $5 THEN excluded ELSE kims END).start_time, "
+	  "end_time = (CASE WHEN $7 THEN excluded ELSE kims END).end_time, "
+	  "duration = (CASE WHEN $9 THEN excluded ELSE kims END).duration, "
+	  "virtual = (CASE WHEN $11 THEN excluded ELSE kims END).virtual, "
+	  "exam = (CASE WHEN $13 THEN excluded ELSE kims END).exam "
+	"RETURNING (xmax = 0)";
+// clang-format on
+
+coro<void> handle_kim_update(fcgx::request_t *r) {
+	auto db = co_await async::pq::connection_pool::local->get_connection();
+	auto session = co_await routes::require_auth(db, r, routes::PERM_NOT_STUDENT);
+
+	auto kim = utils::expect<api::Kim>(r);
+	if (!kim.id()) {
+		utils::err(r, api::INVALID_QUERY);
+	}
+
+	// Protect from overflows to be on the save side.
+	auto check_interval = [r](int64_t what, int64_t lo, int64_t hi) {
+		if (what < lo || what > hi) {
+			utils::err(r, api::INVALID_QUERY);
+		}
+	};
+	// 5e12ms as ns can fit into int64_t.
+	check_interval(kim.start_time(), -5e12, 5e12);
+	check_interval(kim.end_time(), -5e12, 5e12);
+	check_interval(kim.duration(), -5e12, 5e12);
+
+	co_await db.transaction();
+
+	auto start_time = async::pq::timestamp(std::chrono::milliseconds(kim.start_time())),
+		 end_time = async::pq::timestamp(std::chrono::milliseconds(kim.end_time()));
+	auto [is_kim_inserted] =
+		(co_await db.exec(KIM_UPDATE_SQL, kim.id(), kim.name(), kim.has_name(), start_time,
+						  kim.has_start_time(), end_time, kim.has_end_time(), kim.duration(),
+						  kim.has_duration(), kim.is_virtual(), kim.has_is_virtual(), kim.is_exam(),
+						  kim.has_is_exam()))
+			.expect1<bool>();
+
+	if (is_kim_inserted && !is_id_owned_by(session, kim.id())) {
+		utils::err(r, api::EXTREMELY_SORRY);
+	}
+
+	// Process task swaps
+	// 1) We want mapping user_pos -> db_pos.
+	std::vector<int64_t> task_ids;
+	for (auto task : kim.tasks()) {
+		if (task.curr_pos() != -1) {
+			task_ids.push_back(task.id());
+		}
+	}
+
+	auto q =
+		(co_await db.exec("SELECT task_id, pos FROM unnest($1::bigint[]) AS ids JOIN kims_tasks ON "
+						  "task_id = ids WHERE kim_id = $2 ORDER BY (task_id, pos) FOR UPDATE",
+						  task_ids, kim.id()));
+	std::map<int64_t, int> db_positions;
+	for (auto [key, value] : q.iter<int64_t, int>()) {
+		db_positions[key] = value;
+	}
+
+	std::map<int, int> user_pos_remap;
+	for (auto task : kim.tasks()) {
+		if (task.curr_pos() != -1) {
+			user_pos_remap[task.curr_pos()] = db_positions[task.id()];
+		}
+	}
+
+	// 2) There might be some new "introduced" positions, they only appear in swap_pos.
+	std::vector<int> introduced_pos;
+	for (auto task : kim.tasks()) {
+		if (auto pos = task.swap_pos(); pos != -1 && !user_pos_remap.count(pos)) {
+			introduced_pos.push_back(pos);
+		}
+	}
+	std::ranges::sort(introduced_pos);
+
+	// 3) Reserve "introduced" positions in db
+	int new_start_pos = -1, new_end_pos = -1;
+	int introduced_cnt = static_cast<int>(introduced_pos.size());
+
+	if (is_kim_inserted) {
+		new_start_pos = 0, new_end_pos = introduced_cnt;
+		co_await db.exec("INSERT INTO kims_tasks ($1, NULL, $2)", kim.id(), new_end_pos);
+	}
+	if (introduced_cnt && !is_kim_inserted) {
+		std::tie(new_end_pos) =
+			(co_await db.exec("UPDATE kims_tasks SET pos = pos + $1 WHERE kim_id = "
+							  "$2 AND task_id IS NULL RETURNING pos",
+							  introduced_cnt, kim.id()))
+				.expect1<int>();
+		new_start_pos = new_end_pos - introduced_cnt;
+	}
+	for (int pos : introduced_pos) {
+		user_pos_remap[pos] = new_start_pos++;
+	}
+
+	// 4) Delete what needs to be deleted
+	std::vector<int64_t> delete_ids, swap_ids;
+	std::vector<int> swap_positions;
+	for (auto task : kim.tasks()) {
+		if (task.swap_pos() == -1) {
+			if (task.curr_pos() == -1) {
+				// nice trolling
+				continue;
+			}
+			delete_ids.push_back(task.id());
+		} else {
+			swap_ids.push_back(task.id());
+			swap_positions.push_back(user_pos_remap[task.swap_pos()]);
+		}
+	}
+	if (delete_ids.size()) {
+		co_await db.exec(
+			"DELETE FROM kims_tasks USING unnest($1::bigint[]) AS ids WHERE kim_id = $2 AND "
+			"task_id = ids",
+			delete_ids, kim.id());
+	}
+
+	// 5) Finally swap
+	if (swap_ids.size()) {
+		co_await db.exec(
+			"INSERT INTO kims_tasks VALUES ($1, unnest($2::bigint[]), unnest($3::int[])) ON "
+			"CONFLICT"
+			" (kim_id, task_id) DO UPDATE SET pos = excluded.pos",
+			kim.id(), swap_ids, swap_positions);
+	}
+	co_await db.commit();
+
+	utils::ok(r, utils::empty_payload{});
 }
 
 coro<void> handle_kim_list(fcgx::request_t *r) {
@@ -85,6 +239,7 @@ coro<void> handle_kim_list(fcgx::request_t *r) {
 }  // namespace
 
 ROUTE_REGISTER("/kim/$id", handle_kim_get_editable)
+ROUTE_REGISTER("/kim/update", handle_kim_update)
 ROUTE_REGISTER("/kim/list", handle_kim_list)
 
 // static coro<void> handle_kim_list(fcgx::request_t *r) {

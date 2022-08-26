@@ -351,18 +351,27 @@ SIMPLE_PQ_DECODER(double, 701) {
 	return res;
 }
 
+const auto PQ_EPOCH = std::chrono::sys_days{std::chrono::January / 1 / 2000};
+
 SIMPLE_PQ_DECODER(timestamp, 1114) {
 	using namespace std::chrono;
-
-	const pq::timestamp PQ_EPOCH = sys_days{January / 1 / 2000};
 
 #if KEGE_PQ_FP_TIMESTAMP
 	auto secs = pq_binary_converter<double>::get(data, len, oid);
 	return PQ_EPOCH + round<microseconds>(duration<double>(secs));
 #else
-	const int64_t MICRO = 1'000'000;
 	auto secs = pq_binary_converter<int64_t>::get(data, len, oid);
-	return PQ_EPOCH + seconds{secs / MICRO} + microseconds{secs % MICRO};
+	return PQ_EPOCH + microseconds{secs};
+#endif
+}
+
+SIMPLE_PQ_ENCODER(timestamp) {
+	using namespace std::chrono;
+
+#if KEGE_PQ_FP_TIMESTAMP
+	static_assert(false);
+#else
+	return pq_binary_converter<int64_t>::set(round<microseconds>(obj - PQ_EPOCH).count(), buff);
 #endif
 }
 

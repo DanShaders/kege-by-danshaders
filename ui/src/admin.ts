@@ -3,6 +3,7 @@ import { requestU } from "utils/requests";
 import { TaskTypeListResponse } from "proto/task-types_pb";
 
 import "pages/admin/jobs/list";
+import "pages/admin/kims/edit";
 import "pages/admin/kims/list";
 import "pages/admin/tasks/edit";
 import "pages/admin/tasks/list";

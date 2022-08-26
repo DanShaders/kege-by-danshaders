@@ -50,7 +50,10 @@ CREATE TABLE kims (
 	duration bigint,
 	virtual bool,
 	exam bool,
-	deleted bool
+	deleted bool,
+
+	CHECK ((virtual AND EXTRACT(EPOCH FROM end_time - start_time) * 1000 >= duration)
+	 OR (NOT virtual AND EXTRACT(EPOCH FROM end_time - start_time) * 1000 = duration))
 );
 
 CREATE TABLE kims_tasks (
@@ -60,7 +63,8 @@ CREATE TABLE kims_tasks (
 
 	FOREIGN KEY (kim_id) REFERENCES kims(id) ON DELETE CASCADE,
 	FOREIGN KEY (task_id) REFERENCES tasks(id),
-	UNIQUE (kim_id, pos)
+	UNIQUE (kim_id, pos) DEFERRABLE INITIALLY DEFERRED,
+	UNIQUE (kim_id, task_id) -- do not lift unless DiffableSet stops depend on this
 );
 
 CREATE TABLE users (
@@ -116,12 +120,12 @@ CREATE TABLE users_kims (
 
 CREATE TABLE users_answers (
 	kim_id bigint,
-	pos integer,
+	task_id integer,
 	user_id bigint,
 	answer bytea,
 	submit_time bigint,
 
-	FOREIGN KEY (kim_id, pos) REFERENCES kims_tasks(kim_id, pos) ON DELETE CASCADE,
+	FOREIGN KEY (kim_id, task_id) REFERENCES kims_tasks(kim_id, task_id) ON DELETE CASCADE,
 	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -216,11 +220,12 @@ INSERT INTO tasks (task_type, task, tag, answer_rows, answer_cols, answer, delet
 
 INSERT INTO kims (name, duration, virtual, exam, start_time, end_time) VALUES (
 	'Тестовый вариант',
-	235 * 60,
+	235 * 60 * 1000,
 	false,
 	false,
 	'2022-08-22 14:00:00',
-	'2022-08-22 18:55:00'
+	'2022-08-22 17:55:00'
 );
 
 INSERT INTO kims_tasks VALUES (34, 33, 0);
+INSERT INTO kims_tasks VALUES (34, NULL, 1);

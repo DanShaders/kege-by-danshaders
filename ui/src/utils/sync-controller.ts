@@ -18,7 +18,8 @@ export class SyncController<Diffable extends IDiffable<Diffable, unknown, Binary
   private updateWhileSave = false;
   private updateNotifier = new Future<void>();
   private lastFields = 0;
-
+  private catchAllLastFields = 0;
+  private deltaCalled = 0;
   supressSave = true;
 
   constructor(params: SyncControllerParams<Diffable>) {
@@ -26,7 +27,24 @@ export class SyncController<Diffable extends IDiffable<Diffable, unknown, Binary
     this.local = params.remote.createLocal(this.onDeltaChange.bind(this));
   }
 
+  asAtomicChange(fn: () => void): void {
+    if (this.supressSave) {
+      fn();
+      return;
+    }
+
+    const deltaEpoch = this.deltaCalled;
+    this.supressSave = true;
+    fn();
+    this.supressSave = false;
+    if (deltaEpoch !== this.deltaCalled) {
+      this.onDeltaChange(this.catchAllLastFields);
+    }
+  }
+
   async onDeltaChange(fields: number): Promise<void> {
+    ++this.deltaCalled;
+    this.catchAllLastFields = fields;
     this.updateWhileSave = true;
     if (this.supressSave) {
       return;
@@ -46,6 +64,7 @@ export class SyncController<Diffable extends IDiffable<Diffable, unknown, Binary
         this.params.statusElem.innerText = "";
         break;
       }
+      console.log("Sending delta to update", this.local.ctx.delta);
 
       this.params.statusElem.innerText = "Сохранение...";
       const [syncObj, commitDelta] = syncResult;

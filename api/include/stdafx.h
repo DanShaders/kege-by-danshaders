@@ -2,6 +2,7 @@
 
 #include <bits/stdc++.h>
 #include <fmt/chrono.h>
+#include <fmt/ranges.h>
 #include <fmtlog/fmtlog.h>
 
 #include <nlohmann/json.hpp>

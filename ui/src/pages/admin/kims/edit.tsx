@@ -1,3 +1,5 @@
+import { getTaskTypes } from "admin";
+
 import * as jsx from "jsx";
 
 import { dbId, toggleLoadingScreen } from "utils/common";
@@ -8,6 +10,7 @@ import { SyncController, SynchronizablePage } from "utils/sync-controller";
 
 import { Kim } from "proto/kims_pb";
 import * as diff from "proto/kims_pb_diff";
+import { TaskType } from "proto/task-types_pb";
 
 import { ButtonIcon, ButtonIconComponent } from "components/button-icon";
 import { Component } from "components/component";
@@ -22,7 +25,11 @@ function asInputValue(timestamp: number): string {
   return date.toISOString().split("Z")[0];
 }
 
-class Task extends OrderedSetEntry<diff.Kim.DiffableTaskEntry, {}> {
+type TaskTypeRequired = {
+  taskTypes: Map<number, TaskType.AsObject>;
+};
+
+class Task extends OrderedSetEntry<diff.Kim.DiffableTaskEntry, TaskTypeRequired> {
   buttonMoveUp = (
     <ButtonIcon
       settings={{
@@ -54,7 +61,7 @@ class Task extends OrderedSetEntry<diff.Kim.DiffableTaskEntry, {}> {
     return (
       <tr>
         <td>{this.settings.id.toString()}</td>
-        <td>{this.settings.taskType.toString()}</td>
+        <td>{this.settings.taskTypes.get(this.settings.taskType)!.shortName}</td>
         <td>
           <div class="d-flex justify-content-between">
             <span class="text-truncate">{this.settings.tag}</span>
@@ -86,19 +93,19 @@ class Task extends OrderedSetEntry<diff.Kim.DiffableTaskEntry, {}> {
 }
 
 class KimEditComponent extends Component<
-  diff.DiffableKim & { syncController: SyncController<any> }
+  diff.DiffableKim & { syncController: SyncController<any> } & TaskTypeRequired
 > {
   createElement(): HTMLElement {
     const S_ROW = "row gy-2";
     const S_LABEL = "col-md-2 text-md-end fw-600 gx-2 gx-lg-3 align-self-start";
     const S_INPUT = "col-md-10 gy-0 gy-md-2 gx-2 gx-lg-3";
 
-    const taskList = new OrderedSetComponent<diff.Kim.DiffableTaskEntry, {}>(
+    const taskList = new OrderedSetComponent<diff.Kim.DiffableTaskEntry, TaskTypeRequired>(
       this.settings.tasks,
       this,
       listProviderOf("tbody"),
       factoryOf(Task),
-      (e) => e
+      (settings) => Object.assign(settings, { taskTypes: this.settings.taskTypes })
     );
 
     const updateTimeRelatedSettings = (
@@ -251,6 +258,11 @@ class KimEditComponent extends Component<
                             settings={{
                               title: "Добавить задания",
                               icon: "add",
+                              href:
+                                "admin/tasks/list?back=" +
+                                encodeURIComponent(Router.instance.currentURL) +
+                                "&kimId=" +
+                                this.settings.id,
                             }}
                           />
                           <ButtonIcon
@@ -319,7 +331,10 @@ class KimEditPage extends SynchronizablePage<diff.DiffableKim> {
     this.syncController.supressSave = false;
 
     const kimEdit = new KimEditComponent(
-      Object.assign(settings, { syncController: this.syncController }),
+      Object.assign(settings, {
+        syncController: this.syncController,
+        taskTypes: await getTaskTypes(),
+      }),
       null
     );
 

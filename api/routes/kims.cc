@@ -164,7 +164,7 @@ coro<void> handle_kim_update(fcgx::request_t *r) {
 
 	if (is_kim_inserted) {
 		new_start_pos = 0, new_end_pos = introduced_cnt;
-		co_await db.exec("INSERT INTO kims_tasks ($1, NULL, $2)", kim.id(), new_end_pos);
+		co_await db.exec("INSERT INTO kims_tasks VALUES ($1, NULL, $2)", kim.id(), new_end_pos);
 	}
 	if (introduced_cnt && !is_kim_inserted) {
 		std::tie(new_end_pos) =

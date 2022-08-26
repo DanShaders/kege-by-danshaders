@@ -10,7 +10,7 @@ import { requestU } from "utils/requests";
 import { Router } from "utils/router";
 import { SyncController, SynchronizablePage } from "utils/sync-controller";
 
-import { TaskTypeListResponse } from "proto/task-types_pb";
+import { TaskType } from "proto/task-types_pb";
 import { Task } from "proto/tasks_pb";
 import * as diff from "proto/tasks_pb_diff";
 
@@ -24,7 +24,7 @@ import { TextEditor, TextEditorComponent } from "components/text-editor";
 import { requireAuth } from "pages/common";
 
 type TaskEditSettings = diff.DiffableTask & {
-  taskTypes: TaskTypeListResponse.AsObject;
+  taskTypes: Map<number, TaskType.AsObject>;
   uploadImage: (file: File | Blob) => Promise<number>;
   realMap: BidirectionalMap<number, string>;
   fakeMap: BidirectionalMap<number, string>;
@@ -183,11 +183,13 @@ class TaskEditComponent extends Component<TaskEditSettings> {
           <label class={S_LABEL}>Тип задания</label>
           <div class={S_INPUT}>
             <select ref class="form-select">
-              {this.settings.taskTypes.typeList.map((entry) => (
-                <option value={entry.id} selectedIf={entry.id === this.settings.taskType}>
-                  {entry.fullName}
-                </option>
-              ))}
+              {Array.from(this.settings.taskTypes.entries()).map(([id, taskType]) => {
+                return (
+                  <option value={id} selectedIf={id === this.settings.taskType}>
+                    {taskType.fullName}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -311,7 +313,7 @@ class TaskEditPage extends SynchronizablePage<diff.DiffableTask> {
     });
 
     const settings = this.syncController.getLocal();
-    settings.taskType ||= (await getTaskTypes()).typeList[0].id;
+    settings.taskType ||= (await getTaskTypes()).keys().next().value;
     settings.answerRows ||= 1;
     settings.answerCols ||= 1;
     this.syncController.supressSave = false;

@@ -1,6 +1,7 @@
+import { showInternalErrorScreen } from "utils/common";
 import { requestU } from "utils/requests";
 
-import { TaskTypeListResponse } from "proto/task-types_pb";
+import { TaskType, TaskTypeListResponse } from "proto/task-types_pb";
 
 import "pages/admin/jobs/list";
 import "pages/admin/kims/edit";
@@ -54,11 +55,20 @@ export const headerSettings = {
   },
 };
 
-let cachedTaskTypes: TaskTypeListResponse.AsObject;
+let cachedTaskTypes: Map<number, TaskType.AsObject>;
 
-export async function getTaskTypes(): Promise<TaskTypeListResponse.AsObject> {
+export async function getTaskTypes(): Promise<Map<number, TaskType.AsObject>> {
   if (!cachedTaskTypes) {
-    cachedTaskTypes = (await requestU(TaskTypeListResponse, "/api/task-types/list")).toObject();
+    try {
+      const result = (await requestU(TaskTypeListResponse, "/api/task-types/list")).toObject();
+      cachedTaskTypes = new Map();
+      for (const type of result.typeList) {
+        cachedTaskTypes.set(type.id, type);
+      }
+    } catch (e) {
+      showInternalErrorScreen(e);
+      return new Map();
+    }
   }
   return cachedTaskTypes;
 }

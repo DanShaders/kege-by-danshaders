@@ -36,14 +36,15 @@ export async function request<T>(
       body: req?.serializeBinary(),
     });
     const buffer = new Uint8Array(await result.arrayBuffer());
-    if (result.status !== 200) {
+    try {
+      const response = Response.deserializeBinary(buffer);
+      if (response.getCode() !== ErrorCode.OK) {
+        return [response.getCode() || -result.status, response.getResponse_asU8()];
+      } else {
+        return [ErrorCode.OK, resType.deserializeBinary(response.getResponse_asU8())];
+      }
+    } catch (e) {
       return [-result.status];
-    }
-    const response = Response.deserializeBinary(buffer);
-    if (response.getCode() !== ErrorCode.OK) {
-      return [response.getCode() || -result.status, response.getResponse_asU8()];
-    } else {
-      return [ErrorCode.OK, resType.deserializeBinary(response.getResponse_asU8())];
     }
   } catch (e) {
     return [-1000];

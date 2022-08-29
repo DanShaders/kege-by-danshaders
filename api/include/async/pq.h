@@ -17,77 +17,16 @@ class result;
 
 using timestamp = std::chrono::system_clock::time_point;
 
-struct connection_storage {
-	FIXED_CLASS(connection_storage)
-
-	PGconn *conn;
-	socket_storage sock;
-
-	connection_storage() {}
-
-	~connection_storage();
-};
-
-using raw_connection = std::shared_ptr<connection_storage>;
-
 class db_error : public std::runtime_error {
 	using runtime_error::runtime_error;
 };
 
-class connection {
-	ONLY_DEFAULT_MOVABLE_CLASS(connection)
+template <typename... Ts>
+struct type_sequence {};
 
-private:
-	raw_connection conn;
-	connection_pool *pool;
-	bool has_active_transaction = false;
-
-	static coro<void> rollback_and_return(raw_connection conn, connection_pool *pool);
-
-public:
-	connection(raw_connection conn_, connection_pool *pool_);
-	~connection();
-
-	PGconn *get_raw_connection() const noexcept;
-
-	coro<void> transaction();
-	coro<void> commit();
-	coro<void> rollback();
-
-	template <typename... Params>
-	coro<result> exec(const char *command, Params &&...params) const;
-};
-
-class connection_pool : public event_source {
-	ONLY_DEFAULT_MOVABLE_CLASS(connection_pool)
-
-private:
-	friend connection;
-
-	struct impl;
-	std::unique_ptr<impl> pimpl;
-
-	void return_connection(raw_connection conn) noexcept;
-
-public:
-	static thread_local std::shared_ptr<connection_pool> local;
-
-	using clock = std::chrono::steady_clock;
-
-	struct creation_info {
-		std::string_view db_path;
-		size_t connections = 1;
-		clock::duration creation_cooldown;
-	};
-
-	connection_pool(const creation_info &info);
-	~connection_pool();
-
-	void bind_to_thread() override;
-	void on_init() override;
-	void on_stop() override;
-
-	coro<connection> get_connection();
+template <typename Ts, typename Params>
+struct prepared_sql_query {
+	const char *sql;
 };
 
 class result {
@@ -155,6 +94,82 @@ public:
 	auto end() const {
 		return iterator{(size_t) PQntuples(res.get()), this, std::index_sequence_for<Ts...>{}};
 	}
+};
+
+struct connection_storage {
+	FIXED_CLASS(connection_storage)
+
+	PGconn *conn;
+	socket_storage sock;
+
+	connection_storage() {}
+
+	~connection_storage();
+};
+
+using raw_connection = std::shared_ptr<connection_storage>;
+
+class connection {
+	ONLY_DEFAULT_MOVABLE_CLASS(connection)
+
+private:
+	raw_connection conn;
+	connection_pool *pool;
+	bool has_active_transaction = false;
+
+	static coro<void> rollback_and_return(raw_connection conn, connection_pool *pool);
+
+public:
+	connection(raw_connection conn_, connection_pool *pool_);
+	~connection();
+
+	PGconn *get_raw_connection() const noexcept;
+
+	coro<void> transaction();
+	coro<void> commit();
+	coro<void> rollback();
+
+	template <typename... Params>
+	coro<result> exec(const char *command, Params &&...params) const;
+
+	template <typename... Params, typename... Ts>
+	coro<typed_result<Ts...>> exec(prepared_sql_query<type_sequence<std::decay_t<Params>...>, type_sequence<Ts...>> command,
+		Params &&...params) const {
+		result res = co_await exec(command.sql, std::forward<Params>(params)...);
+		co_return res.as<Ts...>();
+	}
+};
+
+class connection_pool : public event_source {
+	ONLY_DEFAULT_MOVABLE_CLASS(connection_pool)
+
+private:
+	friend connection;
+
+	struct impl;
+	std::unique_ptr<impl> pimpl;
+
+	void return_connection(raw_connection conn) noexcept;
+
+public:
+	static thread_local std::shared_ptr<connection_pool> local;
+
+	using clock = std::chrono::steady_clock;
+
+	struct creation_info {
+		std::string_view db_path;
+		size_t connections = 1;
+		clock::duration creation_cooldown;
+	};
+
+	connection_pool(const creation_info &info);
+	~connection_pool();
+
+	void bind_to_thread() override;
+	void on_init() override;
+	void on_stop() override;
+
+	coro<connection> get_connection();
 };
 
 namespace detail {

@@ -1,0 +1,18 @@
+BasedOnStyle: Google
+IndentWidth: 2
+
+TabWidth: 2
+AccessModifierOffset: -2
+NamespaceIndentation: Inner
+DerivePointerAlignment: false
+PointerAlignment: Right
+AllowShortBlocksOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortLoopsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: Empty
+SpaceAfterCStyleCast: true
+ColumnLimit: 100
+IndentCaseBlocks: false
+
+IndentPPDirectives: AfterHash

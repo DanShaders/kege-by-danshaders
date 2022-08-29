@@ -1,6 +1,7 @@
+api/**/*.sql.cc
 docs/doxygen
-tools/diff-proto/bin
-tools/diff-proto/build
+tools/*/bin
+tools/*/build
 ui/build
 ui/node_modules
 ui/src/proto

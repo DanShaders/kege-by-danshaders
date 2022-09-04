@@ -10,7 +10,7 @@ using async::coro;
 
 static coro<void> handle_list(fcgx::request_t *r) {
 	auto db = co_await async::pq::connection_pool::local->get_connection();
-	co_await routes::require_auth(db, r, routes::PERM_NOT_STUDENT);
+	co_await routes::require_auth(db, r);
 
 	api::TaskTypeListResponse ans{};
 

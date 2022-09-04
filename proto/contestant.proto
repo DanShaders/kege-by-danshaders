@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package api;
+
+import "tasks.proto";
+
+enum ParticipationStatus {
+	NOT_STARTED = 0;
+	VIRTUAL_STARTABLE = 1;
+	IN_PROGRESS = 2;
+	FINISHED = 3;
+}
+
+message ContestantKim {
+	int64 id = 1;
+	string name = 2;
+	int64 start_time = 3;
+	int64 end_time = 4;
+	int64 duration = 5;
+	bool is_virtual = 6;
+	bool is_exam = 7;
+	ParticipationStatus status = 8;
+
+	repeated Task tasks = 9;
+	bytes write_token = 10;
+}
+
+message ContestantKimList {
+	repeated ContestantKim kims = 1;
+}
+
+message ContestantAnswer {
+	bytes answer = 1;
+	int64 task_id = 2;
+	bytes write_token = 3;
+}
+
+message ParticipationEndRequest {
+	int64 id = 1;
+}

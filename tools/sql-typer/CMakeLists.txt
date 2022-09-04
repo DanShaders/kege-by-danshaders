@@ -50,6 +50,8 @@ install(
 )
 
 find_program(CLANG_FORMAT "clang-format")
+find_program(PG_FORAMT "pg-format")
+
 if(CLANG_FORMAT)
 	file(
 		GLOB_RECURSE ALL_CXX_SOURCE_FILES

@@ -4,7 +4,6 @@ import "pages/404";
 import "pages/common";
 import "pages/login";
 import "pages/main";
-import "pages/list";
 import "pages/solve";
 
 async function initApplication(): Promise<void> {

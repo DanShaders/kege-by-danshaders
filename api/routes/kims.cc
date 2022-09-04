@@ -3,13 +3,11 @@
 #include "async/coro.h"
 #include "async/pq.h"
 #include "kims.pb.h"
+#include "kims.sql.cc"
 #include "routes.h"
 #include "routes/session.h"
-#include "tasks.pb.h"
-#include "user.pb.h"
 #include "utils/api.h"
 #include "utils/common.h"
-#include "utils/crypto.h"
 using async::coro;
 
 namespace {
@@ -19,16 +17,13 @@ coro<void> handle_kim_get_editable(fcgx::request_t *r) {
 
 	int64_t kim_id = utils::expect<int64_t>(r, "id");
 
-	auto q = co_await db.exec("SELECT * FROM kims WHERE id = $1", kim_id);
+	auto q = co_await db.exec(GET_KIM_REQUEST);
 	if (!q.rows()) {
 		utils::ok<api::Kim>(r, {});
 		co_return;
 	}
 
-	auto [id, name, start_time, end_time, duration, is_virtual, is_exam, deleted] =
-		q.expect1<int64_t, std::string_view, async::pq::timestamp, async::pq::timestamp, int64_t,
-				  bool, bool, bool>();
-
+	auto [id, name, token_version, deleted] = q.expect1();
 	if (deleted) {
 		utils::err(r, api::INVALID_QUERY);
 	}
@@ -36,19 +31,10 @@ coro<void> handle_kim_get_editable(fcgx::request_t *r) {
 	api::Kim msg{{
 		.id = id,
 		.name = std::string(name),
-		.duration = duration,
-		.is_virtual = is_virtual,
-		.is_exam = is_exam,
-		.start_time = utils::millis_since_epoch(start_time),
-		.end_time = utils::millis_since_epoch(end_time),
 	}};
 
-	auto q2 = co_await db.exec(
-		"SELECT task_id, task_type, tag FROM (kims_tasks JOIN tasks ON tasks.id = "
-		"kims_tasks.task_id) WHERE kim_id = $1 ORDER BY pos",
-		kim_id);
 	int task_index = 0;
-	for (auto [task_id, task_type, tag] : q2.iter<int64_t, int64_t, std::string_view>()) {
+	for (auto [task_id, task_type, tag] : co_await db.exec(GET_KIM_TASKS_REQUEST)) {
 		*msg.add_tasks() = {{
 			.id = task_id,
 			.curr_pos = task_index,
@@ -58,6 +44,18 @@ coro<void> handle_kim_get_editable(fcgx::request_t *r) {
 		}};
 		// pos from database is not required to be consecutive
 		++task_index;
+	}
+
+	for (auto [group_id, kim_id_, start_time, end_time, duration, is_virtual, is_exam] :
+		 co_await db.exec(GET_KIM_GROUPS_REQUEST)) {
+		*msg.add_groups() = {{
+			.id = group_id,
+			.start_time = utils::millis_since_epoch(start_time),
+			.end_time = utils::millis_since_epoch(end_time),
+			.duration = duration,
+			.is_virtual = is_virtual,
+			.is_exam = is_exam,
+		}};
 	}
 
 	utils::ok(r, msg);
@@ -105,24 +103,25 @@ coro<void> handle_kim_update(fcgx::request_t *r) {
 		}
 	};
 	// 5e12ms as ns can fit into int64_t.
-	check_interval(kim.start_time(), -5e12, 5e12);
-	check_interval(kim.end_time(), -5e12, 5e12);
-	check_interval(kim.duration(), -5e12, 5e12);
+	// check_interval(kim.start_time(), -5e12, 5e12);
+	// check_interval(kim.end_time(), -5e12, 5e12);
+	// check_interval(kim.duration(), -5e12, 5e12);
 
 	co_await db.transaction();
 
-	auto start_time = async::pq::timestamp(std::chrono::milliseconds(kim.start_time())),
-		 end_time = async::pq::timestamp(std::chrono::milliseconds(kim.end_time()));
-	auto [is_kim_inserted] =
-		(co_await db.exec(KIM_UPDATE_SQL, kim.id(), kim.name(), kim.has_name(), start_time,
-						  kim.has_start_time(), end_time, kim.has_end_time(), kim.duration(),
-						  kim.has_duration(), kim.is_virtual(), kim.has_is_virtual(), kim.is_exam(),
-						  kim.has_is_exam()))
-			.expect1<bool>();
+	// auto start_time = async::pq::timestamp(std::chrono::milliseconds(kim.start_time())),
+	// 	 end_time = async::pq::timestamp(std::chrono::milliseconds(kim.end_time()));
+	// auto [is_kim_inserted] =
+	// 	(co_await db.exec(KIM_UPDATE_SQL, kim.id(), kim.name(), kim.has_name(), start_time,
+	// 					  kim.has_start_time(), end_time, kim.has_end_time(), kim.duration(),
+	// 					  kim.has_duration(), kim.is_virtual(), kim.has_is_virtual(), kim.is_exam(),
+	// 					  kim.has_is_exam()))
+	// 		.expect1<bool>();
 
-	if (is_kim_inserted && !is_id_owned_by(session, kim.id())) {
-		utils::err(r, api::EXTREMELY_SORRY);
-	}
+	// if (is_kim_inserted && !is_id_owned_by(session, kim.id())) {
+	// 	utils::err(r, api::EXTREMELY_SORRY);
+	// }
+	bool is_kim_inserted = false;
 
 	// Process task swaps
 	// 1) We want mapping user_pos -> db_pos.
@@ -219,18 +218,10 @@ coro<void> handle_kim_list(fcgx::request_t *r) {
 
 	api::KimListResponse msg;
 
-	auto q = co_await db.exec("SELECT * FROM kims WHERE NOT coalesce(deleted, false)");
-	for (auto [id, name, start_time, end_time, duration, is_virtual, is_exam, deleted] :
-		 q.iter<int64_t, std::string_view, async::pq::timestamp, async::pq::timestamp, int64_t,
-				bool, bool, bool>()) {
+	for (auto [id, name, token_version, deleted] : co_await db.exec(GET_KIM_LIST_REQUEST)) {
 		*msg.add_kims() = {{
 			.id = id,
 			.name = std::string(name),
-			.duration = duration,
-			.is_virtual = is_virtual,
-			.is_exam = is_exam,
-			.start_time = utils::millis_since_epoch(start_time),
-			.end_time = utils::millis_since_epoch(end_time),
 		}};
 	}
 

@@ -141,7 +141,10 @@ int main(int argc, char **argv) {
     }
   }
 
-  std::string output = "#include <async/pq.h>\n\n";
+  std::string output = R"(#if __INCLUDE_LEVEL__ != 0
+#include <async/pq.h>
+
+)";
 
   for (auto &stmt : statements) {
     lineno = stmt.lineno;
@@ -156,6 +159,7 @@ int main(int argc, char **argv) {
         if (in_param == 0) {
           command += fmt::format("${}", args.size() + 1);
           args.push_back(next_argument);
+          next_argument.clear();
         }
       } else {
         (in_param ? next_argument : command) += c;
@@ -164,6 +168,7 @@ int main(int argc, char **argv) {
     if (in_param) {
       issue_error("unmatched `");
     }
+    args.insert(args.begin(), "sql_queries::" + stmt.name + "_QUERY");
 
     auto prepare_result = PQprepare(db, "", command.c_str(), 0, nullptr);
     if (PQresultStatus(prepare_result) != PGRES_COMMAND_OK) {
@@ -219,17 +224,19 @@ int main(int argc, char **argv) {
 const async::pq::prepared_sql_query<
   async::pq::type_sequence<{}>,
   async::pq::type_sequence<{}>
-> {}_QUERY{{R"`({})`"}};
+> {}_QUERY{{R"BoRdEr({})BoRdEr"}};
 }}
 
-#define {}_REQUEST sql_queries::{}_QUERY, {}
+#define {}_REQUEST {}
 
 )EOF",
                        fmt::join(input_type_seq, ", "), fmt::join(output_type_seq, ", "), stmt.name,
-                       command, stmt.name, stmt.name, fmt::join(args, ", "));
+                       command, stmt.name, fmt::join(args, ", "));
       }
     }
   }
+
+  output += "#endif";
 
   if (has_errors) {
     return 1;

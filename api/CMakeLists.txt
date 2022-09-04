@@ -19,6 +19,18 @@ else()
 endif()
 configure_file(include/KEGE.in.h KEGE.h)
 
+set(
+	SQL_TYPER_PATH
+	${CMAKE_SOURCE_DIR}/../tools/sql-typer/build/sql-typer
+	CACHE STRING "Path to sql-typer binary"
+)
+
+set(
+	DB_CONNECT_STR
+	"postgresql://kege:password@localhost:5432/kege"
+	CACHE STRING "Connection string for database for sql-typer"
+)
+
 
 # ==== Sources ====
 set(
@@ -47,6 +59,7 @@ set(
 	routes/_basic.cc
 	routes/_wrap.cc
 	routes/attachment.cc
+	routes/contestant.cc
 	routes/jobs.cc
 	routes/kims.cc
 	routes/task-types.cc
@@ -55,7 +68,12 @@ set(
 )
 
 set(
-	KEGE_SOURCES
+	KEGE_SQL_SOURCES
+	routes/contestant.sql
+	routes/kims.sql
+)
+
+list(APPEND KEGE_SOURCES
 	${KEGE_BASE_SOURCES}
 	src/main.cc
 )
@@ -63,6 +81,7 @@ set(
 set(
 	PROTO_SOURCES
 	../proto/api.proto
+	../proto/contestant.proto
 	../proto/diff.proto
 	../proto/jobs.proto
 	../proto/kims.proto
@@ -70,6 +89,22 @@ set(
 	../proto/tasks.proto
 	../proto/user.proto
 )
+
+
+# ==== Dealing with SQL sources ====
+foreach(filename IN LISTS KEGE_SQL_SOURCES)
+	list(APPEND KEGE_SOURCES
+		${filename}.cc
+	)
+	add_custom_command(
+		OUTPUT ${CMAKE_SOURCE_DIR}/${filename}.cc
+		COMMAND ${SQL_TYPER_PATH} ${DB_CONNECT_STR} ${CMAKE_SOURCE_DIR}/${filename}
+		DEPENDS
+			${filename}
+			../config/postgresql/db.sql
+			../tools/sql-typer/build/sql-typer
+	)
+endforeach()
 
 
 # ==== Target libbacktrace ====
@@ -240,14 +275,26 @@ endif()
 
 # ==== Target format ====
 find_program(CLANG_FORMAT "clang-format")
-if(CLANG_FORMAT)
+find_program(PG_FORMAT "pg_format")
+
+if(CLANG_FORMAT AND PG_FORMAT)
 	file(
 		GLOB_RECURSE ALL_CXX_SOURCE_FILES
 		*.cc *.h
 	)
+	foreach(filename IN LISTS KEGE_SQL_SOURCES)
+		add_custom_command(
+			OUTPUT ${CMAKE_SOURCE_DIR}/${filename}.formatted
+			COMMAND ${PG_FORMAT} -i ${CMAKE_SOURCE_DIR}/${filename}
+			DEPENDS ${filename}
+		)
+		list(APPEND PG_FORMAT_SOURCES ${CMAKE_SOURCE_DIR}/${filename}.formatted)
+	endforeach()
+
 	add_custom_target(
 		format
 		COMMAND ${CLANG_FORMAT} -i ${ALL_CXX_SOURCE_FILES}
+		DEPENDS ${PG_FORMAT_SOURCES}
 	)
 endif()
 

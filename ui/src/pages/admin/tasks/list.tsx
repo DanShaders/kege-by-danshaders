@@ -2,9 +2,9 @@ import { Modal } from "bootstrap";
 
 import * as jsx from "jsx";
 
-import { dbId, showInternalErrorScreen,toggleLoadingScreen } from "utils/common";
+import { dbId, showInternalErrorScreen, toggleLoadingScreen } from "utils/common";
 import { BulkSelectionChangeEvent } from "utils/events";
-import { EmptyPayload,requestU } from "utils/requests";
+import { EmptyPayload, requestU } from "utils/requests";
 import { Router } from "utils/router";
 
 import { Kim } from "proto/kims_pb";
@@ -84,17 +84,7 @@ async function showTaskListPage(params: URLSearchParams): Promise<void> {
                 tasks.push(new Kim.TaskEntry().setId(id).setCurrPos(-1).setSwapPos(i));
               }
 
-              const today = new Date(Date.now() + 24 * 60 * 60 * 1000);
-              const startTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 9);
-              const defaultLength = 235 * 60 * 1000;
-
               const kim = new Kim().setId(kimId).setTasksList(tasks);
-              if (isNew) {
-                kim
-                  .setStartTime(startTime.getTime())
-                  .setEndTime(startTime.getTime() + defaultLength)
-                  .setDuration(defaultLength);
-              }
 
               try {
                 toggleLoadingScreen(true);

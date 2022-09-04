@@ -1,0 +1,246 @@
+.solve-header {
+  height: 60px;
+  background-color: #1e325a;
+  color: #e2f3ff;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.solve-header > span {
+  margin-left: 30px;
+}
+
+.solve-header > :last-child {
+  margin-left: auto;
+  margin-right: 30px;
+}
+
+.solve-clock {
+  border: 1px solid #087475;
+  color: #087475;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px;
+  height: 40px;
+  margin-left: 30px;
+}
+
+.solve-clock img {
+  width: 20px;
+  height: 25px;
+  margin-right: 10px;
+}
+
+.solve-end {
+  font-size: 16px;
+  text-decoration: none;
+  color: inherit !important;
+}
+
+.solve-list-wrap {
+  background-color: #e7edf9;
+  position: fixed;
+  top: 60px;
+  left: 0;
+  bottom: 0;
+  width: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.solve-list-wrap > span:first-child {
+  margin-top: 10px;
+  color: #666;
+}
+
+.solve-list-wrap > span:nth-child(2) {
+  font-size: 36px;
+  margin-bottom: 10px;
+}
+
+.solve-task-wrap {
+  background-color: #e7edf9;
+  position: fixed;
+  top: 60px;
+  left: 150px;
+  bottom: 0;
+  right: 0;
+  padding: 10px 10px 10px 0;
+}
+
+.solve-task-viewport {
+  background-color: white;
+  height: calc(100% - 90px);
+  display: flex;
+}
+
+.solve-task-viewport > div:not([class]) {
+  width: 80px;
+  min-width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.solve-task-viewport > div:nth-child(2) {
+  overflow: hidden auto;
+  flex-grow: 9999;
+  padding: 20px;
+}
+
+.solve-task-wrap > div:last-child {
+  background-color: white;
+  margin-top: 3px;
+  height: 87px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.solve-list {
+  overflow: hidden;
+  flex-grow: 9999;
+  margin-bottom: 10px;
+}
+
+.solve-list-viewport {
+  display: flex;
+  flex-direction: column;
+}
+
+.solve-list-btn {
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 5px;
+  border: 1px solid white;
+  margin-bottom: 10px;
+  background-color: white;
+}
+
+.solve-list-viewport .solve-list-btn:last-child {
+  margin-bottom: 0;
+}
+
+.solve-list-btn-filled {
+  background: #1e325a !important;
+  color: #fff !important;
+  border: 1px solid white !important;
+}
+
+.solve-list-btn-outline {
+  border: 1px solid #1e325a;
+  color: #1e325a;
+  background: transparent;
+}
+
+.solve-task-nav-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 32px;
+  border: 2px solid #a8c7f6;
+  color: #a8c7f6;
+  font-size: 32px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  background-color: transparent;
+}
+
+.solve-task-nav-btn > span {
+  margin-top: -6px;
+}
+
+.solve-simple-answer-text {
+  height: 40px;
+  font-size: 21.48px;
+}
+
+.solve-simple-answer-btn {
+  cursor: pointer;
+  height: 40px;
+  margin-right: 20px;
+  background: #00c3a2;
+  color: #004a46;
+  border: 0;
+}
+
+.text-container {
+  white-space: pre-wrap;
+  tab-size: 4;
+  font-size: 18px;
+  line-height: 1.4em;
+}
+
+.extended-answer {
+  display: flex;
+  flex-direction: column;
+  width: 400px;
+  min-width: 400px;
+  margin: 10px 10px 20px 10px;
+  border: 1px solid #1e325a;
+}
+
+.extended-answer > :first-child {
+  font-size: 14px;
+  background: #1e325a;
+  color: white;
+  text-align: center;
+  padding: 5px;
+}
+
+.extended-answer tr:first-child td:not(:first-child) {
+  background: #fafafa;
+  text-align: center;
+  width: 80px;
+}
+
+.extended-answer td:first-child {
+  background: #fafafa;
+  text-align: center;
+  width: 30px;
+}
+
+.extended-answer td {
+  border: 1px solid #ded3dc;
+}
+
+.extended-answer table {
+  margin: 10px;
+}
+
+.extended-answer input {
+  outline: none;
+  border: none;
+  margin: 0;
+  padding: 0;
+  width: 78px;
+}
+
+.answer-button-holder {
+  margin-top: auto;
+}
+
+.answer-button-holder button {
+  width: calc(50% - 20px);
+  height: 40px;
+  background: #00c3a2;
+  color: #004a46;
+  border: 0;
+  margin: 10px;
+}
+
+.solve-attachment {
+  display: flex;
+  align-items: center;
+  margin-left: 20px;
+  font-size: 18px;
+  text-decoration: none;
+  color: #666;
+}
+
+.solve-attachment img {
+  margin-right: 5px;
+}

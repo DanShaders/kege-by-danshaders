@@ -64,7 +64,6 @@ export class SyncController<Diffable extends IDiffable<Diffable, unknown, Binary
         this.params.statusElem.innerText = "";
         break;
       }
-      console.log("Sending delta to update", this.local.ctx.delta);
 
       this.params.statusElem.innerText = "Сохранение...";
       const [syncObj, commitDelta] = syncResult;

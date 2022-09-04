@@ -62,7 +62,7 @@ private:
 	const static size_t SIZE = sizeof...(Ts);
 
 	raw_result res;
-	int oids[SIZE];
+	std::array<int, SIZE> oids;
 
 public:
 	template <size_t... Is>
@@ -86,6 +86,27 @@ public:
 	};
 
 	typed_result(raw_result res_);
+
+	size_t rows() const {
+		return std::size_t(PQntuples(res.get()));
+	}
+
+	size_t columns() const {
+		return std::size_t(PQnfields(res.get()));
+	}
+
+	void expect0() const {
+		if (rows()) {
+			throw db_error{"Expected 0 rows as a result"};
+		}
+	}
+
+	std::tuple<Ts...> expect1() const {
+		if (rows() != 1) {
+			throw db_error{"Expected 1 row as a result"};
+		}
+		return *begin();
+	}
 
 	auto begin() const {
 		return iterator{(size_t) 0, this, std::index_sequence_for<Ts...>{}};
@@ -133,7 +154,8 @@ public:
 	coro<result> exec(const char *command, Params &&...params) const;
 
 	template <typename... Params, typename... Ts>
-	coro<typed_result<Ts...>> exec(prepared_sql_query<type_sequence<std::decay_t<Params>...>, type_sequence<Ts...>> command,
+	coro<typed_result<Ts...>> exec(
+		prepared_sql_query<type_sequence<std::decay_t<Params>...>, type_sequence<Ts...>> command,
 		Params &&...params) const {
 		result res = co_await exec(command.sql, std::forward<Params>(params)...);
 		co_return res.as<Ts...>();

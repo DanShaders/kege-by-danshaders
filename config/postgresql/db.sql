@@ -45,15 +45,8 @@ CREATE TABLE task_attachments (
 CREATE TABLE kims (
 	id bigint DEFAULT nextval('builtin_id_sequence') NOT NULL PRIMARY KEY,
 	name text,
-	start_time timestamp,
-	end_time timestamp,
-	duration bigint,
-	virtual bool,
-	exam bool,
-	deleted bool,
-
-	CHECK ((virtual AND EXTRACT(EPOCH FROM end_time - start_time) * 1000 >= duration)
-	 OR (NOT virtual AND EXTRACT(EPOCH FROM end_time - start_time) * 1000 = duration))
+	token_version bigint,
+	deleted bool
 );
 
 CREATE TABLE kims_tasks (
@@ -102,9 +95,18 @@ CREATE TABLE users_groups (
 CREATE TABLE groups_kims (
 	group_id bigint,
 	kim_id bigint,
+	start_time timestamp,
+	end_time timestamp,
+	duration bigint,
+	virtual bool,
+	exam bool,
 
 	FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
-	FOREIGN KEY (kim_id) REFERENCES kims(id) ON DELETE CASCADE
+	FOREIGN KEY (kim_id) REFERENCES kims(id) ON DELETE CASCADE,
+	UNIQUE (group_id, kim_id),
+
+	CHECK ((virtual AND EXTRACT(EPOCH FROM end_time - start_time) * 1000 >= duration)
+	 OR (NOT virtual AND EXTRACT(EPOCH FROM end_time - start_time) * 1000 = duration))
 );
 
 CREATE TABLE users_kims (
@@ -112,15 +114,15 @@ CREATE TABLE users_kims (
 	kim_id bigint,
 	start_time timestamp,
 	end_time timestamp,
-	state int,
 
 	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-	FOREIGN KEY (kim_id) REFERENCES kims(id) ON DELETE CASCADE
+	FOREIGN KEY (kim_id) REFERENCES kims(id) ON DELETE CASCADE,
+	UNIQUE (user_id, kim_id)
 );
 
 CREATE TABLE users_answers (
 	kim_id bigint,
-	task_id integer,
+	task_id bigint,
 	user_id bigint,
 	answer bytea,
 	submit_time bigint,
@@ -137,17 +139,6 @@ CREATE TABLE users_results (
 
 	FOREIGN KEY (kim_id) REFERENCES kims(id) ON DELETE CASCADE,
 	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE standings (
-	kim_id bigint,
-	group_id bigint,
-	name text,
-	fs_filename text,
-	creation_time timestamp,
-
-	FOREIGN KEY (kim_id) REFERENCES kims(id) ON DELETE CASCADE,
-	FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
 );
 
 CREATE TABLE jobs (
@@ -218,14 +209,20 @@ INSERT INTO tasks (task_type, task, tag, answer_rows, answer_cols, answer, delet
 	false
 );
 
-INSERT INTO kims (name, duration, virtual, exam, start_time, end_time) VALUES (
-	'Тестовый вариант',
-	235 * 60 * 1000,
-	false,
-	false,
-	'2022-08-22 14:00:00',
-	'2022-08-22 17:55:00'
-);
-
+INSERT INTO kims (name) VALUES ('Тестовый вариант');
 INSERT INTO kims_tasks VALUES (34, 33, 0);
 INSERT INTO kims_tasks VALUES (34, NULL, 1);
+
+INSERT INTO groups (display_name) VALUES ('Тестовая группа');
+INSERT INTO users_groups VALUES (1, 35);
+INSERT INTO users_groups VALUES (2, 35);
+
+INSERT INTO groups_kims VALUES (
+	35,
+	34,
+	'2022-08-22 00:00:00',
+	'2022-09-22 00:00:00',
+	31::bigint * 86400 * 1000,
+	false,
+	false
+);

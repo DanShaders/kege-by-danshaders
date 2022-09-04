@@ -6,6 +6,7 @@ type PageCategory = "" | "kims" | "tasks" | "standings" | "control";
 type Handler = (params: URLSearchParams) => Promise<void>;
 
 export class RouteNotFoundError extends Error {}
+export class RedirectNotification {}
 
 export abstract class Page {
   params: URLSearchParams;
@@ -149,6 +150,7 @@ export class Router extends EventTarget {
     setTimeout(async () => {
       await this.goTo(url, isPrivate, historyUpdated, reason);
     }, 0);
+    throw new RedirectNotification();
   }
 
   updateUrl(): void {

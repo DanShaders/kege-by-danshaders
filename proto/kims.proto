@@ -9,11 +9,6 @@ message Kim {
 	int64 id = 1;
 
 	optional string name = 2;
-	optional int64 duration = 3;
-	optional bool is_virtual = 4;
-	optional bool is_exam = 5;
-	optional int64 start_time = 6;
-	optional int64 end_time = 7;
 
 	message TaskEntry {
 		int64 id = 1;
@@ -23,13 +18,20 @@ message Kim {
 		int64 task_type = 4 [(in) = true];
 		string tag = 5 [(in) = true];
 	}
-	repeated TaskEntry tasks = 8;
-}
+	repeated TaskEntry tasks = 3;
 
-// message KimTask {
-// 	Task task = 1;
-// 	int64 pos = 2;
-// }
+	message GroupEntry {
+		int64 id = 1;
+
+		optional int64 start_time = 2;
+		optional int64 end_time = 3;
+		optional int64 duration = 4;
+		optional bool is_virtual = 5;
+		optional bool is_exam = 6;
+		optional bool deleted = 7;
+	}
+	repeated GroupEntry groups = 4;
+}
 
 // Route /kim/list
 message KimListResponse {

@@ -2,7 +2,7 @@ import { getTaskTypes } from "admin";
 
 import * as jsx from "jsx";
 
-import { dbId, toggleLoadingScreen } from "utils/common";
+import { dbId, getPrintableParts, toggleLoadingScreen } from "utils/common";
 import { PositionUpdateEvent } from "utils/events";
 import { requestU } from "utils/requests";
 import { Router } from "utils/router";
@@ -14,7 +14,14 @@ import { TaskType } from "proto/task-types_pb";
 
 import { ButtonIcon, ButtonIconComponent } from "components/button-icon";
 import { Component } from "components/component";
-import { factoryOf, listProviderOf, OrderedSetComponent, OrderedSetEntry } from "components/lists";
+import {
+  factoryOf,
+  listProviderOf,
+  OrderedSetComponent,
+  OrderedSetEntry,
+  SetComponent,
+  SetEntry,
+} from "components/lists";
 
 import { requireAuth } from "pages/common";
 
@@ -92,6 +99,57 @@ class Task extends OrderedSetEntry<diff.Kim.DiffableTaskEntry, TaskTypeRequired>
   }
 }
 
+class GroupEntry extends SetEntry<diff.Kim.DiffableGroupEntry, {}> {
+  createElement(): HTMLElement {
+    const examFlag = this.settings.isExam ? "e" : "";
+    const virtualFlag = this.settings.isVirtual ? "v" : "";
+    let flags = ` [${examFlag}${virtualFlag}]`;
+    if (flags === " []") {
+      flags = "";
+    }
+
+    const startTime = new Date(this.settings.startTime);
+    const endTime = new Date(this.settings.endTime);
+    const [sy, sM, sd, sh, sm] = getPrintableParts(startTime);
+    const [ey, eM, ed, eh, em] = getPrintableParts(endTime);
+
+    let timeStr = "";
+    if (sy == ey && sM == eM && sd == ed) {
+      timeStr = `${sd}.${sM}.${sy} ${sh}:${sm} – ${eh}:${em}`;
+    } else if (sy == ey) {
+      timeStr = `${sd}.${sM} – ${ed}.${eM}.${ey}`;
+    } else {
+      timeStr = `${sd}.${sM}.${sy} – ${ed}.${eM}.${ey}`;
+    }
+
+    return (
+      <tr>
+        <td>{timeStr}</td>
+        <td>{this.settings.id.toString()}</td>
+        <td>
+          <div class="d-flex justify-content-between">
+            <span class="text-truncate">{flags}</span>
+            <span class="ms-1">
+              <ButtonIcon
+                settings={{
+                  title: "Редактировать",
+                  icon: "icon-sliders",
+                }}
+              />
+              <ButtonIcon
+                settings={{
+                  title: "Удалить из варианта",
+                  icon: "icon-remove",
+                }}
+              />
+            </span>
+          </div>
+        </td>
+      </tr>
+    ).asElement() as HTMLElement;
+  }
+}
+
 class KimEditComponent extends Component<
   diff.DiffableKim & { syncController: SyncController<any> } & TaskTypeRequired
 > {
@@ -108,71 +166,15 @@ class KimEditComponent extends Component<
       (settings) => Object.assign(settings, { taskTypes: this.settings.taskTypes })
     );
 
-    const updateTimeRelatedSettings = (
-      why: "startTime" | "endTime" | "isVirtual" | "duration"
-    ): void => {
-      const MILLIS_IN_MIN = 60 * 1000;
+    const groupSet = new SetComponent<diff.Kim.DiffableGroupEntry, {}>(
+      this.settings.groups,
+      this,
+      listProviderOf("tbody"),
+      factoryOf(GroupEntry),
+      (settings) => settings
+    );
 
-      let startTime = new Date(startTimeInput.value).getTime();
-      let endTime = new Date(endTimeInput.value).getTime();
-
-      if (Number.isNaN(startTime) || Number.isNaN(endTime)) {
-        return;
-      }
-
-      if (endTime < startTime) {
-        if (why === "endTime") {
-          startTime = endTime;
-        } else {
-          endTime = startTime;
-        }
-      }
-
-      let inferredDuration = endTime - startTime;
-
-      // Round interval to minutes
-      const spareMillis = inferredDuration % MILLIS_IN_MIN;
-      if (spareMillis) {
-        inferredDuration -= spareMillis;
-        endTime -= spareMillis;
-      }
-
-      let actualDuration = Math.round(parseInt(durationInput.value, 10) * MILLIS_IN_MIN);
-      const isVirtual = isVirtualCheckbox.checked;
-
-      if (Number.isNaN(actualDuration)) {
-        actualDuration = 0;
-      }
-
-      // Clap actualDuration to inferredDuration if needed
-      actualDuration = Math.max(actualDuration, 0);
-
-      if (inferredDuration < actualDuration || (!isVirtual && actualDuration < inferredDuration)) {
-        if (why === "duration") {
-          endTime += actualDuration - inferredDuration;
-        } else {
-          actualDuration = inferredDuration;
-        }
-      }
-
-      this.settings.syncController.asAtomicChange(() => {
-        startTimeInput.value = asInputValue((this.settings.startTime = startTime));
-        endTimeInput.value = asInputValue((this.settings.endTime = endTime));
-        this.settings.isVirtual = isVirtual;
-        this.settings.duration = actualDuration;
-        durationInput.value = (this.settings.duration / MILLIS_IN_MIN).toString();
-      });
-    };
-
-    const [
-      elem,
-      nameTextarea,
-      isExamCheckbox,
-      startTimeInput,
-      endTimeInput,
-      durationInput,
-      isVirtualCheckbox,
-    ] = (
+    const [elem, nameTextarea] = (
       <div class="container-fluid">
         <div class={S_ROW}>
           <label class={S_LABEL}>Название</label>
@@ -185,61 +187,6 @@ class KimEditComponent extends Component<
             >
               {this.settings.name}
             </textarea>
-            <div class="form-check mt-1">
-              <input
-                ref
-                class="form-check-input"
-                type="checkbox"
-                checkedIf={this.settings.isExam}
-                onchange={() => void (this.settings.isExam = isExamCheckbox.checked)}
-              />
-              <label class="form-check-label" for="flexCheckDefault">
-                Экзамен
-              </label>
-            </div>
-          </div>
-
-          <label class={S_LABEL}>Время</label>
-          <div class={S_INPUT}>
-            <div class="input-group">
-              <input
-                ref
-                type="datetime-local"
-                class="form-control"
-                value={asInputValue(this.settings.startTime)}
-                onchange={() => void updateTimeRelatedSettings("startTime")}
-              />
-              <span class="input-group-text">&mdash;</span>
-              <input
-                ref
-                type="datetime-local"
-                class="form-control"
-                value={asInputValue(this.settings.endTime)}
-                onchange={() => void updateTimeRelatedSettings("endTime")}
-              />
-            </div>
-            <div class="input-group mt-2" style="max-width: 200px;">
-              <input
-                ref
-                type="number"
-                class="form-control"
-                value={Math.round(this.settings.duration / 60 / 1000).toString()}
-                onchange={() => void updateTimeRelatedSettings("duration")}
-              />
-              <span class="input-group-text">мин.</span>
-            </div>
-            <div class="form-check mt-1">
-              <input
-                ref
-                class="form-check-input"
-                type="checkbox"
-                checkedIf={this.settings.isVirtual}
-                onchange={() => void updateTimeRelatedSettings("isVirtual")}
-              />
-              <label class="form-check-label" for="flexCheckDefault">
-                Виртуальное участие
-              </label>
-            </div>
           </div>
 
           <label class={S_LABEL}>Задания</label>
@@ -286,17 +233,45 @@ class KimEditComponent extends Component<
               </table>
             </div>
           </div>
+
+          <label class={S_LABEL}>Доступ</label>
+          <div class={S_INPUT}>
+            <div class="border rounded mb-2">
+              <table class="table table-fixed table-external-border table-third-col-left mb-0">
+                <thead>
+                  <tr>
+                    <td class="column-200px">Время</td>
+                    <td class="column-80px">ID</td>
+                    <td class="column-norm">
+                      <div class="d-flex justify-content-center">
+                        <span class="ms-auto">Группа</span>
+                        <span class="ms-auto">
+                          <ButtonIcon
+                            settings={{
+                              title: "Добавить",
+                              icon: "add",
+                            }}
+                          />
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                </thead>
+                {groupSet.elem}
+              </table>
+            </div>
+
+            <button class="btn btn-outline-secondary me-2" disabled>
+              Revoke access keys
+            </button>
+
+            <button class="btn btn-outline-secondary" disabled>
+              Clear task cache
+            </button>
+          </div>
         </div>
       </div>
-    ).create() as [
-      HTMLElement,
-      HTMLTextAreaElement,
-      HTMLInputElement,
-      HTMLInputElement,
-      HTMLInputElement,
-      HTMLInputElement,
-      HTMLInputElement
-    ];
+    ).create() as [HTMLElement, HTMLTextAreaElement];
 
     return elem;
   }

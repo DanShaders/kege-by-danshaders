@@ -1,5 +1,6 @@
 .table {
   text-align: center;
+  vertical-align: middle;
 }
 
 .table thead {
@@ -74,6 +75,10 @@ tr:hover .tr-hover-visible,
 
 .column-100px {
   width: 100px;
+}
+
+.column-120px {
+  width: 120px;
 }
 
 .column-160px {

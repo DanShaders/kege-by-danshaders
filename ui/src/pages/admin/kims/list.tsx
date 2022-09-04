@@ -11,75 +11,42 @@ import { factoryOf, ListComponent, ListEntry, listProviderOf } from "components/
 
 import { requireAuth } from "pages/common";
 
-function getPrintableParts(
-  date: Date
-): [year: string, month: string, date: string, hours: string, minutes: string] {
-  return [
-    date.getFullYear().toString(),
-    date.getMonth().toString().padStart(2, "0"),
-    date.getDate().toString().padStart(2, "0"),
-    date.getHours().toString().padStart(2, "0"),
-    date.getMinutes().toString().padStart(2, "0"),
-  ];
-}
-
 class KimEntry extends ListEntry<Kim.AsObject> {
   createElement(): HTMLTableRowElement {
-    const examFlag = this.settings.isExam ? "e" : "";
-    const virtualFlag = this.settings.isVirtual ? "v" : "";
-    let flags = ` [${examFlag}${virtualFlag}]`;
-    if (flags === " []") {
-      flags = "";
-    }
-
-    const startTime = new Date(this.settings.startTime);
-    const endTime = new Date(this.settings.endTime);
-    const [sy, sM, sd, sh, sm] = getPrintableParts(startTime);
-    const [ey, eM, ed, eh, em] = getPrintableParts(endTime);
-
-    let timeStr = "";
-    if (sy == ey && sM == eM && sd == ed) {
-      timeStr = `${sd}.${sM}.${sy} ${sh}:${sm} – ${eh}:${em}`;
-    } else if (sy == ey) {
-      timeStr = `${sd}.${sM} – ${ed}.${eM}.${ey}`;
-    } else {
-      timeStr = `${sd}.${sM}.${sy} – ${ed}.${eM}.${ey}`;
-    }
-
     return (
       <tr>
         <td>{this.settings.id.toString()}</td>
-        <td>{timeStr}</td>
         <td>
-          {this.settings.name}
-          {flags}
-        </td>
-        <td class="tr-hover-visible">
-          <ButtonIcon
-            settings={{
-              title: "Открыть",
-              icon: "icon-open",
-              href:
-                "admin/kims/edit?back=" +
-                encodeURIComponent(Router.instance.currentURL) +
-                "&id=" +
-                this.settings.id,
-            }}
-          />
-          <ButtonIcon
-            settings={{
-              title: "",
-              icon: "icon-delete",
-              hoverColor: "red",
-              onClick: async (): Promise<void> => {
-                if (!confirm("Вы уверены, что хотите удалить вариант?")) {
-                  return;
-                }
+          <div class="d-flex justify-content-between">
+            <span class="text-truncate">{this.settings.name}</span>
+            <span class="ms-1 tr-hover-visible">
+              <ButtonIcon
+                settings={{
+                  title: "Открыть",
+                  icon: "icon-open",
+                  href:
+                    "admin/kims/edit?back=" +
+                    encodeURIComponent(Router.instance.currentURL) +
+                    "&id=" +
+                    this.settings.id,
+                }}
+              />
+              <ButtonIcon
+                settings={{
+                  title: "",
+                  icon: "icon-delete",
+                  hoverColor: "red",
+                  onClick: async (): Promise<void> => {
+                    if (!confirm("Вы уверены, что хотите удалить вариант?")) {
+                      return;
+                    }
 
-                // TODO
-              },
-            }}
-          />
+                    // TODO
+                  },
+                }}
+              />
+            </span>
+          </div>
         </td>
       </tr>
     ).asElement() as HTMLTableRowElement;
@@ -106,14 +73,12 @@ async function showKimsListPage(): Promise<void> {
 
       <div class="border rounded mt-2">
         <table
-          class={"table table-fixed table-no-sep table-third-col-left table-external-border mb-0"}
+          class={"table table-fixed table-no-sep table-second-col-left table-external-border mb-0"}
         >
           <thead>
             <tr>
               <td class="column-80px">ID</td>
-              <td class="column-200px">Время</td>
               <td class="column-norm">Название</td>
-              <td class="column-80px"></td>
             </tr>
           </thead>
           <tbody ref class="no-hover-effects">

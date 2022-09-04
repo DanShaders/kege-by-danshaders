@@ -125,19 +125,10 @@ CREATE TABLE users_answers (
 	task_id bigint,
 	user_id bigint,
 	answer bytea,
+	score double precision,
 	submit_time bigint,
 
 	FOREIGN KEY (kim_id, task_id) REFERENCES kims_tasks(kim_id, task_id) ON DELETE CASCADE,
-	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE users_results (
-	kim_id bigint,
-	user_id bigint,
-	points double precision[],
-	total double precision,
-
-	FOREIGN KEY (kim_id) REFERENCES kims(id) ON DELETE CASCADE,
 	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

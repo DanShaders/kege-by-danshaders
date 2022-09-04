@@ -47,6 +47,7 @@ set(
 	src/config.cc
 	src/fcgx.cc
 	src/routes.cc
+	src/routes/grading.cc
 	src/routes/session.cc
 	src/stacktrace.cc
 	src/stacktrace-specific.cc
@@ -62,6 +63,7 @@ set(
 	routes/contestant.cc
 	routes/jobs.cc
 	routes/kims.cc
+	routes/standings.cc
 	routes/task-types.cc
 	routes/tasks.cc
 	routes/user.cc
@@ -71,6 +73,7 @@ set(
 	KEGE_SQL_SOURCES
 	routes/contestant.sql
 	routes/kims.sql
+	routes/standings.sql
 )
 
 list(APPEND KEGE_SOURCES

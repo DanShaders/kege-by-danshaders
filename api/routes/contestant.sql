@@ -76,9 +76,19 @@ FROM
 WHERE
     id = `token.data.kim_id`;
 
+-- Get real answer
+SELECT
+    answer,
+    grading,
+    scale_factor
+FROM (tasks
+    JOIN task_types ON tasks.task_type = task_types.id)
+WHERE
+    tasks.id = `req.task_id()`;
+
 -- Write answer
 INSERT INTO users_answers
-    VALUES (`token.data.kim_id`, `req.task_id()`, `session->user_id`, `req.answer()`, `current_millis`);
+    VALUES (`token.data.kim_id`, `req.task_id()`, `session->user_id`, `req.answer()`, `score`, `current_millis`);
 
 -- End participation
 INSERT INTO users_kims

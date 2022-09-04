@@ -346,9 +346,22 @@ SIMPLE_PQ_ENCODER(int) {
 
 SIMPLE_PQ_DECODER(double, 701) {
 	assert(len == 8);
-	double res;
+	uint64_t res;
 	memcpy(&res, data, len);
-	return res;
+	res = be64toh(res);
+
+	double res2;
+	memcpy(&res2, reinterpret_cast<char *>(&res), len);
+	return res2;
+}
+
+SIMPLE_PQ_ENCODER(double) {
+	uint64_t res;
+	memcpy(&res, reinterpret_cast<const char *>(&obj), 8);
+
+	uint64_t res2 = htobe64(res);
+	buff.append(reinterpret_cast<char *>(&res2), 8);
+	return {};
 }
 
 const auto PQ_EPOCH = std::chrono::sys_days{std::chrono::January / 1 / 2000};

@@ -5,6 +5,7 @@
 #include "contestant.pb.h"
 #include "contestant.sql.cc"
 #include "routes.h"
+#include "routes/grading.h"
 #include "routes/session.h"
 #include "utils/api.h"
 #include "utils/common.h"
@@ -268,6 +269,9 @@ coro<void> handle_answer(fcgx::request_t *r) {
 	if (current_millis < token.data.start_time || token.data.end_time <= current_millis) {
 		utils::err(r, api::ACCESS_DENIED);
 	}
+
+	auto [answer, grading, scale_factor] = (co_await db.exec(GET_REAL_ANSWER_REQUEST)).expect1();
+	double score = scale_factor * routes::check_and_grade(req.answer(), answer, grading);
 
 	co_await db.exec(WRITE_ANSWER_REQUEST);
 

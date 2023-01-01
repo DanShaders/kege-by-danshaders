@@ -163,8 +163,16 @@ coro<void> handle_kim_list(fcgx::request_t *r) {
 
 	utils::ok(r, msg);
 }
+
+coro<void> revoke_access_keys(fcgx::request_t *r) {
+	auto db = co_await async::pq::connection_pool::local->get_connection();
+	co_await routes::require_auth(db, r, routes::PERM_NOT_STUDENT);
+	co_await db.exec(BUMP_KIM_VERSION_REQUEST);
+	utils::ok(r, utils::empty_payload{});
+}
 }  // namespace
 
 ROUTE_REGISTER("/kim/$id", handle_kim_get_editable)
 ROUTE_REGISTER("/kim/update", handle_kim_update)
 ROUTE_REGISTER("/kim/list", handle_kim_list)
+ROUTE_REGISTER("/kim/$id/revoke-access-keys", revoke_access_keys)

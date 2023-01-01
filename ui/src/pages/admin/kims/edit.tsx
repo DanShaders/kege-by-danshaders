@@ -2,9 +2,9 @@ import { getTaskTypes } from "admin";
 
 import * as jsx from "jsx";
 
-import { dbId, getPrintableParts, toggleLoadingScreen } from "utils/common";
+import { dbId, getPrintableParts, toggleLoadingScreen, showInternalErrorScreen } from "utils/common";
 import { PositionUpdateEvent } from "utils/events";
-import { requestU } from "utils/requests";
+import { requestU, EmptyPayload } from "utils/requests";
 import { Router } from "utils/router";
 import { SyncController, SynchronizablePage } from "utils/sync-controller";
 
@@ -261,7 +261,20 @@ class KimEditComponent extends Component<
               </table>
             </div>
 
-            <button class="btn btn-outline-secondary me-2" disabled>
+            <button
+              class="btn btn-outline-secondary me-2"
+              onclick={async (event: Event): Promise<void> => {
+                try {
+                  toggleLoadingScreen(true);
+                  await requestU(EmptyPayload, `/api/kim/${this.settings.id}/revoke-access-keys`);
+                } catch (e) {
+                  showInternalErrorScreen(e);
+                } finally {
+                  toggleLoadingScreen(false);
+                }
+                (event.target as HTMLButtonElement).blur();
+              }}
+            >
               Revoke access keys
             </button>
 

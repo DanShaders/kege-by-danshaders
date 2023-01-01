@@ -170,7 +170,7 @@ set(LEXBOR_LIBRARIES "${INSTALL_DIR}/lib/liblexbor_static.a")
 ExternalProject_Add(
 	FMTLOG
 	GIT_REPOSITORY "https://github.com/MengRao/fmtlog.git"
-	GIT_TAG "c96260f7955f68f246401684b253b7eeef08cffd"
+	GIT_TAG "dbb4bfe389b53c84a06fc9529ef57aa82afccb06"
 	CMAKE_ARGS
 		-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
 	UPDATE_COMMAND ""

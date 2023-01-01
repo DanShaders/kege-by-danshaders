@@ -51,7 +51,7 @@ coro<void> handle_get_standings(fcgx::request_t *r) {
 		double result = accumulate(ranking[user].begin(), ranking[user].end(), double(0));
 		sorted.emplace_back(result, usernames[user], ranking[user]);
 	}
-	std::ranges::sort(sorted);
+	std::ranges::sort(sorted, std::greater<>{});
 
 	r->out << std::setprecision(2);
 	for (auto [score, username, score_by_task] : sorted) {
@@ -64,5 +64,5 @@ coro<void> handle_get_standings(fcgx::request_t *r) {
 	r->out << "</tbody></table>";
 }
 
-ROUTE_REGISTER("/standings", handle_get_standings)
+ROUTE_REGISTER("/html-standings", handle_get_standings)
 }  // namespace

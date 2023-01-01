@@ -1,16 +1,17 @@
 #pragma once
 
-#include "file-context.h"
 #include "stdafx.h"
+
+#include "file-context.h"
 #include "utils.h"
 
 class FieldCodeGenerator : public FileContextHolder {
 protected:
-  const FieldDescriptor *field;
+  FieldDescriptor const* field;
   std::string name, uppercased;
 
 public:
-  FieldCodeGenerator(const FileContext &c_, const FieldDescriptor *field_)
+  FieldCodeGenerator(FileContext const& c_, FieldDescriptor const* field_)
       : FileContextHolder(c_), field(field_) {
     name = field->camelcase_name();
     uppercased = uppercase_first(name);
@@ -28,7 +29,7 @@ public:
 
 class ScalarFieldCodeGenerator : public FieldCodeGenerator {
 public:
-  ScalarFieldCodeGenerator(const FileContext &c_, const FieldDescriptor *field_);
+  ScalarFieldCodeGenerator(FileContext const& c_, FieldDescriptor const* field_);
 
   void generate_delta_entry() override;
   void generate_class_field() override;
@@ -49,7 +50,7 @@ public:
 
 class UnwiredFieldCodeGenerator : public FieldCodeGenerator {
 public:
-  UnwiredFieldCodeGenerator(const FileContext &c_, const FieldDescriptor *field_);
+  UnwiredFieldCodeGenerator(FileContext const& c_, FieldDescriptor const* field_);
 
   void generate_class_field() override;
   void generate_serialize() override;
@@ -57,7 +58,7 @@ public:
 
 class UnwiredInFieldCodeGenerator : public FieldCodeGenerator {
 public:
-  UnwiredInFieldCodeGenerator(const FileContext &c_, const FieldDescriptor *field_);
+  UnwiredInFieldCodeGenerator(FileContext const& c_, FieldDescriptor const* field_);
 
   void generate_class_field() override;
   void generate_constructor_assignment() override;
@@ -65,7 +66,7 @@ public:
 
 class SetFieldCodeGenerator : public FieldCodeGenerator {
 public:
-  SetFieldCodeGenerator(const FileContext &c_, const FieldDescriptor *field_);
+  SetFieldCodeGenerator(FileContext const& c_, FieldDescriptor const* field_);
 
   void generate_delta_entry() override;
   void generate_class_field() override;

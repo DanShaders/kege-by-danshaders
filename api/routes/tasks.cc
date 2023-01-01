@@ -13,53 +13,53 @@
 using async::coro;
 
 namespace {
-coro<void> handle_get(fcgx::request_t *r) {
-	auto db = co_await async::pq::connection_pool::local->get_connection();
-	co_await routes::require_auth(db, r, routes::PERM_VIEW_TASKS);
+coro<void> handle_get(fcgx::request_t* r) {
+  auto db = co_await async::pq::connection_pool::local->get_connection();
+  co_await routes::require_auth(db, r, routes::PERM_VIEW_TASKS);
 
-	int64_t task_id = utils::expect<int64_t>(r, "id");
+  int64_t task_id = utils::expect<int64_t>(r, "id");
 
-	auto q = co_await db.exec("SELECT * FROM tasks WHERE id = $1", task_id);
-	if (!q.rows()) {
-		utils::ok<api::Task>(r, {});
-		co_return;
-	}
+  auto q = co_await db.exec("SELECT * FROM tasks WHERE id = $1", task_id);
+  if (!q.rows()) {
+    utils::ok<api::Task>(r, {});
+    co_return;
+  }
 
-	auto [id, task_type, parent, task, tag, answer_rows, answer_cols, answer, deleted] =
-		q.expect1<int64_t, int64_t, int64_t, std::string_view, std::string_view, int, int,
-				  std::string_view, bool>();
+  auto [id, task_type, parent, task, tag, answer_rows, answer_cols, answer, deleted] =
+      q.expect1<int64_t, int64_t, int64_t, std::string_view, std::string_view, int, int,
+                std::string_view, bool>();
 
-	if (deleted) {
-		utils::err(r, api::INVALID_QUERY);
-	}
+  if (deleted) {
+    utils::err(r, api::INVALID_QUERY);
+  }
 
-	api::Task msg{{
-		.id = id,
-		.task_type = task_type,
-		.parent = parent,
-		.text = std::string(task),
-		.answer_rows = answer_rows,
-		.answer_cols = answer_cols,
-		.answer = std::string(answer),
-		.tag = std::string(tag),
-	}};
+  api::Task msg{{
+      .id = id,
+      .task_type = task_type,
+      .parent = parent,
+      .text = std::string(task),
+      .answer_rows = answer_rows,
+      .answer_cols = answer_cols,
+      .answer = std::string(answer),
+      .tag = std::string(tag),
+  }};
 
-	auto q2 = co_await db.exec(
-		"SELECT id, filename, mime_type, hash, shown_to_user FROM task_attachments WHERE task_id = "
-		"$1 AND NOT coalesce(deleted, false)",
-		task_id);
-	for (auto [attachment_id, filename, mime_type, hash, shown_to_user] :
-		 q2.iter<int64_t, std::string_view, std::string_view, std::string_view, bool>()) {
-		*msg.add_attachments() = {{
-			.id = attachment_id,
-			.filename = std::string(filename),
-			.mime_type = std::string(mime_type),
-			.hash = std::string(hash),
-			.shown_to_user = shown_to_user,
-		}};
-	}
+  auto q2 = co_await db.exec(
+      "SELECT id, filename, mime_type, hash, shown_to_user FROM task_attachments WHERE task_id = "
+      "$1 AND NOT coalesce(deleted, false)",
+      task_id);
+  for (auto [attachment_id, filename, mime_type, hash, shown_to_user] :
+       q2.iter<int64_t, std::string_view, std::string_view, std::string_view, bool>()) {
+    *msg.add_attachments() = {{
+        .id = attachment_id,
+        .filename = std::string(filename),
+        .mime_type = std::string(mime_type),
+        .hash = std::string(hash),
+        .shown_to_user = shown_to_user,
+    }};
+  }
 
-	utils::ok(r, msg);
+  utils::ok(r, msg);
 }
 
 // clang-format off
@@ -138,170 +138,169 @@ const char TASK_BULK_DELETE_SQL[] =
 	"  tasks.id = ids";
 // clang-format on
 
-const lxb_char_t *operator"" _u(const char *str, size_t) {
-	return (const lxb_char_t *) str;
+lxb_char_t const* operator"" _u(char const* str, size_t) {
+  return (lxb_char_t const*) str;
 }
 
 const std::vector<std::string> ALLOWED_TAGS = {
-	"a", "b", "i", "s", "u", "div", "img", "font", "sub", "sup", "br", "formula", "pre",
+    "a", "b", "i", "s", "u", "div", "img", "font", "sub", "sup", "br", "formula", "pre",
 };
 
-const auto CATCH_ALL_SELECTOR = ([] {
-	std::string slctr;
-	for (auto tag : ALLOWED_TAGS) {
-		slctr += ":not(" + tag + ")";
-	}
-	return slctr;
+auto const CATCH_ALL_SELECTOR = ([] {
+  std::string slctr;
+  for (auto tag : ALLOWED_TAGS) {
+    slctr += ":not(" + tag + ")";
+  }
+  return slctr;
 })();
 
 auto use_tag(std::map<std::string_view, std::set<std::string_view>> allowed_attrs = {}) {
-	return [=](lxb_dom_node_t *node, void *) {
-		auto elem = lxb_dom_interface_element(node);
+  return [=](lxb_dom_node_t* node, void*) {
+    auto elem = lxb_dom_interface_element(node);
 
-		for (auto attr = elem->first_attr; attr;) {
-			size_t key_size, value_size;
-			auto key = (const char *) lxb_dom_attr_qualified_name(attr, &key_size);
-			auto value = (const char *) lxb_dom_attr_value(attr, &value_size);
-			auto next = attr->next;
+    for (auto attr = elem->first_attr; attr;) {
+      size_t key_size, value_size;
+      auto key = (const char*) lxb_dom_attr_qualified_name(attr, &key_size);
+      auto value = (const char*) lxb_dom_attr_value(attr, &value_size);
+      auto next = attr->next;
 
-			auto it = allowed_attrs.find({key, key_size});
-			bool is_allowed = true;
-			if (it != allowed_attrs.end()) {
-				if (it->second.size() && !it->second.count({value, value_size})) {
-					is_allowed = false;
-				}
-			} else {
-				is_allowed = false;
-			}
-			if (!is_allowed) {
-				lxb_dom_element_attr_remove(elem, attr);
-			}
-			attr = next;
-		}
+      auto it = allowed_attrs.find({key, key_size});
+      bool is_allowed = true;
+      if (it != allowed_attrs.end()) {
+        if (it->second.size() && !it->second.count({value, value_size})) {
+          is_allowed = false;
+        }
+      } else {
+        is_allowed = false;
+      }
+      if (!is_allowed) {
+        lxb_dom_element_attr_remove(elem, attr);
+      }
+      attr = next;
+    }
 
-		return node;
-	};
+    return node;
+  };
 }
 
 const std::vector<utils::transform_rule> RULES_SANITIZE = {
-	{"img",
-	 [](lxb_dom_node_t *node, void *ctx) -> lxb_dom_node_t * {
-		 auto id_map = (std::map<int64_t, std::string> *) ctx;
+    {"img",
+     [](lxb_dom_node_t* node, void* ctx) -> lxb_dom_node_t* {
+       auto id_map = (std::map<int64_t, std::string>*) ctx;
 
-		 size_t attr_length;
-		 auto elem = lxb_dom_interface_element(node);
-		 auto value =
-			 (const char *) lxb_dom_element_get_attribute(elem, "data-id"_u, 7, &attr_length);
+       size_t attr_length;
+       auto elem = lxb_dom_interface_element(node);
+       auto value = (const char*) lxb_dom_element_get_attribute(elem, "data-id"_u, 7, &attr_length);
 
-		 int64_t id = -1;
-		 std::from_chars(value, value + attr_length, id);
+       int64_t id = -1;
+       std::from_chars(value, value + attr_length, id);
 
-		 if (auto it = id_map->find(id); it != id_map->end()) {
-			 auto url = "/api/attachment/" + it->second;
-			 lxb_dom_element_set_attribute(elem, "src"_u, 3, (const lxb_char_t *) url.data(),
-										   url.size());
-			 return node;
-		 } else {
-			 return nullptr;
-		 }
-	 }},
+       if (auto it = id_map->find(id); it != id_map->end()) {
+         auto url = "/api/attachment/" + it->second;
+         lxb_dom_element_set_attribute(elem, "src"_u, 3, (const lxb_char_t*) url.data(),
+                                       url.size());
+         return node;
+       } else {
+         return nullptr;
+       }
+     }},
 
-	{"br, b, i, u, s, sub, sup, pre, formula", use_tag()},
-	{"div", use_tag({{"align", {"left", "center", "right", "justify"}}})},
-	{"img", use_tag({{"src", {}}})},
-	{"a", use_tag({{"href", {}}})},
-	{"font", use_tag({{"size", {"1", "2", "3", "4", "5", "6"}}, {"color", {}}})},
-	{CATCH_ALL_SELECTOR, [](auto...) { return nullptr; }},
+    {"br, b, i, u, s, sub, sup, pre, formula", use_tag()},
+    {"div", use_tag({{"align", {"left", "center", "right", "justify"}}})},
+    {"img", use_tag({{"src", {}}})},
+    {"a", use_tag({{"href", {}}})},
+    {"font", use_tag({{"size", {"1", "2", "3", "4", "5", "6"}}, {"color", {}}})},
+    {CATCH_ALL_SELECTOR, [](auto...) { return nullptr; }},
 };
 
 std::atomic<utils::transform_rules> TRANSFORM_SANITIZE = nullptr;
 
-coro<void> handle_update(fcgx::request_t *r) {
-	auto db = co_await async::pq::connection_pool::local->get_connection();
-	auto session = co_await routes::require_auth(db, r, routes::PERM_WRITE_TASKS);
+coro<void> handle_update(fcgx::request_t* r) {
+  auto db = co_await async::pq::connection_pool::local->get_connection();
+  auto session = co_await routes::require_auth(db, r, routes::PERM_WRITE_TASKS);
 
-	auto task = utils::expect<api::Task>(r);
-	if (!task.id()) {
-		utils::err(r, api::INVALID_QUERY);
-	}
-	std::vector<std::pair<std::string, const std::string &>> files;
-	std::map<int64_t, std::string> id_map;
+  auto task = utils::expect<api::Task>(r);
+  if (!task.id()) {
+    utils::err(r, api::INVALID_QUERY);
+  }
+  std::vector<std::pair<std::string, std::string const&>> files;
+  std::map<int64_t, std::string> id_map;
 
-	co_await db.transaction();
+  co_await db.transaction();
 
-	for (const auto &attachment : task.attachments()) {
-		std::string hash = SHA3_256_EMPTY;
-		if (attachment.contents().size()) {
-			hash = utils::b16_encode(utils::sha3_256(attachment.contents()));
-		}
-		id_map[attachment.id()] = hash;
-	}
+  for (auto const& attachment : task.attachments()) {
+    std::string hash = SHA3_256_EMPTY;
+    if (attachment.contents().size()) {
+      hash = utils::b16_encode(utils::sha3_256(attachment.contents()));
+    }
+    id_map[attachment.id()] = hash;
+  }
 
-	std::string task_text;
-	if (task.has_text()) {
-		if (!TRANSFORM_SANITIZE.load()) {
-			// Might be called concurrently, seems harmless
-			TRANSFORM_SANITIZE = utils::compile_transform_rules(RULES_SANITIZE);
-		}
+  std::string task_text;
+  if (task.has_text()) {
+    if (!TRANSFORM_SANITIZE.load()) {
+      // Might be called concurrently, seems harmless
+      TRANSFORM_SANITIZE = utils::compile_transform_rules(RULES_SANITIZE);
+    }
 
-		utils::html_fragment text(task.text());
-		auto q =
-			co_await db.exec("SELECT id, hash FROM task_attachments WHERE task_id = $1", task.id());
-		for (auto [id, hash] : q.iter<int64_t, std::string_view>()) {
-			id_map[id] = hash;
-		}
-		text.transform(TRANSFORM_SANITIZE, &id_map);
-		task.set_text(text.get_html());
-	}
+    utils::html_fragment text(task.text());
+    auto q =
+        co_await db.exec("SELECT id, hash FROM task_attachments WHERE task_id = $1", task.id());
+    for (auto [id, hash] : q.iter<int64_t, std::string_view>()) {
+      id_map[id] = hash;
+    }
+    text.transform(TRANSFORM_SANITIZE, &id_map);
+    task.set_text(text.get_html());
+  }
 
-	auto [is_task_inserted] =
-		(co_await db.exec(TASK_UPDATE_SQL, task.id(), task.task_type(), task.has_task_type(),
-						  task.parent(), task.has_parent(), task.text(), task.has_text(),
-						  task.answer_rows(), task.has_answer_rows(), task.answer_cols(),
-						  task.has_answer_cols(), task.answer(), task.has_answer(), task.tag(),
-						  task.has_tag()))
-			.expect1<bool>();
+  auto [is_task_inserted] =
+      (co_await db.exec(TASK_UPDATE_SQL, task.id(), task.task_type(), task.has_task_type(),
+                        task.parent(), task.has_parent(), task.text(), task.has_text(),
+                        task.answer_rows(), task.has_answer_rows(), task.answer_cols(),
+                        task.has_answer_cols(), task.answer(), task.has_answer(), task.tag(),
+                        task.has_tag()))
+          .expect1<bool>();
 
-	if (is_task_inserted && !is_id_owned_by(session, task.id())) {
-		// Either we are f*cked up or somebody is trying to fool us.
-		utils::err(r, api::EXTREMELY_SORRY);
-	}
+  if (is_task_inserted && !is_id_owned_by(session, task.id())) {
+    // Either we are f*cked up or somebody is trying to fool us.
+    utils::err(r, api::EXTREMELY_SORRY);
+  }
 
-	for (const auto &attachment : task.attachments()) {
-		auto hash = id_map[attachment.id()];
-		auto [is_inserted] =
-			(co_await db.exec(ATTACHMENT_UPDATE_SQL, attachment.id(), task.id(),
-							  attachment.filename(), attachment.has_filename(),
-							  attachment.mime_type(), attachment.has_mime_type(),
-							  attachment.shown_to_user(), attachment.has_shown_to_user(),
-							  attachment.deleted(), attachment.has_deleted(), hash))
-				.expect1<bool>();
-		if (is_inserted) {
-			if (!is_id_owned_by(session, attachment.id())) {
-				utils::err(r, api::EXTREMELY_SORRY);
-			}
-			files.push_back({hash, attachment.contents()});
-		}
-	}
+  for (auto const& attachment : task.attachments()) {
+    auto hash = id_map[attachment.id()];
+    auto [is_inserted] =
+        (co_await db.exec(ATTACHMENT_UPDATE_SQL, attachment.id(), task.id(), attachment.filename(),
+                          attachment.has_filename(), attachment.mime_type(),
+                          attachment.has_mime_type(), attachment.shown_to_user(),
+                          attachment.has_shown_to_user(), attachment.deleted(),
+                          attachment.has_deleted(), hash))
+            .expect1<bool>();
+    if (is_inserted) {
+      if (!is_id_owned_by(session, attachment.id())) {
+        utils::err(r, api::EXTREMELY_SORRY);
+      }
+      files.push_back({hash, attachment.contents()});
+    }
+  }
 
-	co_await db.commit();
+  co_await db.commit();
 
-	for (const auto &[hash, content] : files) {
-		auto path = std::filesystem::path(conf.files_dir) / hash.substr(0, 2);
-		std::filesystem::create_directories(path);
-		std::ofstream out(path / hash.substr(2), std::ios::binary);
-		out << content;
-	}
-	utils::ok(r, utils::empty_payload{});
+  for (auto const& [hash, content] : files) {
+    auto path = std::filesystem::path(conf.files_dir) / hash.substr(0, 2);
+    std::filesystem::create_directories(path);
+    std::ofstream out(path / hash.substr(2), std::ios::binary);
+    out << content;
+  }
+  utils::ok(r, utils::empty_payload{});
 }
 
-coro<void> handle_list(fcgx::request_t *r) {
-	auto db = co_await async::pq::connection_pool::local->get_connection();
-	co_await routes::require_auth(db, r, routes::PERM_VIEW_TASKS);
+coro<void> handle_list(fcgx::request_t* r) {
+  auto db = co_await async::pq::connection_pool::local->get_connection();
+  co_await routes::require_auth(db, r, routes::PERM_VIEW_TASKS);
 
-	auto req = utils::expect<api::TaskListRequest>(r);
+  auto req = utils::expect<api::TaskListRequest>(r);
 
-	// clang-format off
+  // clang-format off
 	// !refs && (type == 19 || type == 20 || type == 21) && parent_included && type_count <= 4
 	utils::filter filter(req.filter(), {
 		{"id", utils::T_INTEGER},
@@ -311,40 +310,40 @@ coro<void> handle_list(fcgx::request_t *r) {
 		// filtered already type_count - number of tasks with the
 		// same type filtered already tag - comment
 	});
-	// clang-format on
-	if (auto compile_error = filter.get_error()) {
-		utils::send_raw(r, api::INVALID_QUERY, *compile_error);
-		throw utils::expected_error("unable to compile filter");
-	}
+  // clang-format on
+  if (auto compile_error = filter.get_error()) {
+    utils::send_raw(r, api::INVALID_QUERY, *compile_error);
+    throw utils::expected_error("unable to compile filter");
+  }
 
-	api::TaskListResponse msg{{
-		.page_count = 1,
-		.has_more_pages = false,
-	}};
+  api::TaskListResponse msg{{
+      .page_count = 1,
+      .has_more_pages = false,
+  }};
 
-	auto q = co_await db.exec(TASK_LIST_SQL);
-	for (auto [id, task_type, tag] : q.iter<int64_t, int, std::string_view>()) {
-		if (!filter.matches({id, task_type})) {
-			continue;
-		}
-		*msg.add_tasks() = {{
-			.id = id,
-			.task_type = task_type,
-			.tag = std::string(tag),
-		}};
-	}
+  auto q = co_await db.exec(TASK_LIST_SQL);
+  for (auto [id, task_type, tag] : q.iter<int64_t, int, std::string_view>()) {
+    if (!filter.matches({id, task_type})) {
+      continue;
+    }
+    *msg.add_tasks() = {{
+        .id = id,
+        .task_type = task_type,
+        .tag = std::string(tag),
+    }};
+  }
 
-	utils::ok(r, msg);
+  utils::ok(r, msg);
 }
 
-coro<void> handle_bulk_delete(fcgx::request_t *r) {
-	auto db = co_await async::pq::connection_pool::local->get_connection();
-	co_await routes::require_auth(db, r, routes::PERM_WRITE_TASKS);
+coro<void> handle_bulk_delete(fcgx::request_t* r) {
+  auto db = co_await async::pq::connection_pool::local->get_connection();
+  co_await routes::require_auth(db, r, routes::PERM_WRITE_TASKS);
 
-	auto req = utils::expect<api::TaskBulkDeleteRequest>(r);
-	co_await db.exec(TASK_BULK_DELETE_SQL, req.tasks());
+  auto req = utils::expect<api::TaskBulkDeleteRequest>(r);
+  co_await db.exec(TASK_BULK_DELETE_SQL, req.tasks());
 
-	utils::ok<utils::empty_payload>(r, {});
+  utils::ok<utils::empty_payload>(r, {});
 }
 }  // namespace
 

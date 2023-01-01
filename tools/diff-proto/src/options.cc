@@ -4,12 +4,12 @@ struct Options {
   bool diffable, in, out;
 };
 
-Options get_options(const Message &options) {
+Options get_options(Message const& options) {
   Options res{};
 
-  const auto &unknown_fields = options.GetReflection()->GetUnknownFields(options);
+  auto const& unknown_fields = options.GetReflection()->GetUnknownFields(options);
   for (int i = 0; i < unknown_fields.field_count(); ++i) {
-    const auto &field = unknown_fields.field(i);
+    auto const& field = unknown_fields.field(i);
     int id = field.number(), type = field.type();
 
     if (id == 37700 && type == UnknownField::TYPE_VARINT) {
@@ -23,14 +23,14 @@ Options get_options(const Message &options) {
   return res;
 }
 
-bool is_diffable(const Descriptor *msg) {
+bool is_diffable(Descriptor const* msg) {
   return get_options(msg->options()).diffable;
 }
 
-bool is_in(const FieldDescriptor *field) {
+bool is_in(FieldDescriptor const* field) {
   return get_options(field->options()).in;
 }
 
-bool is_out(const FieldDescriptor *field) {
+bool is_out(FieldDescriptor const* field) {
   return get_options(field->options()).out;
 }

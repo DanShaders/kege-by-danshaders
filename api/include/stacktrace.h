@@ -22,17 +22,17 @@ namespace stacktrace {
  *             with sanitizers after such manipulations).
  */
 struct exception_st {
-	int length;         /**< Number of stacktrace entries */
-	int alloced_length; /**< Number of stacktrace entries the memory was allocated for */
+  int length;         /**< Number of stacktrace entries */
+  int alloced_length; /**< Number of stacktrace entries the memory was allocated for */
 
-	/** Stacktrace entry */
-	struct st_entry {
-		uintptr_t pc;   /**< PC address */
-		char *filename; /**< Deduced filename, may be nullptr */
-		char *function; /**< Deduced function name, may be nullptr */
-		int lineno;     /**< Deduced line number */
-		bool is_async;  /**< If this is first entry appended by @ref async_update_stacktrace */
-	} entry[0];
+  /** Stacktrace entry */
+  struct st_entry {
+    uintptr_t pc;   /**< PC address */
+    char* filename; /**< Deduced filename, may be nullptr */
+    char* function; /**< Deduced function name, may be nullptr */
+    int lineno;     /**< Deduced line number */
+    bool is_async;  /**< If this is first entry appended by @ref async_update_stacktrace */
+  } entry[0];
 };
 
 /**
@@ -49,14 +49,14 @@ void init();
  *
  * @return     stacktrace.
  */
-const exception_st *get_stacktrace(const std::exception_ptr &ptr);
+exception_st const* get_stacktrace(std::exception_ptr const& ptr);
 
 /**
  * Should be called to record stacktrace between asynchronous suspensions/continuations.
  *
  * @param[in]  ptr   Pointer to the exception.
  */
-void async_update_stacktrace(const std::exception_ptr &ptr);
+void async_update_stacktrace(std::exception_ptr const& ptr);
 
 /**
  * Logs an unhandled exception using @ref logging::error.
@@ -67,7 +67,7 @@ void async_update_stacktrace(const std::exception_ptr &ptr);
  * @param[in]  e     Pointer to the exception
  * @note       Defined in `src/stacktrace-specific.cc`.
  */
-void log_unhandled_exception(const std::exception_ptr &e);
+void log_unhandled_exception(std::exception_ptr const& e);
 
 /**
  * Terminate handler to be set globally to intercept exceptions causing `std::terminate` to be

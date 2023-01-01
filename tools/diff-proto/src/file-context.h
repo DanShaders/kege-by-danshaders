@@ -5,25 +5,25 @@
 class Generator;
 
 struct FileContext {
-  const FileDescriptor *file;
-  const Generator *generator;
+  FileDescriptor const* file;
+  Generator const* generator;
   std::unique_ptr<io::Printer> p;
 
-  FileContext(const FileDescriptor *file_, const Generator *generator_);
+  FileContext(FileDescriptor const* file_, Generator const* generator_);
   void generate_header() const;
-  void generate_message(const Descriptor *msg) const;
+  void generate_message(Descriptor const* msg) const;
 };
 
 #define println(x) print(x "\n")
 
 class FileContextHolder {
 protected:
-  const FileContext &c;
+  FileContext const& c;
   std::map<string, string> vars;
 
-  FileContextHolder(const FileContext &c_) : c(c_) {}
+  FileContextHolder(FileContext const& c_) : c(c_) {}
 
-  void print(char const *s) {
+  void print(char const* s) {
     c.p->Print(vars, s);
   }
 

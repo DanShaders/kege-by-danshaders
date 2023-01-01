@@ -1,25 +1,26 @@
+#include "stdafx.h"
+
 #include "errors.h"
 #include "fields.h"
 #include "file-context.h"
 #include "options.h"
-#include "stdafx.h"
 #include "utils.h"
 
 class MessageCodeGenerator : public FileContextHolder {
 private:
-  const Descriptor *msg;
+  Descriptor const* msg;
   std::vector<std::unique_ptr<FieldCodeGenerator>> fields;
   bool has_nonscalars = false;
 
 public:
-  MessageCodeGenerator(const FileContext &c_, const Descriptor *msg_)
+  MessageCodeGenerator(FileContext const& c_, Descriptor const* msg_)
       : FileContextHolder(c_), msg(msg_) {
     vars["msg"] = msg->name();
     string scope = get_scope(msg->containing_type());
     vars["transport"] = "defs." + scope + msg->name();
     vars["scope"] = scope.size() ? scope.substr(0, scope.size() - 1) : "";
 
-    for_all_fields(msg, [&](const FieldDescriptor *field) {
+    for_all_fields(msg, [&](FieldDescriptor const* field) {
       if (field->name() == "curr_pos") {
         fields.push_back(std::make_unique<PosFieldCodeGenerator>(c, field));
       } else if (field->name() == "swap_pos") {
@@ -51,7 +52,7 @@ public:
   void generate_delta_type() {
     print("export interface $msg$Delta");
     blockln([&] {
-      for (const auto &field : fields) {
+      for (const auto& field : fields) {
         field->generate_delta_entry();
       }
     });
@@ -62,7 +63,7 @@ public:
   }
 
   void generate_class_fields() {
-    for (const auto &field : fields) {
+    for (auto const& field : fields) {
       field->generate_class_field();
     }
     print(
@@ -80,14 +81,14 @@ public:
     print("constructor(msg: $transport$)");
     blockln([&] {
       println("this.msg = msg.clone();");
-      for (const auto &field : fields) {
+      for (const auto& field : fields) {
         field->generate_constructor_assignment();
       }
     });
   }
 
   void generate_getters_setters() {
-    for (const auto &field : fields) {
+    for (auto const& field : fields) {
       field->generate_getter_setter();
     }
   }
@@ -114,7 +115,7 @@ public:
     print("mount(ctx: $msg$DiffContext): void");
     blockln([&] {
       print("this.ctx = ctx;\n");
-      for (const auto &field : fields) {
+      for (const auto& field : fields) {
         field->generate_mount();
       }
     });
@@ -139,7 +140,7 @@ public:
         println("this.supressPropagation = true;");
       }
 
-      for (const auto &field : fields) {
+      for (const auto& field : fields) {
         field->generate_commit();
       }
 
@@ -159,7 +160,7 @@ public:
       print(
           "const delta = this.ctx!.delta;\n"
           "const obj = new $transport$();\n");
-      for (const auto &field : fields) {
+      for (const auto& field : fields) {
         field->generate_serialize();
       }
       println("return obj;");
@@ -209,7 +210,7 @@ import {
            "name", compiler::StripProto(file->name()));
 }
 
-void FileContext::generate_message(const Descriptor *msg) const {
+void FileContext::generate_message(Descriptor const* msg) const {
   MessageCodeGenerator gen{*this, msg};
   gen.begin_scope();
   gen.generate_delta_type();
@@ -222,26 +223,26 @@ class Generator : public compiler::CodeGenerator {
 private:
   friend FileContext;
 
-  mutable std::set<const FileDescriptor *> files_set;
-  mutable std::map<const FileDescriptor *, FileContext> file_ctx;
-  mutable std::set<const Descriptor *> diffable_msgs;
-  mutable std::string *error;
-  mutable compiler::GeneratorContext *context;
+  mutable std::set<FileDescriptor const*> files_set;
+  mutable std::map<FileDescriptor const*, FileContext> file_ctx;
+  mutable std::set<Descriptor const*> diffable_msgs;
+  mutable std::string* error;
+  mutable compiler::GeneratorContext* context;
 
-  void add_error(auto cause, const std::string &message) const {
-    const FileDescriptor *file = cause->file();
+  void add_error(auto cause, std::string const& message) const {
+    FileDescriptor const* file = cause->file();
     SourceLocation location;
     cause->GetSourceLocation(&location);
     *error += fmt::format("{}:{}:{}: {}\n", file->name(), location.start_line + 1,
                           location.start_column + 1, message);
   }
 
-  void mark_diffable(const Descriptor *msg) const {
+  void mark_diffable(Descriptor const* msg) const {
     diffable_msgs.insert(msg);
     if (!file_ctx.contains(msg->file())) {
       file_ctx.insert({msg->file(), FileContext(msg->file(), this)});
     }
-    for_all_fields(msg, [&](const FieldDescriptor *field) {
+    for_all_fields(msg, [&](FieldDescriptor const* field) {
       if (field->is_map()) {
         return;
       }
@@ -255,9 +256,9 @@ private:
     });
   }
 
-  void check_message(const Descriptor *msg) const {
+  void check_message(Descriptor const* msg) const {
     bool has_id = false;
-    for_all_fields(msg, [&](const FieldDescriptor *field) {
+    for_all_fields(msg, [&](FieldDescriptor const* field) {
       if (field->name() == "id") {
         has_id = true;
         if (field->cpp_type() >= 5) {
@@ -280,9 +281,9 @@ private:
   }
 
 public:
-  bool GenerateAll(const std::vector<const FileDescriptor *> &files, const std::string &,
-                   compiler::GeneratorContext *generator_context,
-                   std::string *error_) const override {
+  bool GenerateAll(std::vector<const FileDescriptor*> const& files, std::string const&,
+                   compiler::GeneratorContext* generator_context,
+                   std::string* error_) const override {
     files_set = {files.begin(), files.end()};
     diffable_msgs.clear();
     error = error_;
@@ -290,7 +291,7 @@ public:
 
     for (auto file : files) {
       for (int i = 0; i < file->message_type_count(); ++i) {
-        for_all_nested(file->message_type(i), [this](const Descriptor *msg) {
+        for_all_nested(file->message_type(i), [this](Descriptor const* msg) {
           if (!is_diffable(msg)) {
             return;
           }
@@ -307,7 +308,7 @@ public:
       return false;
     }
 
-    for (const auto &[_, file] : file_ctx) {
+    for (auto const& [_, file] : file_ctx) {
       file.generate_header();
     }
     for (auto msg : diffable_msgs) {
@@ -319,8 +320,8 @@ public:
     return true;
   }
 
-  bool Generate(const FileDescriptor *file, const string &param,
-                compiler::GeneratorContext *generator_context, string *error_) const override {
+  bool Generate(FileDescriptor const* file, string const& param,
+                compiler::GeneratorContext* generator_context, string* error_) const override {
     return GenerateAll({file}, param, generator_context, error_);
   }
 
@@ -329,13 +330,13 @@ public:
   }
 };
 
-FileContext::FileContext(const FileDescriptor *file_, const Generator *generator_)
+FileContext::FileContext(FileDescriptor const* file_, Generator const* generator_)
     : file(file_),
       generator(generator_),
       p(std::make_unique<io::Printer>(
           generator->context->Open(compiler::StripProto(file->name()) + "_pb_diff.ts"), '$')) {}
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   Generator generator;
   return compiler::PluginMain(argc, argv, &generator);
 }

@@ -2,6 +2,6 @@
 
 #include "stdafx.h"
 
-bool is_diffable(const Descriptor *msg);
-bool is_in(const FieldDescriptor *field);
-bool is_out(const FieldDescriptor *field);
+bool is_diffable(Descriptor const* msg);
+bool is_in(FieldDescriptor const* field);
+bool is_out(FieldDescriptor const* field);

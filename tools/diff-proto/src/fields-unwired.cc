@@ -1,7 +1,7 @@
 #include "fields.h"
 
-UnwiredFieldCodeGenerator::UnwiredFieldCodeGenerator(const FileContext &c_,
-                                                     const FieldDescriptor *field_)
+UnwiredFieldCodeGenerator::UnwiredFieldCodeGenerator(FileContext const& c_,
+                                                     FieldDescriptor const* field_)
     : FieldCodeGenerator(c_, field_) {
   vars["type"] = TYPE_REMAP[field->type()];
   vars["setter"] = "set" + uppercased;
@@ -18,8 +18,8 @@ void UnwiredFieldCodeGenerator::generate_serialize() {
       "}\n");
 }
 
-UnwiredInFieldCodeGenerator::UnwiredInFieldCodeGenerator(const FileContext &c_,
-                                                         const FieldDescriptor *field_)
+UnwiredInFieldCodeGenerator::UnwiredInFieldCodeGenerator(FileContext const& c_,
+                                                         FieldDescriptor const* field_)
     : FieldCodeGenerator(c_, field_) {
   vars["type"] = TYPE_REMAP[field->type()];
   vars["getter"] =

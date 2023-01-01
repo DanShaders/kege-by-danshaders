@@ -1,19 +1,19 @@
 BasedOnStyle: Google
-IndentWidth: 4
+IndentWidth: 2
 
-TabWidth: 4
-UseTab: ForContinuationAndIndentation
-AccessModifierOffset: -4
-NamespaceIndentation: Inner
-DerivePointerAlignment: false
-PointerAlignment: Right
+AccessModifierOffset: -2
 AllowShortBlocksOnASingleLine: Empty
 AllowShortFunctionsOnASingleLine: Empty
-AllowShortLoopsOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: Never
-SpaceAfterCStyleCast: true
+AllowShortLoopsOnASingleLine: false
 ColumnLimit: 100
+DerivePointerAlignment: false
 IndentCaseBlocks: false
+InsertBraces: true
+NamespaceIndentation: Inner
+PointerAlignment: Left
+SpaceAfterCStyleCast: true
+QualifierAlignment: Right
 
 IndentPPDirectives: AfterHash
 IncludeCategories:

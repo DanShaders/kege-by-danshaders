@@ -1,6 +1,6 @@
 #include "fields.h"
 
-SetFieldCodeGenerator::SetFieldCodeGenerator(const FileContext &c_, const FieldDescriptor *field_)
+SetFieldCodeGenerator::SetFieldCodeGenerator(FileContext const& c_, FieldDescriptor const* field_)
     : FieldCodeGenerator(c_, field_) {
   auto type = field->message_type();
   string type_name = type->name();

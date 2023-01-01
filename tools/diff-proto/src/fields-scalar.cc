@@ -1,7 +1,7 @@
 #include "fields.h"
 
-ScalarFieldCodeGenerator::ScalarFieldCodeGenerator(const FileContext &c_,
-                                                   const FieldDescriptor *field_)
+ScalarFieldCodeGenerator::ScalarFieldCodeGenerator(FileContext const& c_,
+                                                   FieldDescriptor const* field_)
     : FieldCodeGenerator(c_, field_) {
   vars["fname"] = "f" + uppercased;
   vars["type"] = TYPE_REMAP[field->type()];
@@ -24,9 +24,7 @@ void ScalarFieldCodeGenerator::generate_constructor_assignment() {
 
 void ScalarFieldCodeGenerator::generate_getter_setter() {
   print("get $name$(): $type$");
-  blockln([&] {
-    println("return this.$fname$;");
-  });
+  blockln([&] { println("return this.$fname$;"); });
 
   print("set $name$(value: $type$)");
   blockln([&] {

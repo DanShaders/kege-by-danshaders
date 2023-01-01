@@ -35,11 +35,7 @@ struct session {
 using psession = std::shared_ptr<session>;
 
 enum {
-  PERM_NOT_STUDENT = 1,     // view admin interface
-  PERM_VIEW_TASKS = 2,      // view all kims & tasks with answers
-  PERM_VIEW_STANDINGS = 4,  // view standings
-  PERM_WRITE_TASKS = 8,     // modify kims & tasks
-  PERM_MANAGE_USERS = 16    // manage users & groups
+  PERM_ADMIN = 1,     // view admin interface
 };
 
 coro<psession> _restore_session(async::pq::connection const& db, fcgx::request_t* r);

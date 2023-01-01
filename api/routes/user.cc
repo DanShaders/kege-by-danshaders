@@ -58,7 +58,7 @@ coro<void> handle_user_logout(fcgx::request_t* r) {
 
 coro<void> handle_check_admin(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  co_await routes::require_auth(db, r, routes::PERM_NOT_STUDENT);
+  co_await routes::require_auth(db, r, routes::PERM_ADMIN);
 }
 
 coro<void> handle_request_id_range(fcgx::request_t* r) {
@@ -79,7 +79,7 @@ coro<void> handle_request_id_range(fcgx::request_t* r) {
   };
 
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  auto s = co_await routes::require_auth(db, r, routes::PERM_NOT_STUDENT);
+  auto s = co_await routes::require_auth(db, r, routes::PERM_ADMIN);
 
   int64_t block_len = 2;
   auto where = &s->id_ranges;

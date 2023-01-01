@@ -11,7 +11,7 @@ using async::coro;
 namespace {
 coro<void> handle_get_standings(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  co_await routes::require_auth(db, r, routes::PERM_NOT_STUDENT);
+  co_await routes::require_auth(db, r, routes::PERM_ADMIN);
 
   int64_t kim_id = utils::expect<int64_t>(r, "id");
   int64_t group_id = utils::expect<int64_t>(r, "gid");

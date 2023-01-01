@@ -43,6 +43,9 @@ double routes::check_and_grade(std::string_view user_answer, std::string_view ju
 			}
 			return static_cast<double>(matches) / static_cast<double>(jury_parts.size());
 		} else if (grading_policy == api::INDEPENDENT_SWAP_PENALTY) {
+			if (user_parts.size() == 1) {
+				user_parts.push_back("");
+			}
 			if (user_parts.size() != 2 || jury_parts.size() != 2) {
 				return 0;
 			}

@@ -198,7 +198,7 @@ int main(int argc, char **argv) {
 
           auto it = type_mapping.find(oid);
           if (it == type_mapping.end()) {
-            issue_error(fmt::format("Unknown type of parameter `{}` with oid={}", args[i], oid));
+            issue_error(fmt::format("Unknown type of parameter `{}` with oid={}", args[i + 1], oid));
           } else {
             input_type_seq.emplace_back(it->second);
           }

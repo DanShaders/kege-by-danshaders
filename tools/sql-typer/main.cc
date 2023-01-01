@@ -18,6 +18,7 @@ const std::map<Oid, std::string_view> type_mapping = {
     {23, "int"},
     {25, "std::string"},
     {701, "double"},
+    {1007, "std::vector<int>"},
     {1016, "std::vector<int64_t>"},
     {1042, "std::string"},
     {1114, "async::pq::timestamp"},

@@ -24,6 +24,9 @@ public:
   void await_suspend(std::coroutine_handle<> h);
 };
 
+using func_ptr = std::unique_ptr<std::function<void()>>;
+void set_timeout(func_ptr scheduler, std::chrono::nanoseconds timeout);
+
 /**
  * Implementation of the event loop interface using libev
  */
@@ -59,6 +62,8 @@ public:
    * Schedules work from @ref sleep object for execution.
    */
   void schedule_timer_resume(sleep* obj);
+
+  void schedule_timeout(func_ptr scheduler, double timeout);
 
   /**
    * Adds socket to the event loop.

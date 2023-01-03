@@ -24,10 +24,15 @@ void sleep::await_suspend(std::coroutine_handle<> h) {
   libev_event_loop::get()->schedule_timer_resume(this);
 }
 
+void async::set_timeout(func_ptr delayed_scheduler, std::chrono::nanoseconds timeout) {
+  libev_event_loop::get()->schedule_timeout(std::move(delayed_scheduler),
+                                            double(timeout.count()) / 1e9);
+}
+
 /* ==== async::libev_event_loop::impl ==== */
 /** @private */
 struct data_t {
-  enum { NEW_TIMEOUT, NEW_SOCKET, DEL_SOCKET, MOD_SOCKET } type;
+  enum { NEW_TIMEOUT, NEW_SOCKET, DEL_SOCKET, MOD_SOCKET, NEW_DELAYED } type;
 
   union {
     double vdouble;
@@ -40,6 +45,14 @@ typedef struct ev_loop ev_loop_t;
 
 /** @private */
 struct libev_event_loop::impl {
+  struct delayed_work {
+    ev_timer w;
+    func_ptr work;
+    std::list<delayed_work>::iterator self;
+    double timeout;
+    libev_event_loop::impl* pimpl;
+  };
+
   std::vector<std::shared_ptr<event_source>> sources;
   ev_loop_t* loop;
 
@@ -47,6 +60,7 @@ struct libev_event_loop::impl {
 
   ev_with_arg<ev_prepare> worker;
 
+  std::list<delayed_work> delayed_jobs;
   std::queue<event_loop_work> queue;
   bool until_complete = 1;
   bool success_flag = 1;
@@ -56,6 +70,13 @@ struct libev_event_loop::impl {
     ev_timer_stop(loop, &w->w);
     ((sleep*) w->arg.ext.vptr)->work.do_work();
     delete w;
+  }
+
+  static void delayed_cb(ev_loop_t* loop, ev_timer* w_, int) {
+    auto& job = *reinterpret_cast<delayed_work*>(w_);
+    ev_timer_stop(loop, &job.w);
+    job.work->operator()();
+    job.pimpl->delayed_jobs.erase(job.self);
   }
 
   static void socket_cb(ev_loop_t*, ev_io* w, int revents) {
@@ -73,6 +94,13 @@ struct libev_event_loop::impl {
         ev_timer_init(&timer_event->w, timer_cb, ((sleep*) timer_event->arg.ext.vptr)->duration,
                       0.);
         ev_timer_start(loop, &timer_event->w);
+        break;
+      }
+
+      case data_t::NEW_DELAYED: {
+        auto& job = *reinterpret_cast<delayed_work*>(data.ext.vptr);
+        ev_timer_init(&job.w, delayed_cb, job.timeout, 0.);
+        ev_timer_start(loop, &job.w);
         break;
       }
 
@@ -133,6 +161,10 @@ struct libev_event_loop::impl {
     }
 
     if (p->queue.empty() && p->until_complete && !event_loop::local->alive_coroutines) {
+      for (auto& job : p->delayed_jobs) {
+        ev_timer_stop(loop, &job.w);
+      }
+      p->delayed_jobs.clear();
       ev_break(loop, EVBREAK_ALL);
       for (auto source : p->sources) {
         source->on_stop();
@@ -217,6 +249,13 @@ void libev_event_loop::bind_to_thread() {
 
 void libev_event_loop::schedule_timer_resume(sleep* obj) {
   pimpl->process_event({data_t::NEW_TIMEOUT, {.vptr = obj}});
+}
+
+void libev_event_loop::schedule_timeout(func_ptr delayed_scheduler, double timeout) {
+  pimpl->delayed_jobs.push_front({{}, std::move(delayed_scheduler), {}, timeout, pimpl});
+  pimpl->delayed_jobs.front().self = pimpl->delayed_jobs.begin();
+  pimpl->process_event(
+      {.type = data_t::NEW_DELAYED, .ext = {.vptr = &pimpl->delayed_jobs.front()}});
 }
 
 void libev_event_loop::socket_add(socket_storage* storage) {

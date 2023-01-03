@@ -28,17 +28,20 @@ coro<void> handle_user_login(fcgx::request_t* r) {
     utils::err(r, api::INVALID_CREDENTIALS);
   }
 
-  auto s = std::make_shared<routes::session>(
-      user_id, utils::b16_encode(utils::urandom(32)), username, display_name, perms, false,
-      routes::session_clock::now().time_since_epoch().count());
-  co_await routes::session_store(db, r, s);
+  auto session = std::make_shared<routes::session>(user_id, username, display_name, perms);
+  auto session_id = utils::urandom(32);
+  co_await routes::session::save(session, session_id);
 
-  utils::ok<api::UserInfo>(r, s->serialize());
+  r->headers.push_back(
+      fmt::format("Set-Cookie: kege-session={}; Path=/; Max-Age=86400; Secure; HttpOnly",
+                  utils::b16_encode(session_id)));
+
+  utils::ok<api::UserInfo>(r, session->serialize());
 }
 
 coro<void> handle_user_info(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  auto s = co_await routes::require_auth(db, r);
+  auto s = co_await require_auth(r, routes::Permission::NONE);
 
   utils::ok<api::UserInfo>(r, s->serialize());
 }
@@ -46,19 +49,19 @@ coro<void> handle_user_info(fcgx::request_t* r) {
 coro<void> handle_user_logout(fcgx::request_t* r) {
   auto req = utils::expect<api::LogoutRequest>(r);
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  auto s = co_await routes::require_auth(db, r);
+  auto s = co_await require_auth(r, routes::Permission::NONE);
 
   if (s->user_id != req.user_id()) {
     utils::err(r, api::INVALID_QUERY);
   }
-  co_await routes::session_logout(db, s);
+  s->logged_out = true;
   r->headers.push_back("Set-Cookie: kege-session=invalid; expires=Thu, 01 Jan 1970 00:00:00 GMT");
   utils::ok<utils::empty_payload>(r, {});
 }
 
 coro<void> handle_check_admin(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  co_await routes::require_auth(db, r, routes::PERM_ADMIN);
+  co_await require_auth(r, routes::Permission::ADMIN);
 }
 
 coro<void> handle_request_id_range(fcgx::request_t* r) {
@@ -79,7 +82,7 @@ coro<void> handle_request_id_range(fcgx::request_t* r) {
   };
 
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  auto s = co_await routes::require_auth(db, r, routes::PERM_ADMIN);
+  auto s = co_await require_auth(r, routes::Permission::ADMIN);
 
   int64_t block_len = 2;
   auto where = &s->id_ranges;

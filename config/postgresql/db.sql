@@ -66,17 +66,7 @@ CREATE TABLE users (
 	display_name text,
 	permissions integer,
 	salt char(64),
-	password char(64), -- = b16encode(sha3_256(password + b16decode(salt)))
-	last_login_time timestamp,
-	last_login_method text
-);
-
-CREATE TABLE sessions (
-	id char(64) NOT NULL PRIMARY KEY,
-	user_id bigint,
-	login_time bigint, 
-
-	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+	password char(64) -- = b16encode(sha3_256(password + b16decode(salt)))
 );
 
 CREATE TABLE groups (
@@ -211,8 +201,8 @@ INSERT INTO users_groups VALUES (2, 35);
 INSERT INTO groups_kims VALUES (
 	35,
 	34,
-	'2022-08-22 00:00:00',
-	'2022-09-22 00:00:00',
+	'2022-12-31 00:00:00',
+	'2023-01-31 00:00:00',
 	31::bigint * 86400 * 1000,
 	false,
 	false

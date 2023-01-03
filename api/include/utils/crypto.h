@@ -5,15 +5,12 @@
 #include "fcgx.h"
 
 namespace utils {
-std::string hmac_sign(std::string_view const& value, std::string_view const& key);
-std::string sha3_256(std::string_view const& data);
+inline constexpr size_t signature_length = 32;
+using signature_t = std::array<char, signature_length>;
 
-std::string sign_url(std::string_view const& url,
-                     std::vector<std::pair<std::string_view, std::string_view>> const& params,
-                     bool full = true);
-bool is_signed(fcgx::request_t* r, bool full = true) noexcept;
-void signature_required(fcgx::request_t* r, bool full = true);
+signature_t hmac_sign(std::string_view value, std::string_view key);
+std::string sha3_256(std::string_view data);
 
-std::string urandom(int len);
-std::string urandom_priv(int len);
+std::string urandom(int length);
+std::string urandom_priv(int length);
 }  // namespace utils

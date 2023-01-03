@@ -13,7 +13,7 @@ using async::coro;
 namespace {
 coro<void> handle_kim_get_editable(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  co_await routes::require_auth(db, r, routes::PERM_ADMIN);
+  co_await require_auth(r, routes::Permission::ADMIN);
 
   int64_t kim_id = utils::expect<int64_t>(r, "id");
 
@@ -63,7 +63,7 @@ coro<void> handle_kim_get_editable(fcgx::request_t* r) {
 
 coro<void> handle_kim_update(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  auto session = co_await routes::require_auth(db, r, routes::PERM_ADMIN);
+  auto session = co_await require_auth(r, routes::Permission::ADMIN);
 
   auto kim = utils::expect<api::Kim>(r);
   if (!kim.id()) {
@@ -150,7 +150,7 @@ coro<void> handle_kim_update(fcgx::request_t* r) {
 
 coro<void> handle_kim_list(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  co_await routes::require_auth(db, r, routes::PERM_ADMIN);
+  co_await require_auth(r, routes::Permission::ADMIN);
 
   api::KimListResponse msg;
 
@@ -166,7 +166,7 @@ coro<void> handle_kim_list(fcgx::request_t* r) {
 
 coro<void> revoke_access_keys(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  co_await routes::require_auth(db, r, routes::PERM_ADMIN);
+  co_await require_auth(r, routes::Permission::ADMIN);
   co_await db.exec(BUMP_KIM_VERSION_REQUEST);
   utils::ok(r, utils::empty_payload{});
 }

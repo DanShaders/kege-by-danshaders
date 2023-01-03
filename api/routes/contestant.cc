@@ -13,31 +13,29 @@
 using async::coro;
 
 namespace {
-char const TOKEN_SIGN_KEY[] = {-123, 7,   78, -65, -96, -105, 117, 121,
-                               10,   -78, 54, 123, 54,  77,   -97, -58};
-
 struct write_token {
-  struct {
+  struct data_t {
     int64_t user_id, kim_id, token_version, start_time, end_time;
   } data;
   static_assert(sizeof(data) == 40);
 
-  char signature[64];
+  utils::signature_t signature;
 
-  std::string get_signature() {
-    return utils::hmac_sign(std::string_view{reinterpret_cast<char*>(&data), sizeof(data)},
-                            std::string_view{TOKEN_SIGN_KEY, sizeof(TOKEN_SIGN_KEY)});
+  utils::signature_t get_signature() {
+    static const std::string token_sign_key = utils::urandom_priv(32);
+    std::string_view data_view{reinterpret_cast<char*>(&data), sizeof(data)};
+    return utils::hmac_sign(data_view, token_sign_key);
   }
 
   bool is_valid() {
-    return get_signature() == std::string_view{signature, sizeof(signature)};
+    return get_signature() == signature;
   }
 
   void sign() {
-    std::ranges::copy(get_signature(), signature);
+    signature = get_signature();
   }
 };
-static_assert(sizeof(write_token) == 40 + 64);
+static_assert(sizeof(write_token) == sizeof(write_token::data_t) + utils::signature_length);
 
 struct kim_t {
   int64_t id;
@@ -137,7 +135,7 @@ coro<std::vector<kim_t>> get_available_kims(async::pq::connection& db, int64_t u
 
 coro<void> handle_get_available_kims(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  auto session = co_await routes::require_auth(db, r);
+  auto session = co_await require_auth(r, routes::Permission::NONE);
 
   api::ContestantKimList list;
   auto current_time = std::chrono::system_clock::now();
@@ -151,7 +149,7 @@ coro<void> handle_get_available_kims(fcgx::request_t* r) {
 
 coro<void> handle_get_tasks(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  auto session = co_await routes::require_auth(db, r);
+  auto session = co_await require_auth(r, routes::Permission::NONE);
 
   auto id = utils::expect<int64_t>(r, "id");
   auto current_time = std::chrono::system_clock::now();
@@ -231,7 +229,7 @@ coro<void> handle_get_tasks(fcgx::request_t* r) {
 
 coro<void> handle_answer(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  auto session = co_await routes::require_auth(db, r);
+  auto session = co_await require_auth(r, routes::Permission::NONE);
 
   auto req = utils::expect<api::ContestantAnswer>(r);
 
@@ -277,7 +275,7 @@ coro<void> handle_answer(fcgx::request_t* r) {
 
 coro<void> handle_end_request(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  auto session = co_await routes::require_auth(db, r);
+  auto session = co_await require_auth(r, routes::Permission::NONE);
 
   auto req = utils::expect<api::ParticipationEndRequest>(r);
 

@@ -9,13 +9,14 @@
 using async::coro;
 
 static coro<void> handle_attachment(fcgx::request_t* r) {
+  co_await routes::require_auth(r, routes::Permission::NONE);
+
   int const BUFFER_SIZE = 8192;
   char buffer[BUFFER_SIZE];
 
   std::string hash = r->params["hash"], filename, mime_type;
   {
     auto db = co_await async::pq::connection_pool::local->get_connection();
-    co_await routes::require_auth(db, r);
     tie(filename, mime_type) =
         (co_await db.exec("SELECT filename, mime_type FROM task_attachments WHERE hash = $1 "
                           "AND NOT coalesce(deleted, false) LIMIT 1",

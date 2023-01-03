@@ -15,7 +15,7 @@ using async::coro;
 namespace {
 coro<void> handle_get(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  co_await routes::require_auth(db, r, routes::PERM_ADMIN);
+  co_await require_auth(r, routes::Permission::ADMIN);
 
   int64_t task_id = utils::expect<int64_t>(r, "id");
 
@@ -217,7 +217,7 @@ std::atomic<utils::transform_rules> TRANSFORM_SANITIZE = nullptr;
 
 coro<void> handle_update(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  auto session = co_await routes::require_auth(db, r, routes::PERM_ADMIN);
+  auto session = co_await require_auth(r, routes::Permission::ADMIN);
 
   auto task = utils::expect<api::Task>(r);
   if (!task.id()) {
@@ -261,7 +261,7 @@ coro<void> handle_update(fcgx::request_t* r) {
                         task.has_tag()))
           .expect1<bool>();
 
-  if (is_task_inserted && !is_id_owned_by(session, task.id())) {
+  if (is_task_inserted && !session->is_owner_of(task.id())) {
     // Either we are f*cked up or somebody is trying to fool us.
     utils::err(r, api::EXTREMELY_SORRY);
   }
@@ -276,7 +276,7 @@ coro<void> handle_update(fcgx::request_t* r) {
                           attachment.has_deleted(), hash))
             .expect1<bool>();
     if (is_inserted) {
-      if (!is_id_owned_by(session, attachment.id())) {
+      if (!session->is_owner_of(attachment.id())) {
         utils::err(r, api::EXTREMELY_SORRY);
       }
       files.push_back({hash, attachment.contents()});
@@ -296,7 +296,7 @@ coro<void> handle_update(fcgx::request_t* r) {
 
 coro<void> handle_list(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  co_await routes::require_auth(db, r, routes::PERM_ADMIN);
+  co_await require_auth(r, routes::Permission::ADMIN);
 
   auto req = utils::expect<api::TaskListRequest>(r);
 
@@ -338,7 +338,7 @@ coro<void> handle_list(fcgx::request_t* r) {
 
 coro<void> handle_bulk_delete(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
-  co_await routes::require_auth(db, r, routes::PERM_ADMIN);
+  co_await require_auth(r, routes::Permission::ADMIN);
 
   auto req = utils::expect<api::TaskBulkDeleteRequest>(r);
   co_await db.exec(TASK_BULK_DELETE_SQL, req.tasks());

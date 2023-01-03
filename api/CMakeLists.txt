@@ -137,8 +137,10 @@ ExternalProject_Add(
 	GIT_REPOSITORY "https://github.com/DanShaders/cpp-protoc-initializers.git"
 	GIT_TAG "1e9148ddc1748f6f74378d04dbce2f71d813ac71"
 	CMAKE_ARGS
-		-DCMAKE_BUILD_TYPE=Release
+		-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+		-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
 		-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+		-DCMAKE_BUILD_TYPE=Release
 	EXCLUDE_FROM_ALL
 	UPDATE_COMMAND ""
 )
@@ -152,9 +154,11 @@ ExternalProject_Add(
 	GIT_REPOSITORY "https://github.com/lexbor/lexbor.git"
 	GIT_TAG "9c6915b98b0c33ac140bc85cc2c9b9eb0a93751b"
 	CMAKE_ARGS
-		-DLEXBOR_BUILD_SHARED=OFF
+		-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+		-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
 		-DCMAKE_BUILD_TYPE=Release
 		-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+		-DLEXBOR_BUILD_SHARED=OFF
 	UPDATE_COMMAND ""
 	EXCLUDE_FROM_ALL
 	BUILD_BYPRODUCTS
@@ -166,12 +170,22 @@ set(LEXBOR_LIBRARIES "${INSTALL_DIR}/lib/liblexbor_static.a")
 
 
 # ==== Target fmtlog ====
+# Someone said "easy setup"?
 ExternalProject_Add(
 	FMTLOG
-	GIT_REPOSITORY "https://github.com/MengRao/fmtlog.git"
-	GIT_TAG "dbb4bfe389b53c84a06fc9529ef57aa82afccb06"
+	DOWNLOAD_COMMAND
+		rm -r <SOURCE_DIR> &&
+		git clone https://github.com/MengRao/fmtlog.git <SOURCE_DIR> &&
+		cd <SOURCE_DIR> &&
+		git checkout dbb4bfe389b53c84a06fc9529ef57aa82afccb06 &&
+		git submodule update --init ./fmt &&
+		echo > ./bench/CMakeLists.txt &&
+		cd -
 	CMAKE_ARGS
+		-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+		-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
 		-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+		-DCMAKE_BUILD_TYPE=Release
 	UPDATE_COMMAND ""
 	EXCLUDE_FROM_ALL
 	BUILD_BYPRODUCTS
@@ -184,6 +198,29 @@ ExternalProject_Add(
 ExternalProject_Get_property(FMTLOG INSTALL_DIR)
 set(FMTLOG_INCLUDE_DIRS "${INSTALL_DIR}/include")
 set(FMTLOG_LIBRARIES "${INSTALL_DIR}/lib/libfmtlog-static.a")
+
+
+# ==== Target uriparser ====
+ExternalProject_Add(
+	URIPARSER
+	GIT_REPOSITORY "https://github.com/uriparser/uriparser.git"
+	GIT_TAG "634b678fa858abf1d1ebc0634e96e9e29596e92a"
+	CMAKE_ARGS
+		-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+		-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+		-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+		-DCMAKE_BUILD_TYPE=Release
+		-DBUILD_SHARED_LIBS=OFF
+		-DURIPARSER_BUILD_DOCS=OFF
+		-DURIPARSER_BUILD_TESTS=OFF
+	UPDATE_COMMAND ""
+	EXCLUDE_FROM_ALL
+	BUILD_BYPRODUCTS
+		<INSTALL_DIR>/lib/liburiparser.a
+)
+ExternalProject_Get_property(URIPARSER INSTALL_DIR)
+set(URIPARSER_INCLUDE_DIRS "${INSTALL_DIR}/include")
+set(URIPARSER_LIBRARIES "${INSTALL_DIR}/lib/liburiparser.a")
 
 
 # ==== *.proto -> *.pb.cc ====
@@ -214,7 +251,6 @@ pkg_check_modules(FMT REQUIRED fmt)
 pkg_check_modules(NLOHMANN_JSON REQUIRED nlohmann_json)
 pkg_check_modules(OPENSSL REQUIRED openssl)
 pkg_check_modules(PQ REQUIRED libpq)
-pkg_check_modules(URIPARSER REQUIRED liburiparser)
 
 
 target_include_directories(

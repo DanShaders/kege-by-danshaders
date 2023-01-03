@@ -43,7 +43,6 @@ set(
 	src/async/mutex.cc
 	src/async/pq.cc
 	src/async/socket.cc
-	src/async/stackful.cc
 	src/config.cc
 	src/fcgx.cc
 	src/routes.cc

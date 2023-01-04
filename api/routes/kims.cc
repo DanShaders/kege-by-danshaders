@@ -61,6 +61,21 @@ coro<void> handle_kim_get_editable(fcgx::request_t* r) {
   utils::ok(r, msg);
 }
 
+// clang-format off
+const char KIM_UPDATE_SQL[] =
+  "INSERT INTO kims ("
+    "id, name"
+  ") "
+  "VALUES "
+    "("
+      "$1, "
+      "(CASE WHEN $3 THEN $2::text ELSE NULL END)"
+    ")"
+  "ON CONFLICT (id) DO UPDATE SET "
+    "name = (CASE WHEN $3 THEN excluded ELSE kims END).name "
+  "RETURNING (xmax = 0)";
+// clang-format on
+
 coro<void> handle_kim_update(fcgx::request_t* r) {
   auto db = co_await async::pq::connection_pool::local->get_connection();
   auto session = co_await require_auth(r, routes::Permission::ADMIN);
@@ -72,7 +87,13 @@ coro<void> handle_kim_update(fcgx::request_t* r) {
 
   co_await db.transaction();
 
-  bool is_kim_inserted = false;
+  auto [is_kim_inserted] =
+   (co_await db.exec(KIM_UPDATE_SQL, kim.id(), kim.name(), kim.has_name()))
+     .expect1<bool>();
+
+  if (is_kim_inserted && !session->is_owner_of(kim.id())) {
+   utils::err(r, api::EXTREMELY_SORRY);
+  }
 
   // Process task swaps
   // 1) We want mapping user_pos -> db_pos.

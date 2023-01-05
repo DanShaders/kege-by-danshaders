@@ -105,7 +105,7 @@ async function showLoginPage(params: URLSearchParams): Promise<void> {
     } else {
       setGlobalUserInfo(result.toObject());
       await Router.instance.goTo("#update-header");
-      Router.instance.redirect("");
+      Router.instance.redirect(params.get("back") ?? "");
     }
     return false;
   });

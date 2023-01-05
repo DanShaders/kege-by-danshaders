@@ -180,6 +180,7 @@ ExternalProject_Add(
 		git checkout dbb4bfe389b53c84a06fc9529ef57aa82afccb06 &&
 		git submodule update --init ./fmt &&
 		echo > ./bench/CMakeLists.txt &&
+		echo > ./test/CMakeLists.txt &&
 		cd -
 	CMAKE_ARGS
 		-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
@@ -243,6 +244,28 @@ set(EV_INCLUDE_DIRS "${INSTALL_DIR}/include")
 set(EV_LIBRARIES "${INSTALL_DIR}/lib/libev.a")
 
 
+# ==== nlohmann_json ====
+ExternalProject_Add(
+	NLOHMANN_JSON
+	DOWNLOAD_COMMAND
+		rm -r <SOURCE_DIR> && mkdir -p <SOURCE_DIR> && cd <SOURCE_DIR> &&
+		git init && git remote add origin https://github.com/nlohmann/json.git &&
+		git fetch origin bc889afb4c5bf1c0d8ee29ef35eaaf4c8bef8a5d --depth=1 &&
+		git reset --hard FETCH_HEAD &&
+		cd -
+	CMAKE_ARGS
+		-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+		-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+		-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+		-DCMAKE_BUILD_TYPE=Release
+		-DJSON_BuildTests=OFF
+	UPDATE_COMMAND ""
+	EXCLUDE_FROM_ALL
+)
+ExternalProject_Get_property(NLOHMANN_JSON INSTALL_DIR)
+set(NLOHMANN_JSON_INCLUDE_DIRS "${INSTALL_DIR}/include")
+
+
 # ==== *.proto -> *.pb.cc ====
 find_package(Protobuf REQUIRED)
 
@@ -264,11 +287,10 @@ endforeach()
 # ==== Target KEGE_BASE ====
 add_library(KEGE_BASE INTERFACE)
 
-add_dependencies(KEGE_BASE CPP_PROTOC_INITIALIZERS LIBBACKTRACE EV LEXBOR FMTLOG)
+add_dependencies(KEGE_BASE CPP_PROTOC_INITIALIZERS LIBBACKTRACE EV LEXBOR FMTLOG NLOHMANN_JSON)
 pkg_check_modules(CURL REQUIRED libcurl)
 pkg_check_modules(FCGI REQUIRED fcgi)
 pkg_check_modules(FMT REQUIRED fmt)
-pkg_check_modules(NLOHMANN_JSON REQUIRED nlohmann_json)
 pkg_check_modules(OPENSSL REQUIRED openssl)
 pkg_check_modules(PQ REQUIRED libpq)
 

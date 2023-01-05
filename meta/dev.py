@@ -189,7 +189,7 @@ def main():
           exec_in(builder_hash, "pkill -2 KEGE", check=False)
           api_thr.join(timeout=5)
           while api_thr.is_alive():
-            exec_in(builder_hash, "pkill -9 ninja KEGE", check=False)
+            exec_in(builder_hash, "pkill -9 KEGE", check=False)
             api_thr.join(timeout=2)
           api_thr = None
 

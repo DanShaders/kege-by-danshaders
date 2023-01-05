@@ -52,5 +52,4 @@ RUN mkdir -p /third-party/fmt && \
     ninja -C Build install && \
     cd / && rm -r /third-party/
 
-# FIXME: Should instead fix versions in CMakeLists
-RUN apt-get install -y nlohmann-json3-dev libprotoc-dev
+RUN git config --global init.defaultBranch master

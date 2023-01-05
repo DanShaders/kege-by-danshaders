@@ -1,3 +1,5 @@
+FIXME: Completely outdated
+
 # Установка на Windows (WSL)
 
 Скачать Arch WSL, распаковать в любую папку, запустить Arch.exe

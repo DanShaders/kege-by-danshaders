@@ -1,1 +1,1 @@
-config/postgresql/init-script.sh binary
+meta/postgres/init-script.sh binary

@@ -21,13 +21,13 @@ configure_file(include/KEGE.in.h KEGE.h)
 
 set(
 	SQL_TYPER_PATH
-	${CMAKE_SOURCE_DIR}/../tools/sql-typer/build/sql-typer
+	/usr/local/bin/sql-typer
 	CACHE STRING "Path to sql-typer binary"
 )
 
 set(
 	DB_CONNECT_STR
-	"postgresql://kege:password@localhost:5432/kege"
+	"postgresql://kege@/kege"
 	CACHE STRING "Connection string for database for sql-typer"
 )
 
@@ -103,8 +103,8 @@ foreach(filename IN LISTS KEGE_SQL_SOURCES)
 		COMMAND ${SQL_TYPER_PATH} ${DB_CONNECT_STR} ${CMAKE_SOURCE_DIR}/${filename}
 		DEPENDS
 			${filename}
-			../config/postgresql/db.sql
-			../tools/sql-typer/build/sql-typer
+			../meta/postgres/db.sql
+			/usr/local/bin/sql-typer
 	)
 endforeach()
 
@@ -223,6 +223,26 @@ set(URIPARSER_INCLUDE_DIRS "${INSTALL_DIR}/include")
 set(URIPARSER_LIBRARIES "${INSTALL_DIR}/lib/liburiparser.a")
 
 
+# ==== Target libev ====
+ExternalProject_Add(
+	EV
+	GIT_REPOSITORY "https://github.com/xorangekiller/libev-git"
+	GIT_TAG "c7d6986ec119831cebe0e815f83e7ba2fbdb1ae0"
+	CMAKE_ARGS
+		-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+		-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+		-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+		-DCMAKE_BUILD_TYPE=Release
+	UPDATE_COMMAND ""
+	EXCLUDE_FROM_ALL
+	BUILD_BYPRODUCTS
+		<INSTALL_DIR>/lib/libev.a
+)
+ExternalProject_Get_property(EV INSTALL_DIR)
+set(EV_INCLUDE_DIRS "${INSTALL_DIR}/include")
+set(EV_LIBRARIES "${INSTALL_DIR}/lib/libev.a")
+
+
 # ==== *.proto -> *.pb.cc ====
 find_package(Protobuf REQUIRED)
 
@@ -244,7 +264,7 @@ endforeach()
 # ==== Target KEGE_BASE ====
 add_library(KEGE_BASE INTERFACE)
 
-add_dependencies(KEGE_BASE CPP_PROTOC_INITIALIZERS LIBBACKTRACE LEXBOR FMTLOG)
+add_dependencies(KEGE_BASE CPP_PROTOC_INITIALIZERS LIBBACKTRACE EV LEXBOR FMTLOG)
 pkg_check_modules(CURL REQUIRED libcurl)
 pkg_check_modules(FCGI REQUIRED fcgi)
 pkg_check_modules(FMT REQUIRED fmt)
@@ -261,6 +281,7 @@ target_include_directories(
 
 	${BACKTRACE_INCLUDE_DIRS}
 	${CURL_INCLUDE_DIRS}
+	${EV_INCLUDE_DIRS}
 	${FCGI_INCLUDE_DIRS}
 	${FMT_INCLUDE_DIRS}
 	${FMTLOG_INCLUDE_DIRS}
@@ -283,6 +304,7 @@ target_link_libraries(
 	KEGE_BASE INTERFACE
 	${BACKTRACE_LIBRARIES}
 	${CURL_LIBRARIES}
+	${EV_LIBRARIES}
 	${FCGI_LIBRARIES}
 	${FMT_LIBRARIES}
 	${FMTLOG_LIBRARIES}
@@ -294,7 +316,6 @@ target_link_libraries(
 	${URIPARSER_LIBRARIES}
 	pthread
 	dl
-	ev
 )
 
 target_precompile_headers(

@@ -1,4 +1,5 @@
 api/**/*.sql.cc
+build
 docs/doxygen
 tools/*/bin
 tools/*/build

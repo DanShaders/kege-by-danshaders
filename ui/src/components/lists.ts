@@ -199,7 +199,7 @@ export class SetComponent<
     initializeLocal: (local: Diffable) => void
   ): void {
     // [Dan Klishch, literally 2 months after writing this code]
-    // Genially, no idea why using clone() here, why passing initializeLocal to DiffableSet.add
+    // Genuinely, no idea why using clone() here, why passing initializeLocal to DiffableSet.add
     // Absence of tests and documentation only exacerbates the situation.
     // It works and I'm not intending on fixing/rewriting this shit.
     const local = remote.clone();

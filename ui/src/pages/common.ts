@@ -14,7 +14,7 @@ export function setGlobalUserInfo(userInfo_: typeof userInfo): void {
 
 export function requireAuth(perms: number = 0): void {
   if (!userInfo) {
-    Router.instance.redirect("login?back=" + Router.instance.currentURL);
+    Router.instance.redirect("login?back=" + encodeURIComponent(Router.instance.currentURL));
     throw new Error("Auth required to view page");
   } else {
     if ((userInfo.perms & perms) !== perms) {

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package api;
+
+message Group {
+	int64 id = 1;
+	string name = 2;
+}
+
+message GroupListResponse {
+	repeated Group groups = 1;
+}

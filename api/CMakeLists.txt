@@ -60,6 +60,7 @@ set(
 	routes/_wrap.cc
 	routes/attachment.cc
 	routes/contestant.cc
+	routes/groups.cc
 	routes/jobs.cc
 	routes/kims.cc
 	routes/standings.cc
@@ -71,6 +72,7 @@ set(
 set(
 	KEGE_SQL_SOURCES
 	routes/contestant.sql
+	routes/groups.sql
 	routes/kims.sql
 	routes/standings.sql
 )
@@ -85,6 +87,7 @@ set(
 	../proto/api.proto
 	../proto/contestant.proto
 	../proto/diff.proto
+	../proto/groups.proto
 	../proto/jobs.proto
 	../proto/kims.proto
 	../proto/task-types.proto

@@ -2,6 +2,7 @@ import { showInternalErrorScreen } from "utils/common";
 import { requestU } from "utils/requests";
 
 import { TaskType, TaskTypeListResponse } from "proto/task-types_pb";
+import { GroupListResponse } from "proto/groups_pb";
 
 import "pages/admin/jobs/list";
 import "pages/admin/kims/edit";
@@ -59,16 +60,32 @@ let cachedTaskTypes: Map<number, TaskType.AsObject>;
 
 export async function getTaskTypes(): Promise<Map<number, TaskType.AsObject>> {
   if (!cachedTaskTypes) {
+    cachedTaskTypes = new Map();
     try {
       const result = (await requestU(TaskTypeListResponse, "/api/task-types/list")).toObject();
-      cachedTaskTypes = new Map();
       for (const type of result.typeList) {
         cachedTaskTypes.set(type.id, type);
       }
     } catch (e) {
       showInternalErrorScreen(e);
-      return new Map();
     }
   }
   return cachedTaskTypes;
+}
+
+let cachedGroups: Map<number, string>;
+
+export async function getGroups(): Promise<Map<number, string>> {
+  if (!cachedGroups) {
+    cachedGroups = new Map();
+    try {
+      const result = (await requestU(GroupListResponse, "/api/groups/list")).toObject();
+      for (const group of result.groupsList) {
+        cachedGroups.set(group.id, group.name);
+      }
+    } catch (e) {
+      showInternalErrorScreen(e);
+    }
+  }
+  return cachedGroups;
 }

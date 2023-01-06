@@ -75,4 +75,4 @@ async function showTaskListPage(): Promise<void> {
   toggleLoadingScreen(false);
 }
 
-Router.instance.addRoute("admin/jobs/list", showTaskListPage, "control");
+// Router.instance.addRoute("admin/jobs/list", showTaskListPage, "control");

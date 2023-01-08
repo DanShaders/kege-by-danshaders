@@ -13,14 +13,14 @@
 
 const std::map<Oid, std::string_view> type_mapping = {
     {16, "bool"},
-    {17, "std::string"},
+    {17, "std::string_view"},
     {20, "int64_t"},
     {23, "int"},
-    {25, "std::string"},
+    {25, "std::string_view"},
     {701, "double"},
     {1007, "std::vector<int>"},
     {1016, "std::vector<int64_t>"},
-    {1042, "std::string"},
+    {1042, "std::string_view"},
     {1114, "async::pq::timestamp"},
 };
 

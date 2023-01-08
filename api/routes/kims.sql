@@ -44,7 +44,7 @@ WHERE
 
 -- Insert or update KIM
 INSERT INTO kims (id, name)
-    VALUES (`kim.id()`, `kim.name()`)
+    VALUES (`kim.id()`, `std::string_view(kim.name())`)
 ON CONFLICT (id)
     DO UPDATE SET
         name = (

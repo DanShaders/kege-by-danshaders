@@ -110,7 +110,7 @@ coro<std::vector<kim_t>> get_available_kims(async::pq::connection& db, int64_t u
              virtual_start_time, virtual_end_time] : co_await db.exec(AVAILABLE_KIMS_REQUEST)) {
     kim_t kim{
         .id = id,
-        .name = name,
+        .name = std::string(name),
         .token_version = token_version,
         .start_time = start_time,
         .end_time = end_time,

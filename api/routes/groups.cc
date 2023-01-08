@@ -19,7 +19,7 @@ coro<void> get_group_list(fcgx::request_t* r) {
   for (auto [id, name] : co_await db.exec(GET_GROUPS_LIST_REQUEST)) {
     *response.add_groups() = api::Group::initializable_type{
         .id = id,
-        .name = name,
+        .name = std::string(name),
     };
   }
 

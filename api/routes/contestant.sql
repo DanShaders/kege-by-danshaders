@@ -88,7 +88,7 @@ WHERE
 
 -- Write answer
 INSERT INTO users_answers
-    VALUES (`token.data.kim_id`, `req.task_id()`, `session->user_id`, `req.answer()`, `score`, `current_millis`);
+    VALUES (`token.data.kim_id`, `req.task_id()`, `session->user_id`, `std::string_view(req.answer())`, `score`, `current_millis`);
 
 -- End participation
 INSERT INTO users_kims

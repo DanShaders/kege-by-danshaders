@@ -42,6 +42,19 @@ SET
 WHERE
     id = `utils::expect<int64_t>(r, "id")`;
 
+-- Insert or update KIM
+INSERT INTO kims (id, name)
+    VALUES (`kim.id()`, `kim.name()`)
+ON CONFLICT (id)
+    DO UPDATE SET
+        name = (
+            CASE WHEN `kim.has_name()` THEN
+                excluded
+            ELSE
+                kims
+            END).name
+    RETURNING (xmax = 0);
+
 -- Lock mentioned tasks
 SELECT
     task_id,
@@ -82,4 +95,45 @@ INSERT INTO kims_tasks
 ON CONFLICT (kim_id, task_id)
     DO UPDATE SET
         pos = excluded.pos;
+
+-- Delete group assignment
+DELETE FROM groups_kims
+WHERE kim_id = `kim.id()`
+    AND group_id = `entry.id()`;
+
+-- Insert or modify group assignments
+INSERT INTO groups_kims (group_id, kim_id, start_time, end_time, duration, virtual, exam)
+    VALUES (`entry.id()`, `kim.id()`, `start_time`, `end_time`, `entry.duration()`, `entry.is_virtual()`, `entry.is_exam()`)
+ON CONFLICT (group_id, kim_id)
+    DO UPDATE SET
+        start_time = (
+            CASE WHEN `entry.has_start_time()` THEN
+                excluded
+            ELSE
+                groups_kims
+            END).start_time, end_time = (
+            CASE WHEN `entry.has_end_time()` THEN
+                excluded
+            ELSE
+                groups_kims
+            END).end_time, duration = (
+            CASE WHEN `entry.has_duration()` THEN
+                excluded
+            ELSE
+                groups_kims
+            END).duration, virtual = (
+            CASE WHEN `entry.has_is_virtual()` THEN
+                excluded
+            ELSE
+                groups_kims
+            END).virtual, exam = (
+            CASE WHEN `entry.has_is_exam()` THEN
+                excluded
+            ELSE
+                groups_kims
+            END).exam
+    RETURNING ((virtual
+            AND EXTRACT(EPOCH FROM end_time - start_time) * 1000 >= duration)
+        OR (NOT virtual
+            AND EXTRACT(EPOCH FROM end_time - start_time) * 1000 = duration));
 

@@ -32,7 +32,9 @@ SELECT
 FROM
     kims
 WHERE
-    NOT coalesce(deleted, FALSE);
+    NOT coalesce(deleted, FALSE)
+ORDER BY
+    id;
 
 -- Bump KIM version
 UPDATE

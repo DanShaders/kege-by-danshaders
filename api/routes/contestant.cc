@@ -265,7 +265,9 @@ coro<void> handle_answer(fcgx::request_t* r) {
     utils::err(r, api::ACCESS_DENIED);
   }
 
-  auto [answer, grading, scale_factor] = (co_await db.exec(GET_REAL_ANSWER_REQUEST)).expect1();
+  // FIXME: This is cringe
+  auto q = co_await db.exec(GET_REAL_ANSWER_REQUEST);
+  auto [answer, grading, scale_factor] = q.expect1();
   double score = scale_factor * routes::check_and_grade(req.answer(), answer, grading);
 
   co_await db.exec(WRITE_ANSWER_REQUEST);

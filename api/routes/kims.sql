@@ -154,8 +154,7 @@ WHERE
 
 -- Collect user answers
 SELECT
-    user_id,
-    submit_time,
+    id,
     answer
 FROM
     users_answers
@@ -169,10 +168,7 @@ UPDATE
 SET
     score = new_score
 FROM
-    unnest(`user_ids`::bigint[], `submit_times`::bigint[], `scores`::double precision[]) AS _ (map_user_id,
-        map_submit_time,
-        new_score)
+    unnest(`ids`::bigint[], `scores`::double precision[]) AS _ (map_id, new_score)
 WHERE
-    submit_time = map_submit_time
-    AND user_id = map_user_id;
+    id = map_id;
 

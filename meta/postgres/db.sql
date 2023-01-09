@@ -1,4 +1,5 @@
 CREATE SEQUENCE builtin_id_sequence MAXVALUE 499999;
+CREATE SEQUENCE answer_tag_sequence;
 
 CREATE TABLE api_id_sequence (
 	value bigint
@@ -108,6 +109,7 @@ CREATE TABLE users_kims (
 );
 
 CREATE TABLE users_answers (
+	id bigint DEFAULT nextval('answer_tag_sequence') NOT NULL PRIMARY KEY,
 	kim_id bigint,
 	task_id bigint,
 	user_id bigint,
@@ -116,8 +118,7 @@ CREATE TABLE users_answers (
 	submit_time bigint,
 
 	FOREIGN KEY (kim_id, task_id) REFERENCES kims_tasks(kim_id, task_id) ON DELETE CASCADE,
-	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-	UNIQUE (user_id, answer_time) -- Rejudging depends on this
+	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE jobs (

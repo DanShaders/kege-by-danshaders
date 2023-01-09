@@ -213,15 +213,14 @@ coro<void> rejudge_submissions(fcgx::request_t* r) {
 
   for (auto [task_id, task_type, jury_answer, grading, scale_factor] :
        co_await db.exec(COLLECT_TASKS_FROM_KIM_REQUEST)) {
-    std::vector<int64_t> user_ids, submit_times;
+    std::vector<int64_t> ids;
     std::vector<double> scores;
 
-    for (auto [user_id, submit_time, user_answer] :
+    for (auto [id, user_answer] :
          co_await db.exec(COLLECT_USER_ANSWERS_REQUEST)) {
       double score = scale_factor * routes::check_and_grade(user_answer, jury_answer, grading);
 
-      user_ids.push_back(user_id);
-      submit_times.push_back(submit_time);
+      ids.push_back(id);
       scores.push_back(score);
     }
 

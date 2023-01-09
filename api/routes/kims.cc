@@ -5,6 +5,7 @@
 #include "kims.pb.h"
 #include "kims.sql.cc"
 #include "routes.h"
+#include "routes/grading.h"
 #include "routes/session.h"
 #include "utils/api.h"
 #include "utils/common.h"
@@ -203,9 +204,36 @@ coro<void> revoke_access_keys(fcgx::request_t* r) {
   co_await db.exec(BUMP_KIM_VERSION_REQUEST);
   utils::ok(r, utils::empty_payload{});
 }
+
+coro<void> rejudge_submissions(fcgx::request_t* r) {
+  auto db = co_await async::pq::connection_pool::local->get_connection();
+  co_await require_auth(r, routes::Permission::ADMIN);
+
+  int64_t kim_id = utils::expect<int64_t>(r, "id");
+
+  for (auto [task_id, task_type, jury_answer, grading, scale_factor] :
+       co_await db.exec(COLLECT_TASKS_FROM_KIM_REQUEST)) {
+    std::vector<int64_t> user_ids, submit_times;
+    std::vector<double> scores;
+
+    for (auto [user_id, submit_time, user_answer] :
+         co_await db.exec(COLLECT_USER_ANSWERS_REQUEST)) {
+      double score = scale_factor * routes::check_and_grade(user_answer, jury_answer, grading);
+
+      user_ids.push_back(user_id);
+      submit_times.push_back(submit_time);
+      scores.push_back(score);
+    }
+
+    co_await db.exec(WRITE_REJUDGED_SCORES_REQUEST);
+  }
+
+  utils::ok(r, utils::empty_payload{});
+}
 }  // namespace
 
 ROUTE_REGISTER("/kim/$id", handle_kim_get_editable)
 ROUTE_REGISTER("/kim/update", handle_kim_update)
 ROUTE_REGISTER("/kim/list", handle_kim_list)
 ROUTE_REGISTER("/kim/$id/revoke-access-keys", revoke_access_keys)
+ROUTE_REGISTER("/kim/$id/rejudge-submissions", rejudge_submissions)

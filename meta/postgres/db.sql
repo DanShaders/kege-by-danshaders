@@ -116,7 +116,8 @@ CREATE TABLE users_answers (
 	submit_time bigint,
 
 	FOREIGN KEY (kim_id, task_id) REFERENCES kims_tasks(kim_id, task_id) ON DELETE CASCADE,
-	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+	UNIQUE (user_id, answer_time) -- Rejudging depends on this
 );
 
 CREATE TABLE jobs (

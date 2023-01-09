@@ -547,8 +547,21 @@ class KimEditComponent extends Component<
               Revoke access keys
             </button>
 
-            <button class="btn btn-outline-secondary" disabled>
-              Clear task cache
+            <button
+              class="btn btn-outline-secondary"
+              onclick={async (event: Event): Promise<void> => {
+                try {
+                  toggleLoadingScreen(true);
+                  await requestU(EmptyPayload, `/api/kim/${this.settings.id}/rejudge-submissions`);
+                } catch (e) {
+                  showInternalErrorScreen(e);
+                } finally {
+                  toggleLoadingScreen(false);
+                }
+                (event.target as HTMLButtonElement).blur();
+              }}
+            >
+              Rejudge submissions
             </button>
           </div>
         </div>

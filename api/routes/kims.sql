@@ -137,3 +137,40 @@ ON CONFLICT (group_id, kim_id)
         OR (NOT virtual
             AND EXTRACT(EPOCH FROM end_time - start_time) * 1000 = duration));
 
+-- Collect tasks from KIM
+SELECT
+    task_id,
+    task_type,
+    answer,
+    grading,
+    scale_factor
+FROM (kims_tasks
+    JOIN tasks ON task_id = tasks.id
+    JOIN task_types ON task_type = task_types.id)
+WHERE
+    kim_id = `kim_id`;
+
+-- Collect user answers
+SELECT
+    user_id,
+    submit_time,
+    answer
+FROM
+    users_answers
+WHERE
+    task_id = `task_id`
+    AND kim_id = `kim_id`;
+
+-- Write rejudged scores
+UPDATE
+    users_answers
+SET
+    score = new_score
+FROM
+    unnest(`user_ids`::bigint[], `submit_times`::bigint[], `scores`::double precision[]) AS _ (map_user_id,
+        map_submit_time,
+        new_score)
+WHERE
+    submit_time = map_submit_time
+    AND user_id = map_user_id;
+

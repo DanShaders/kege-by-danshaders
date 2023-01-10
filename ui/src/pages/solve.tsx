@@ -269,7 +269,7 @@ class KimSolvePage extends Page {
   override async mount(): Promise<void> {
     requireAuth();
 
-    this.unloadable = !!userInfo.perms;
+    this.unloadable = !!userInfo!.perms;
 
     const taskTypes = await getTaskTypes();
     this.kim = await requestU(ContestantKim, "/api/contestant/tasks?id=" + this.params.get("id")!);

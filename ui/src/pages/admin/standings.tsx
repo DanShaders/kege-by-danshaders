@@ -1,18 +1,16 @@
+import { getGroups } from "admin";
+
 import * as jsx from "jsx";
 
 import { assert } from "utils/assert";
-
-import { toggleLoadingScreen, showInternalErrorScreen } from "utils/common";
+import { showInternalErrorScreen, toggleLoadingScreen } from "utils/common";
 import { requestU } from "utils/requests";
-import { Router, Page } from "utils/router";
+import { Page, Router } from "utils/router";
 
-import { Jobs } from "proto/jobs_pb";
 import { KimListResponse } from "proto/kims_pb";
-import { getGroups } from "admin";
-import { StandingsRequest, StandingsResponse, SubmissionSummaryRequest, SubmissionSummaryResponse } from "proto/standings_pb";
+import { StandingsRequest, StandingsResponse } from "proto/standings_pb";
 
 import { ButtonIcon } from "components/button-icon";
-import { factoryOf, ListComponent, ListEntry, listProviderOf } from "components/lists";
 
 import { requireAuth } from "pages/common";
 
@@ -26,7 +24,7 @@ class StandingsPage extends Page {
   override async mount(): Promise<void> {
     requireAuth(1);
 
-    const addCell = (gridRow: number, centerLeft = false, isHeader = false) => {
+    const addCell = (gridRow: number, centerLeft = false, isHeader = false): HTMLDivElement => {
       const elem = document.createElement("div");
       if (centerLeft) {
         elem.classList.add("text-start");
@@ -42,7 +40,7 @@ class StandingsPage extends Page {
     let syncTag = 0;
     let lastUserUpdateTime = 0;
 
-    const updateTime = () => {
+    const updateTime = (): void => {
       if (standingsUpdateLock) {
         return;
       }
@@ -60,15 +58,18 @@ class StandingsPage extends Page {
     };
 
     let problemIds: number[] = [];
-    let problems: Map<number, [string, number]> = new Map;
-    let participants: Map<number, {
-      position: number,
-      name: string,
-      elements: HTMLDivElement[],
-      total: number,
-      scores: (number | undefined)[],
-      hasSubmissions: boolean
-    }> = new Map;
+    let problems: Map<number, [string, number]> = new Map();
+    let participants: Map<
+      number,
+      {
+        position: number;
+        name: string;
+        elements: HTMLDivElement[];
+        total: number;
+        scores: (number | undefined)[];
+        hasSubmissions: boolean;
+      }
+    > = new Map();
     const reallyUpdateStandings = async (fromChange: boolean = true): Promise<void> => {
       if (fromChange) {
         syncTag = 0;
@@ -81,11 +82,16 @@ class StandingsPage extends Page {
         tableWrap.removeAttribute("hidden");
 
         try {
-          const request = new StandingsRequest().setGroupId(parseInt(groupSelect.value)).setKimId(parseInt(kimSelect.value)).setSyncTag(syncTag);
+          const request = new StandingsRequest()
+            .setGroupId(parseInt(groupSelect.value))
+            .setKimId(parseInt(kimSelect.value))
+            .setSyncTag(syncTag);
 
           const savedSyncTag = syncTag;
           syncTag = 1;
-          const response = (await requestU(StandingsResponse, "/api/admin/standings", request)).toObject();
+          const response = (
+            await requestU(StandingsResponse, "/api/admin/standings", request)
+          ).toObject();
           if (!syncTag) {
             assert(requestedWhileBlocking);
             return;
@@ -103,22 +109,29 @@ class StandingsPage extends Page {
             addCell(1, false, true).innerHTML = "&Sigma;";
 
             problemIds = [];
-            problems = new Map;
-            for (const [pos, {id, name}] of response.tasksList.entries()) {
+            problems = new Map();
+            for (const [pos, { id, name }] of response.tasksList.entries()) {
               problemIds.push(id);
               problems.set(id, [name, pos]);
               addCell(1, false, true).innerText = name;
             }
 
-            participants = new Map;
-            for (const {id, name} of response.usersList) {
+            participants = new Map();
+            for (const { id, name } of response.usersList) {
               const scores: undefined[] = [];
               scores.length = problemIds.length;
-              participants.set(id, {position: -1, name: name, elements: [], total: 0, hasSubmissions: false, scores: scores});
+              participants.set(id, {
+                position: -1,
+                name: name,
+                elements: [],
+                total: 0,
+                hasSubmissions: false,
+                scores: scores,
+              });
             }
           }
 
-          for (const {score, taskId, userId} of response.submissionsList) {
+          for (const { score, taskId, userId } of response.submissionsList) {
             const problemPos = problems.get(taskId)![1];
             const participant = participants.get(userId)!;
             const scoresArray = participant.scores;
@@ -137,32 +150,32 @@ class StandingsPage extends Page {
           }
           positions.sort((a, b) => b[0] - a[0]);
 
-          for (const [new_position, [total, id, old_position]] of positions.entries()) {
+          for (const [newPosition, [total, id, oldPosition]] of positions.entries()) {
             const participant = participants.get(id)!;
             const elems = participant.elements;
 
-            if (new_position !== old_position) {
+            if (newPosition !== oldPosition) {
               if (elems.length) {
                 for (const elem of elems) {
-                  elem.style.gridRow = (new_position + 2).toString();
+                  elem.style.gridRow = (newPosition + 2).toString();
                 }
               } else {
-                elems.push(addCell(new_position + 2));
-                elems.push(addCell(new_position + 2, true));
-                elems.push(addCell(new_position + 2));
-                for (const [i, problem] of problemIds.entries()) {
-                  elems.push(addCell(new_position + 2));
+                elems.push(addCell(newPosition + 2));
+                elems.push(addCell(newPosition + 2, true));
+                elems.push(addCell(newPosition + 2));
+                for (const _ of problemIds) {
+                  elems.push(addCell(newPosition + 2));
                 }
                 elems[1].innerText = participant.name;
               }
 
-              elems[0].innerText = (new_position + 1).toString();
-              participant.position = new_position;
+              elems[0].innerText = (newPosition + 1).toString();
+              participant.position = newPosition;
             }
             elems[2].innerText = total.toString();
           }
 
-          for (const {score, taskId, userId} of response.submissionsList) {
+          for (const { score, taskId, userId } of response.submissionsList) {
             const problemPos = problems.get(taskId)![1];
             const participant = participants.get(userId)!;
             participant.elements[problemPos + 3].innerText = score.toString();
@@ -204,12 +217,12 @@ class StandingsPage extends Page {
 
         <div class="row">
           <div class="col-md-5">
-            <select ref class="form-select col-md-5" onchange={() => updateStandings(true)}>
+            <select ref class="form-select col-md-5" onchange={() => void updateStandings(true)}>
               <option value=""></option>
             </select>
           </div>
           <div class="col-md-5">
-            <select ref class="form-select col-md-5" onchange={() => updateStandings(true)}>
+            <select ref class="form-select col-md-5" onchange={() => void updateStandings(true)}>
               <option value=""></option>
             </select>
           </div>
@@ -218,16 +231,21 @@ class StandingsPage extends Page {
               settings={{
                 title: "Обновить",
                 icon: "icon-refresh",
-                onClick: () => {
+                onClick: (): void => {
                   syncTag = 0;
                   updateStandings(true);
-                }
+                },
               }}
             />
           </div>
         </div>
         <div class="row">
-          <small>Обновлено: <span ref></span> <span style="color: rgba(173, 181, 189, 0.75);">(автоматические обновления не поддерживают перепроверку или изменение списка задач)</span></small>
+          <small>
+            Обновлено: <span ref></span>{" "}
+            <span style="color: rgba(173, 181, 189, 0.75);">
+              (автоматические обновления не поддерживают перепроверку или изменение списка задач)
+            </span>
+          </small>
         </div>
 
         <div ref class="row mt-3">
@@ -238,7 +256,13 @@ class StandingsPage extends Page {
           </div>
         </div>
       </>
-    ).replaceContentsOf("main") as [HTMLSelectElement, HTMLSelectElement, HTMLSpanElement, HTMLDivElement, HTMLDivElement];
+    ).replaceContentsOf("main") as [
+      HTMLSelectElement,
+      HTMLSelectElement,
+      HTMLSpanElement,
+      HTMLDivElement,
+      HTMLDivElement
+    ];
 
     const kimPromise = requestU(KimListResponse, "/api/kim/list");
     const groupsPromise = getGroups();

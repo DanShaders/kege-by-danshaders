@@ -1,15 +1,16 @@
-import { getTaskTypes, getGroups } from "admin";
+import { getGroups, getTaskTypes } from "admin";
+import { Modal } from "bootstrap";
 
 import * as jsx from "jsx";
 
 import {
   dbId,
   getPrintableParts,
-  toggleLoadingScreen,
   showInternalErrorScreen,
+  toggleLoadingScreen,
 } from "utils/common";
 import { PositionUpdateEvent } from "utils/events";
-import { requestU, EmptyPayload } from "utils/requests";
+import { EmptyPayload, requestU } from "utils/requests";
 import { Router } from "utils/router";
 import { SyncController, SynchronizablePage } from "utils/sync-controller";
 
@@ -27,8 +28,6 @@ import {
   SetComponent,
   SetEntry,
 } from "components/lists";
-
-import { Modal } from "bootstrap";
 
 import { requireAuth } from "pages/common";
 
@@ -129,8 +128,8 @@ class GroupSettingsUI extends Component<{ syncController: SyncController<any> }>
     ): void => {
       const MILLIS_IN_MIN = 60 * 1000;
 
-      let startDate = new Date(startTimeInput.value);
-      let endDate = new Date(endTimeInput.value);
+      const startDate = new Date(startTimeInput.value);
+      const endDate = new Date(endTimeInput.value);
 
       if (
         startDate.getFullYear() < 2022 ||
@@ -269,7 +268,7 @@ class GroupSettingsUI extends Component<{ syncController: SyncController<any> }>
             <div class="modal-footer">
               <button
                 class="btn btn-primary"
-                onclick={() => {
+                onclick={(): void => {
                   updateTimeRelatedSettings("save");
                   this.modal!.hide();
                 }}
@@ -282,14 +281,8 @@ class GroupSettingsUI extends Component<{ syncController: SyncController<any> }>
       </div>
     ).asElement(this.refs) as HTMLDivElement;
 
-    const [
-      heading,
-      startTimeInput,
-      endTimeInput,
-      durationInput,
-      isVirtualCheckbox,
-      isExamCheckbox,
-    ] = this.refs as HTMLInputElement[];
+    const [_, startTimeInput, endTimeInput, durationInput, isVirtualCheckbox, isExamCheckbox] = this
+      .refs as HTMLInputElement[];
 
     this.modal = new Modal(elem);
     elem.addEventListener("bs.modal.hidden", () => {
@@ -343,7 +336,7 @@ class GroupEntry extends SetEntry<diff.Kim.DiffableGroupEntry, GroupEntrySetting
                 settings={{
                   title: "Редактировать",
                   icon: "icon-sliders",
-                  onClick: () => {
+                  onClick: (): void => {
                     this.settings.settingsUI.updateSettingsOf(this);
                   },
                 }}
@@ -352,7 +345,7 @@ class GroupEntry extends SetEntry<diff.Kim.DiffableGroupEntry, GroupEntrySetting
                 settings={{
                   title: "Удалить",
                   icon: "icon-remove",
-                  onClick: () => {
+                  onClick: (): void => {
                     this.settings.deleted = true;
                     this.parent.pop(this.i);
                   },
@@ -501,10 +494,11 @@ class KimEditComponent extends Component<
                             settings={{
                               title: "Добавить",
                               icon: "add",
-                              onClick: () => {
+                              onClick: (): void => {
                                 groupSelect.innerHTML = "";
 
-                                // FIXME: This is dumb, we are definitely maintaining this set somewhere.
+                                // FIXME: This is dumb, we are definitely maintaining this set
+                                //        somewhere.
                                 const currentIds = new Set<number>();
                                 for (const [_, groupElem] of groupSet.entries()) {
                                   currentIds.add(groupElem.settings.id);
@@ -585,7 +579,7 @@ class KimEditComponent extends Component<
               <div class="modal-footer">
                 <button
                   class="btn btn-primary"
-                  onclick={() => {
+                  onclick={(): void => {
                     groupAddModal.hide();
 
                     const groupId = parseInt(groupSelect.value);

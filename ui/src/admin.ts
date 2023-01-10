@@ -1,8 +1,8 @@
 import { showInternalErrorScreen } from "utils/common";
 import { requestU } from "utils/requests";
 
-import { TaskType, TaskTypeListResponse } from "proto/task-types_pb";
 import { GroupListResponse } from "proto/groups_pb";
+import { TaskType, TaskTypeListResponse } from "proto/task-types_pb";
 
 import "pages/admin/jobs/list";
 import "pages/admin/kims/edit";

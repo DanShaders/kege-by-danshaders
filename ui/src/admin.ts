@@ -9,6 +9,7 @@ import "pages/admin/kims/edit";
 import "pages/admin/kims/list";
 import "pages/admin/tasks/edit";
 import "pages/admin/tasks/list";
+import "pages/admin/standings";
 
 export const headerSettings = {
   highlightedId: "",

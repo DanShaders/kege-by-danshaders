@@ -15,5 +15,6 @@
 @import "./components/text-editor";
 
 @import "./pages/admin/tasks/list";
+@import "./pages/admin/standings";
 @import "./pages/login";
 @import "./pages/solve";

@@ -1,0 +1,16 @@
+.standings-table {
+	display: grid;
+	grid-template-columns: 40px max-content;
+	text-align: center;
+}
+
+.standings-table > div {
+	min-width: 40px;
+	padding: 0.5rem;
+	border-top: 1px solid var(--bs-border-color);
+}
+
+.standings-table > .header {
+	border-top: none;
+	font-weight: 600;
+}

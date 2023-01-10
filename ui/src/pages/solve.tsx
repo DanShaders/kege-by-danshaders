@@ -1,4 +1,4 @@
-import { requireAuth } from "./common";
+import { requireAuth, userInfo } from "./common";
 import { getTaskTypes } from "admin";
 import katex from "katex";
 
@@ -205,7 +205,7 @@ class KimSolvePage extends Page {
   hasAnswers: boolean[] = [];
   answerCount = 0;
 
-  unloadable = false;
+  unloadable = true;
   intervalId?: number;
 
   private writeToken?: Uint8Array;
@@ -268,6 +268,8 @@ class KimSolvePage extends Page {
 
   override async mount(): Promise<void> {
     requireAuth();
+
+    this.unloadable = !!userInfo.perms;
 
     const taskTypes = await getTaskTypes();
     this.kim = await requestU(ContestantKim, "/api/contestant/tasks?id=" + this.params.get("id")!);

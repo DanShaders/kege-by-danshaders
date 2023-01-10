@@ -216,8 +216,7 @@ coro<void> rejudge_submissions(fcgx::request_t* r) {
     std::vector<int64_t> ids;
     std::vector<double> scores;
 
-    for (auto [id, user_answer] :
-         co_await db.exec(COLLECT_USER_ANSWERS_REQUEST)) {
+    for (auto [id, user_answer] : co_await db.exec(COLLECT_USER_ANSWERS_REQUEST)) {
       double score = scale_factor * routes::check_and_grade(user_answer, jury_answer, grading);
 
       ids.push_back(id);

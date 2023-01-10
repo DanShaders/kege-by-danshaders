@@ -168,7 +168,8 @@ UPDATE
 SET
     score = new_score
 FROM
-    unnest(`ids`::bigint[], `scores`::double precision[]) AS _ (map_id, new_score)
+    unnest(`ids`::bigint[], `scores`::double precision[]) AS _ (map_id,
+        new_score)
 WHERE
     id = map_id;
 

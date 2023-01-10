@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package api;
+
+// Route /standings
+message StandingsRequest {
+	int64 sync_tag = 1;
+	int64 kim_id = 2;
+	int64 group_id = 3;
+}
+
+message StandingsResponse {
+	message Task {
+		int64 id = 1;
+		string name = 2;
+	}
+
+	message User {
+		int64 id = 1;
+		string name = 2;
+	}
+
+	message Submission {
+		int64 user_id = 1;
+		int64 task_id = 2;
+		double score = 3;
+		int64 timestamp = 4;
+	}
+
+	repeated Task tasks = 1;
+	repeated User users = 2;
+	repeated Submission submissions = 3;
+	int64 sync_tag = 4;
+}
+
+// Route /standings/user-summary
+message UserSummaryRequest {
+	int64 kim_id = 1;
+	int64 user_id = 2;
+}
+
+message UserSummaryResponse {
+	int64 start_time = 1;
+	int64 end_time = 2;
+}
+
+// Route /standings/task-summary
+message SubmissionSummaryRequest {
+	int64 kim_id = 1;
+	int64 task_id = 2;
+	int64 user_id = 3;
+}
+
+message SubmissionSummaryResponse {
+	message Submission {
+		double score = 1;
+		int64 timestamp = 2;
+		bytes answer = 3;
+	}
+
+	repeated Submission submissions = 1;
+}

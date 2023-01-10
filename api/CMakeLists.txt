@@ -90,6 +90,7 @@ set(
 	../proto/groups.proto
 	../proto/jobs.proto
 	../proto/kims.proto
+	../proto/standings.proto
 	../proto/task-types.proto
 	../proto/tasks.proto
 	../proto/user.proto

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package api;
+
+message User {
+	int64 id = 1;
+	optional string username = 2;
+	optional string password = 3;
+	optional string display_name = 4;
+	optional uint32 permissions = 5;
+	repeated int64 groups = 6;
+}
+
+message UserList {
+	repeated User users = 1;
+}
+
+message UserReplaceRequest {
+	repeated string groups = 1;
+	repeated User users = 2;
+}

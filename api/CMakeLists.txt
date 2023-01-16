@@ -67,6 +67,7 @@ set(
 	routes/task-types.cc
 	routes/tasks.cc
 	routes/user.cc
+	routes/users.cc
 )
 
 set(
@@ -75,6 +76,7 @@ set(
 	routes/groups.sql
 	routes/kims.sql
 	routes/standings.sql
+	routes/users.sql
 )
 
 list(APPEND KEGE_SOURCES
@@ -94,6 +96,7 @@ set(
 	../proto/task-types.proto
 	../proto/tasks.proto
 	../proto/user.proto
+	../proto/users.proto
 )
 
 

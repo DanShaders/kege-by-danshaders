@@ -19,6 +19,7 @@ const std::map<Oid, std::string_view> type_mapping = {
     {25, "std::string_view"},
     {701, "double"},
     {1007, "std::vector<int>"},
+    {1009, "std::vector<std::string_view>"},
     {1016, "std::vector<int64_t>"},
     {1022, "std::vector<double>"},
     {1042, "std::string_view"},

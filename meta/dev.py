@@ -4,6 +4,7 @@ from collections import namedtuple
 import logging as l
 from joblib import Parallel, delayed
 import pathlib
+import shutil
 import re
 import subprocess
 import threading
@@ -24,8 +25,7 @@ BUILDER = Container(
     "-v", f"{ROOT}/build/var/run/postgresql:/var/run/postgresql",
     "-v", f"{ROOT}/build/var/run/kege:/var/run/kege",
     "-v", f"{ROOT}/build/bin:/usr/local/bin",
-    "-v", f"{ROOT}/build/var/lib/kege/files:/var/lib/kege/files",
-    "-v", f"{ROOT}/meta/config.json:/var/lib/kege/config.json",
+    "-v", f"{ROOT}/build/var/lib/kege:/var/lib/kege",
   ],
   command=["sh", "-c", "trap : TERM INT; tail -f /dev/null & wait"],
   bootstrap=[
@@ -58,7 +58,7 @@ NGINX = Container(
   image="nginx:1.23-alpine",
   name="managed-kege-nginx",
   options=[
-    "-v", f"{ROOT}/meta/nginx:/etc/nginx/conf.d",
+    "-v", f"{ROOT}/build/etc/nginx/conf.d:/etc/nginx/conf.d",
     "-v", f"{ROOT}/build/var/www/html:/var/www/html/build",
     "-v", f"{ROOT}/build/var/run/kege:/var/run/kege",
     "-v", f"{ROOT}/ui/static:/var/www/html/static",
@@ -152,6 +152,13 @@ def stop_container(container):
   subprocess.run(["docker", "stop", container], capture_output=True, check=True)
 
 
+def copy_if_required(src, dst):
+  dst = ROOT / "build" / dst
+  if not dst.exists():
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy(ROOT / src, dst)
+
+
 def main():
   l.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level="INFO")
 
@@ -164,10 +171,12 @@ def main():
       [nginx_hash, db_hash, builder_hash] = Parallel(n_jobs=3, prefer="threads") \
         (delayed(find_or_create_container)(container) for container in [NGINX, DB, BUILDER])
 
-      if not (ROOT / "build" / "bin" / "sql-typer").exists():
+      if not (ROOT / "build/bin/sql-typer").exists():
         exec_in(builder_hash, "ninja -C /kege/build/sql-typer install")
-      if not (ROOT / "build" / "bin" / "diff-proto").exists():
+      if not (ROOT / "build/bin/diff-proto").exists():
         exec_in(builder_hash, "ninja -C /kege/build/diff-proto install")
+      copy_if_required("meta/config.json", "var/lib/kege/config.json")
+      copy_if_required("meta/nginx-devel.conf", "etc/nginx/conf.d/nginx.conf")
 
       db_thr = exec_detached(db_hash, ["sh", "-c", "docker-entrypoint.sh postgres"])
       api_thr = None
@@ -199,14 +208,13 @@ def main():
           exec_in(builder_hash, "pkill -2 node", check=False)
           esbuild_thr.join()
 
-
       while True:
-        command = input().split()
-
-        if len(command) and command[0] in {"api", "a", "full-clean"} and len(command) == 1:
-          command.append("debug")
-
         try:
+          command = input().split()
+
+          if len(command) and command[0] in {"api", "a", "full-clean"} and len(command) == 1:
+            command.append("debug")
+
           match command:
             case ["quit" | "q"]:
               break
@@ -229,6 +237,48 @@ def main():
             case "api-clean" | "ac", build_type:
               kill_api()
               exec_in(builder_hash, f"rm -r /kege/build/{build_type}/* && cmake -G Ninja -DCMAKE_BUILD_TYPE={build_type[0].upper() + build_type[1:]} -DCMAKE_CXX_COMPILER=g++-12 -DCMAKE_C_COMPILER=gcc-12 -S /kege/src/api -B /kege/build/{build_type}")
+
+            case "api-build-image", build_type:
+              kill_api()
+              exec_in(builder_hash, f"ninja -C /kege/build/{build_type}")
+
+              build_root = ROOT / "build/api-root"
+              subprocess.run(["sh", "-c", f"rm -r {build_root}; mkdir -p {build_root}"], check=False)
+
+              files_to_copy = [
+                (f"/kege/build/{build_type}/KEGE", "KEGE"),
+                (f"/lib64/ld-linux-x86-64.so.2", "lib64/ld-linux-x86-64.so.2")
+              ]
+
+              process = subprocess.run(["docker", "exec", builder_hash, "ldd", f"/kege/build/{build_type}/KEGE"], check=True, capture_output=True)
+              for line in process.stdout.split(b"\n"):
+                if match := re.fullmatch(rb"\t([a-zA-Z0-9+_\-.]+) => ([a-zA-Z0-9+_\-.\/]+) \(0x[0-9a-f]+\)", line):
+                  path = match[2].decode()
+                  files_to_copy.append((path, path[1:] if path[0] == "/" else path))
+                elif line and not (line.startswith(b"\tlinux-vdso.so.1 ") or line.startswith(b"\t/lib64/ld-linux-x86-64.so.2")):
+                  raise Exception(f"Unable to parse ldd output: {line}")
+
+              for src, dst in files_to_copy:
+                dst = (build_root / dst).resolve()
+                assert dst.is_relative_to(build_root)
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                subprocess.run(["docker", "cp", "--follow-link", f"{builder_hash}:{src}", dst], check=True)
+              subprocess.run(["cp", f"{ROOT}/meta/api.dockerfile", f"{build_root}/Dockerfile"])
+
+              subprocess.run(["docker", "build", "-t", f"{DOCKER_REGISTRY}kege-by-danshaders/api", build_root], check=True)
+
+            case ["nginx-build-image"]:
+              kill_esbuild()
+              exec_in(builder_hash, "cd /kege/src/ui && rm -r /kege/src/ui/build/*; npm run gen-proto && npm run build-prod")
+
+              build_root = ROOT / "build/nginx-root"
+              subprocess.run(["sh", "-c", f"rm -r {build_root}; mkdir -p {build_root}"], check=False)
+
+              shutil.copytree(ROOT / "build/var/www/html", build_root / "html")
+              shutil.copytree(ROOT / "ui/static", build_root / "html", dirs_exist_ok=True)
+              shutil.copy(ROOT / "meta/nginx.dockerfile", build_root / "Dockerfile")
+
+              subprocess.run(["docker", "build", "-t", f"{DOCKER_REGISTRY}kege-by-danshaders/nginx", build_root], check=True)
 
             case ["ui-node-install" | "ui"]:
               kill_esbuild()

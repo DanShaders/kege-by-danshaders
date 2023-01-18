@@ -1,0 +1,37 @@
+version: '3.4'
+
+services:
+  nginx:
+    image: docker-registry.dshpr.com/kege-by-danshaders/nginx
+    ports:
+      - "81:80"
+    volumes:
+      - ./etc/nginx/conf.d:/etc/nginx/conf.d
+      - ./var/run/kege:/var/run/kege
+
+  api:
+    image: docker-registry.dshpr.com/kege-by-danshaders/api
+    volumes:
+      - ./var/lib/kege:/var/lib/kege
+      - ./var/run/kege:/var/run/kege
+      - ./var/run/postgresql:/var/run/postgresql
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: docker-registry.dshpr.com/kege-by-danshaders/postgres
+    volumes:
+      - ./var/lib/postgresql/data:/var/lib/postgresql/data
+      - ./var/run/postgresql:/var/run/postgresql
+
+    environment:
+      - POSTGRES_USER=kege
+      - POSTGRES_DB=kege
+
+    healthcheck:
+      test: "pg_isready -U kege"
+      interval: 3s
+      timeout: 5s
+      retries: 10

@@ -181,7 +181,7 @@ set(LEXBOR_LIBRARIES "${INSTALL_DIR}/lib/liblexbor_static.a")
 ExternalProject_Add(
 	FMTLOG
 	DOWNLOAD_COMMAND
-		rm -r <SOURCE_DIR> &&
+		rm -rf <SOURCE_DIR> &&
 		git clone https://github.com/MengRao/fmtlog.git <SOURCE_DIR> &&
 		cd <SOURCE_DIR> &&
 		git checkout dbb4bfe389b53c84a06fc9529ef57aa82afccb06 &&
@@ -255,7 +255,7 @@ set(EV_LIBRARIES "${INSTALL_DIR}/lib/libev.a")
 ExternalProject_Add(
 	NLOHMANN_JSON
 	DOWNLOAD_COMMAND
-		rm -r <SOURCE_DIR> && mkdir -p <SOURCE_DIR> && cd <SOURCE_DIR> &&
+		rm -rf <SOURCE_DIR> && mkdir -p <SOURCE_DIR> && cd <SOURCE_DIR> &&
 		git init && git remote add origin https://github.com/nlohmann/json.git &&
 		git fetch origin bc889afb4c5bf1c0d8ee29ef35eaaf4c8bef8a5d --depth=1 &&
 		git reset --hard FETCH_HEAD &&
@@ -392,4 +392,3 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -Og -g -fno-omit-frame-pointer -fs
 set(CMAKE_CXX_FLAGS_DEBUGL "${CMAKE_CXX_FLAGS} -Og -g -fno-omit-frame-pointer")
 set(CMAKE_CXX_FLAGS_THREAD "${CMAKE_CXX_FLAGS} -Og -g -fno-omit-frame-pointer -fsanitize=thread -DKEGE_SANITIZE_THREAD")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3")
-set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")

@@ -1,7 +1,7 @@
 {
 	"workers": 3,
 	"api_root": "/api",
-	"files_dir": "files",
+	"files_dir": "/var/lib/kege/files",
 
 	"fastcgi": {
 		"use_unix_sockets": true,

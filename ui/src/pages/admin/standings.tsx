@@ -1,4 +1,5 @@
 import { getGroups } from "admin";
+import { Modal } from "bootstrap";
 
 import * as jsx from "jsx";
 
@@ -8,11 +9,31 @@ import { requestU } from "utils/requests";
 import { Page, Router } from "utils/router";
 
 import { KimListResponse } from "proto/kims_pb";
+import { SubmissionSummaryRequest, SubmissionSummaryResponse } from "proto/standings_pb";
 import { StandingsRequest, StandingsResponse } from "proto/standings_pb";
 
 import { ButtonIcon } from "components/button-icon";
 
 import { requireAuth } from "pages/common";
+
+function convertToPrintableAnswer(answer: Uint8Array): string {
+  const textDecoder = new TextDecoder();
+  const answerParts = [];
+
+  let currentPartStart = 0;
+  for (let i = 0; i <= answer.length; ++i) {
+    if (i == answer.length || answer[i] == 0) {
+      answerParts.push(textDecoder.decode(answer.subarray(currentPartStart, i)));
+      currentPartStart = i + 1;
+    }
+  }
+  return answerParts.join("|");
+}
+
+function convertToPrintableTimestamp(timestamp: number): string {
+  const timeZoneOffset = new Date().getTimezoneOffset() * 60 * 1000;
+  return new Date(timestamp - timeZoneOffset).toISOString().split(".")[0].replaceAll("T", " ");
+}
 
 class StandingsPage extends Page {
   static URL = "admin/standings" as const;
@@ -57,6 +78,7 @@ class StandingsPage extends Page {
       }
     };
 
+    let modalVersion = 0;
     let problemIds: number[] = [];
     let problems: Map<number, [string, number]> = new Map();
     let participants: Map<
@@ -163,8 +185,52 @@ class StandingsPage extends Page {
                 elems.push(addCell(newPosition + 2));
                 elems.push(addCell(newPosition + 2, true));
                 elems.push(addCell(newPosition + 2));
-                for (const _ of problemIds) {
-                  elems.push(addCell(newPosition + 2));
+                for (const problemId of problemIds) {
+                  const elem = addCell(newPosition + 2);
+                  elems.push(elem);
+                  elem.addEventListener("click", async () => {
+                    participantNameSpan.innerText = participant.name;
+                    taskNameSpan.innerText = (problems.get(problemId) ?? ["?"])[0];
+                    (
+                      <span
+                        style="border-width: 2px;"
+                        class="spinner-border spinner-border-sm m-2"
+                      />
+                    ).replaceContentsOf(modalBody);
+                    modal.show();
+
+                    modalVersion++;
+                    const currentVersion = modalVersion;
+                    try {
+                      const summaryRequest = new SubmissionSummaryRequest()
+                        .setUserId(id)
+                        .setTaskId(problemId)
+                        .setKimId(parseInt(kimSelect.value));
+                      const summary = await requestU(
+                        SubmissionSummaryResponse,
+                        "/api/admin/standings/submission-summary",
+                        summaryRequest
+                      );
+                      if (modalVersion != currentVersion) {
+                        return;
+                      }
+
+                      modalBody.innerHTML = "";
+                      for (const answer of summary.getSubmissionsList()) {
+                        modalBody.appendChild(
+                          (
+                            <p class="m-0">
+                              <b>{convertToPrintableTimestamp(answer.getTimestamp())}</b> (
+                              {answer.getScore().toString()}):{" "}
+                              {convertToPrintableAnswer(answer.getAnswer_asU8())}
+                            </p>
+                          ).asElement()
+                        );
+                      }
+                    } catch (e) {
+                      showInternalErrorScreen(e);
+                    }
+                  });
                 }
                 elems[1].innerText = participant.name;
               }
@@ -211,7 +277,17 @@ class StandingsPage extends Page {
       updateTime();
     };
 
-    const [kimSelect, groupSelect, updateTimeSpan, tableWrap, standingsElem] = (
+    const [
+      kimSelect,
+      groupSelect,
+      updateTimeSpan,
+      tableWrap,
+      standingsElem,
+      modalElem,
+      taskNameSpan,
+      participantNameSpan,
+      modalBody,
+    ] = (
       <>
         <h2>Результаты</h2>
 
@@ -255,14 +331,41 @@ class StandingsPage extends Page {
             </div>
           </div>
         </div>
+
+        <div ref class="modal" tabindex="-1">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <div class="modal-title">
+                  <h4 class="mb-0">
+                    Ответы на задание <span ref />
+                  </h4>
+                  <span ref />
+                </div>
+                <button
+                  type="button"
+                  class="btn-close btn-no-shadow"
+                  data-bs-dismiss="modal"
+                ></button>
+              </div>
+              <div ref class="modal-body" />
+            </div>
+          </div>
+        </div>
       </>
     ).replaceContentsOf("main") as [
       HTMLSelectElement,
       HTMLSelectElement,
       HTMLSpanElement,
       HTMLDivElement,
+      HTMLDivElement,
+      HTMLDivElement,
+      HTMLSpanElement,
+      HTMLSpanElement,
       HTMLDivElement
     ];
+
+    const modal = new Modal(modalElem);
 
     const kimPromise = requestU(KimListResponse, "/api/kim/list");
     const groupsPromise = getGroups();

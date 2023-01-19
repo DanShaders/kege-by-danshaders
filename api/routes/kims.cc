@@ -228,6 +228,16 @@ coro<void> rejudge_submissions(fcgx::request_t* r) {
 
   utils::ok(r, utils::empty_payload{});
 }
+
+coro<void> delete_kim(fcgx::request_t* r) {
+  auto db = co_await async::pq::connection_pool::local->get_connection();
+  co_await require_auth(r, routes::Permission::ADMIN);
+
+  auto req = utils::expect<api::KimDeleteRequest>(r);
+  co_await db.exec(DELETE_KIM_REQUEST);
+
+  utils::ok(r, utils::empty_payload{});
+}
 }  // namespace
 
 ROUTE_REGISTER("/kim/$id", handle_kim_get_editable)
@@ -235,3 +245,4 @@ ROUTE_REGISTER("/kim/update", handle_kim_update)
 ROUTE_REGISTER("/kim/list", handle_kim_list)
 ROUTE_REGISTER("/kim/$id/revoke-access-keys", revoke_access_keys)
 ROUTE_REGISTER("/kim/$id/rejudge-submissions", rejudge_submissions)
+ROUTE_REGISTER("/kim/delete", delete_kim)

@@ -1,10 +1,10 @@
 import * as jsx from "jsx";
 
-import { toggleLoadingScreen } from "utils/common";
-import { requestU } from "utils/requests";
+import { toggleLoadingScreen, showInternalErrorScreen } from "utils/common";
+import { requestU, EmptyPayload } from "utils/requests";
 import { Router } from "utils/router";
 
-import { Kim, KimListResponse } from "proto/kims_pb";
+import { Kim, KimListResponse, KimDeleteRequest } from "proto/kims_pb";
 
 import { ButtonIcon } from "components/button-icon";
 import { factoryOf, ListComponent, ListEntry, listProviderOf } from "components/lists";
@@ -40,8 +40,15 @@ class KimEntry extends ListEntry<Kim.AsObject> {
                     if (!confirm("Вы уверены, что хотите удалить вариант?")) {
                       return;
                     }
-
-                    // TODO
+                    try {
+                      toggleLoadingScreen(true);
+                      await requestU(EmptyPayload, "/api/kim/delete", new KimDeleteRequest().setId(this.settings.id));
+                      this.parent.pop(this.i);
+                    } catch (e) {
+                      showInternalErrorScreen(e);
+                    } finally {
+                      toggleLoadingScreen(false);
+                    }
                   },
                 }}
               />

@@ -173,3 +173,5 @@ FROM
 WHERE
     id = map_id;
 
+-- Delete KIM
+UPDATE kims SET deleted = TRUE WHERE id = `req.id()`;

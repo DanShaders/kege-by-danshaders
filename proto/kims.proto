@@ -38,18 +38,7 @@ message KimListResponse {
 	repeated Kim kims = 1;
 }
 
-// Route /kim/list
-// message UserKimListResponse {
-// 	repeated Kim kim = 1;
-// }
-
-// message TaskAnswer {
-// 	int64 pos = 1;
-// 	bytes answer = 2;
-// 	int64 submit_time = 3;
-// }
-
-// Route /kim/user/answers
-// message KimUserAnswerListResponse {
-// 	repeated TaskAnswer	answers = 1;
-// }
+// Route /kim/delete
+message KimDeleteRequest {
+	int64 id = 1;
+}

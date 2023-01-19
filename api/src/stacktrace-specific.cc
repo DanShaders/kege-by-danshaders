@@ -44,8 +44,9 @@ static void print_exception(std::string const& what, fmtlog::LogLevel log_level,
 
   for (int lef = 0; lef < st->length;) {
     int rig = lef + 1;
-    for (; rig < st->length && !st->entry[rig].is_async; ++rig)
+    for (; rig < st->length && !st->entry[rig].is_async; ++rig) {
       ;
+    }
 
     bool should_print_awaiting = !!lef;
     for (auto s : std::span(st->entry + lef, rig - lef)) {

@@ -39,8 +39,8 @@ class StandingsPage extends Page {
   static URL = "admin/standings" as const;
   static CATEGORY = "standings" as const;
 
-  updateTimer?: number;
-  updateStandings?: number;
+  updateTimer?: NodeJS.Timer;
+  updateStandings?: NodeJS.Timer;
 
   override async mount(): Promise<void> {
     requireAuth(1);

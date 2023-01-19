@@ -206,7 +206,7 @@ class KimSolvePage extends Page {
   answerCount = 0;
 
   unloadable = true;
-  intervalId?: number;
+  intervalId?: NodeJS.Timer;
 
   private writeToken?: Uint8Array;
 

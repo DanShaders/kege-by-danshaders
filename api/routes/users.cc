@@ -2,10 +2,10 @@
 
 #include "async/coro.h"
 #include "async/pq.h"
-#include "users.pb.h"
-#include "users.sql.cc"
 #include "routes.h"
 #include "routes/session.h"
+#include "users.pb.h"
+#include "users.sql.cc"
 #include "utils/api.h"
 #include "utils/common.h"
 #include "utils/crypto.h"
@@ -26,7 +26,8 @@ coro<void> list_users_as_plain_text(fcgx::request_t* r) {
   }
 
   for (auto [id, username, display_name, permissions] : co_await db.exec(LIST_ALL_USERS_REQUEST)) {
-    r->out << fmt::format("id={} username={} display_name={} perms={}\n", id, username, display_name, permissions);
+    r->out << fmt::format("id={} username={} display_name={} perms={}\n", id, username,
+                          display_name, permissions);
   }
 
   int64_t prev_group = -1;
@@ -71,7 +72,7 @@ coro<void> replace_users(fcgx::request_t* r) {
   }
 
   std::vector<int64_t> user_ids;
-  for (auto [id]  : co_await db.exec(ADD_USERS_REQUEST)) {
+  for (auto [id] : co_await db.exec(ADD_USERS_REQUEST)) {
     user_ids.push_back(id);
   }
 

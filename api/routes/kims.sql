@@ -174,4 +174,28 @@ WHERE
     id = map_id;
 
 -- Delete KIM
-UPDATE kims SET deleted = TRUE WHERE id = `req.id()`;
+UPDATE
+    kims
+SET
+    deleted = TRUE
+WHERE
+    id = `req.id()`;
+
+-- Clone answers
+INSERT INTO users_answers (kim_id, task_id, user_id, answer, score, submit_time)
+SELECT DISTINCT ON (task_id, user_id)
+    `req.to_id()`,
+    task_id,
+    user_id,
+    answer,
+    score,
+    submit_time
+FROM
+    users_answers
+WHERE
+    kim_id = `req.from_id()`
+ORDER BY
+    task_id,
+    user_id,
+    submit_time DESC;
+

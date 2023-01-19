@@ -42,3 +42,9 @@ message KimListResponse {
 message KimDeleteRequest {
 	int64 id = 1;
 }
+
+// Route /kim/clone-answers
+message CloneAnswersRequest {
+	int64 from_id = 1;
+	int64 to_id = 2;
+}

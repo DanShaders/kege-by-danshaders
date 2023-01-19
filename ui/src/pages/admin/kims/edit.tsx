@@ -14,7 +14,7 @@ import { EmptyPayload, requestU } from "utils/requests";
 import { Router } from "utils/router";
 import { SyncController, SynchronizablePage } from "utils/sync-controller";
 
-import { Kim } from "proto/kims_pb";
+import { Kim, CloneAnswersRequest } from "proto/kims_pb";
 import * as diff from "proto/kims_pb_diff";
 import { TaskType } from "proto/task-types_pb";
 
@@ -419,7 +419,7 @@ class KimEditComponent extends Component<
       (settings) => Object.assign(settings, staticGroupSettings)
     );
 
-    const [elem, nameTextarea, groupAddModalElem, groupSelect] = (
+    const [elem, nameTextarea, cloneWithAnswersInput, groupAddModalElem, groupSelect] = (
       <div class="container-fluid">
         <div class={S_ROW}>
           <label class={S_LABEL}>Название</label>
@@ -529,7 +529,7 @@ class KimEditComponent extends Component<
           <label class={S_LABEL}>Действия</label>
           <div class={S_INPUT}>
             <button
-              class="btn btn-outline-secondary mb-1"
+              class="btn btn-outline-secondary mb-2"
               onclick={async (event: Event): Promise<void> => {
                 try {
                   toggleLoadingScreen(true);
@@ -547,7 +547,7 @@ class KimEditComponent extends Component<
             <br />
 
             <button
-              class="btn btn-outline-secondary mb-1"
+              class="btn btn-outline-secondary"
               onclick={async (event: Event): Promise<void> => {
                 try {
                   toggleLoadingScreen(true);
@@ -563,6 +563,9 @@ class KimEditComponent extends Component<
                     );
                   }
                   await requestU(EmptyPayload, `/api/kim/update`, clone);
+                  if (cloneWithAnswersInput.checked) {
+                    await requestU(EmptyPayload, `/api/kim/clone-answers`, new CloneAnswersRequest().setFromId(this.settings.id).setToId(cloneId));
+                  }
 
                   Router.instance.redirect(
                     `admin/kims/edit?id=${cloneId}&back=${this.settings.backURL}`
@@ -577,10 +580,13 @@ class KimEditComponent extends Component<
             >
               Клонировать КИМ
             </button>
-            <br />
+            <div class="mb-2 d-flex align-items-center">
+              <input ref id="clone-answers" class="form-check-input" type="checkbox" checked />
+              <label for="clone-answers" class="ms-1">вместе с ответами участников</label>
+            </div>
 
             <button
-              class="btn btn-outline-secondary mb-1"
+              class="btn btn-outline-secondary mb-2"
               onclick={async (event: Event): Promise<void> => {
                 try {
                   toggleLoadingScreen(true);
@@ -646,7 +652,7 @@ class KimEditComponent extends Component<
           </div>
         </div>
       </div>
-    ).create() as [HTMLElement, HTMLTextAreaElement, HTMLDivElement, HTMLSelectElement];
+    ).create() as [HTMLElement, HTMLTextAreaElement, HTMLInputElement, HTMLDivElement, HTMLSelectElement];
 
     const groupAddModal = new Modal(groupAddModalElem);
 

@@ -388,6 +388,7 @@ class KimEditComponent extends Component<
   diff.DiffableKim & {
     syncController: SyncController<any>;
     groupsInfo: Map<number, string>;
+    backURL: string;
   } & TaskTypeRequired
 > {
   createElement(): HTMLElement {
@@ -523,26 +524,12 @@ class KimEditComponent extends Component<
                 {groupSet.elem}
               </table>
             </div>
+          </div>
 
+          <label class={S_LABEL}>Действия</label>
+          <div class={S_INPUT}>
             <button
-              class="btn btn-outline-secondary me-2"
-              onclick={async (event: Event): Promise<void> => {
-                try {
-                  toggleLoadingScreen(true);
-                  await requestU(EmptyPayload, `/api/kim/${this.settings.id}/revoke-access-keys`);
-                } catch (e) {
-                  showInternalErrorScreen(e);
-                } finally {
-                  toggleLoadingScreen(false);
-                }
-                (event.target as HTMLButtonElement).blur();
-              }}
-            >
-              Revoke access keys
-            </button>
-
-            <button
-              class="btn btn-outline-secondary"
+              class="btn btn-outline-secondary mb-1"
               onclick={async (event: Event): Promise<void> => {
                 try {
                   toggleLoadingScreen(true);
@@ -555,8 +542,60 @@ class KimEditComponent extends Component<
                 (event.target as HTMLButtonElement).blur();
               }}
             >
-              Rejudge submissions
+              Перетестировать ответы
             </button>
+            <br />
+
+            <button
+              class="btn btn-outline-secondary mb-1"
+              onclick={async (event: Event): Promise<void> => {
+                try {
+                  toggleLoadingScreen(true);
+
+                  const cloneId = await dbId();
+                  const clone = new Kim().setId(cloneId).setName(this.settings.name + " – копия");
+                  for (const [id, task] of this.settings.tasks.entries()) {
+                    clone.addTasks(
+                      new Kim.TaskEntry()
+                        .setId(id)
+                        .setCurrPos(-1)
+                        .setSwapPos(task.currPos)
+                    );
+                  }
+                  await requestU(EmptyPayload, `/api/kim/update`, clone);
+
+                  Router.instance.redirect(
+                    `admin/kims/edit?id=${cloneId}&back=${this.settings.backURL}`
+                  );
+                } catch (e) {
+                  showInternalErrorScreen(e);
+                } finally {
+                  toggleLoadingScreen(false);
+                }
+                (event.target as HTMLButtonElement).blur();
+              }}
+            >
+              Клонировать КИМ
+            </button>
+            <br />
+
+            <button
+              class="btn btn-outline-secondary mb-1"
+              onclick={async (event: Event): Promise<void> => {
+                try {
+                  toggleLoadingScreen(true);
+                  await requestU(EmptyPayload, `/api/kim/${this.settings.id}/revoke-access-keys`);
+                } catch (e) {
+                  showInternalErrorScreen(e);
+                } finally {
+                  toggleLoadingScreen(false);
+                }
+                (event.target as HTMLButtonElement).blur();
+              }}
+            >
+              Отозвать ключи доступа
+            </button>
+            <br />
           </div>
         </div>
 
@@ -648,6 +687,7 @@ class KimEditPage extends SynchronizablePage<diff.DiffableKim> {
         syncController: this.syncController,
         taskTypes: await getTaskTypes(),
         groupsInfo: await getGroups(),
+        backURL: this.params.get("back") ?? "",
       }),
       null
     );

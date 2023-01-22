@@ -58,23 +58,6 @@ export const headerSettings = {
   },
 };
 
-let cachedTaskTypes: Map<number, TaskType.AsObject>;
-
-export async function getTaskTypes(): Promise<Map<number, TaskType.AsObject>> {
-  if (!cachedTaskTypes) {
-    cachedTaskTypes = new Map();
-    try {
-      const result = (await requestU(TaskTypeListResponse, "/api/task-types/list")).toObject();
-      for (const type of result.typeList) {
-        cachedTaskTypes.set(type.id, type);
-      }
-    } catch (e) {
-      showInternalErrorScreen(e);
-    }
-  }
-  return cachedTaskTypes;
-}
-
 let cachedGroups: Map<number, string>;
 
 export async function getGroups(): Promise<Map<number, string>> {

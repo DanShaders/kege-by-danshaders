@@ -1,4 +1,4 @@
-import { getTaskTypes } from "admin";
+import { getTaskTypes } from "app";
 
 import * as jsx from "jsx";
 

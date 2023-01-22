@@ -1,4 +1,6 @@
-import { getGroups, getTaskTypes } from "admin";
+import { getGroups } from "admin";
+import { getTaskTypes } from "app";
+
 import { Modal } from "bootstrap";
 
 import * as jsx from "jsx";

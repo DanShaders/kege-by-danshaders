@@ -5,15 +5,16 @@
   "author": "Dan Klishch",
   "license": "MIT",
   "scripts": {
-    "build": "node build.js dev",
-    "watch": "node build.js watch",
-    "build-prod": "node build.js prod",
+    "build": "node build.mjs dev",
+    "watch": "node build.mjs watch",
+    "build-prod": "node build.mjs prod",
     "prettify": "prettier --write .",
     "lint": "shopt -s globstar && GLOBIGNORE='src/proto/*' && eslint src/**/*.ts* build.js",
     "lint-fix": "shopt -s globstar && GLOBIGNORE='src/proto/*' && eslint --fix src/**/*.ts* build.js",
     "gen-proto": "mkdir -p src/proto && protoc --plugin=\"protoc-gen-ts=./node_modules/.bin/protoc-gen-ts\" --plugin=\"protoc-gen-diff=/usr/local/bin/diff-proto\" --js_out=\"import_style=commonjs,binary:./src/proto\" --ts_out=\"./src/proto\" --diff_out=\"./src/proto\" -I ../proto `find ../proto -type f -printf \"%f \"` && sed -i 's/in: /pb_in: /g' src/proto/diff_pb.d.ts"
   },
   "devDependencies": {
+    "@chialab/esbuild-plugin-html": "github:DanShaders/esbuild-plugin-html",
     "@types/bootstrap": "^5.2.6",
     "@types/google-protobuf": "^3.15.6",
     "@types/katex": "^0.16.0",

@@ -33,6 +33,17 @@ type PageClass = {
   new (params: URLSearchParams): Page;
 };
 
+const trimmedRoot = window.documentRoot.substr(0, window.documentRoot.length - 1);
+
+export function urlRelativeToRoot(url: string): string | false {
+  if (url.startsWith(window.documentRoot)) {
+    return url.substr(window.documentRoot.length);
+  } else if (url === trimmedRoot) {
+    return "";
+  }
+  return false;
+}
+
 export class Router extends EventTarget {
   private static _instance: Router;
   private publicRoutes: Map<string, [Handler, PageCategory]>;
@@ -45,8 +56,11 @@ export class Router extends EventTarget {
   pageInstance?: Page;
 
   private static locationChangeListener(e: Event): void {
-    e.preventDefault();
-    Router.instance.redirect(location.pathname.substr(1) + location.search, false, true);
+    const newPathname = urlRelativeToRoot(location.pathname);
+    if (newPathname !== false) {
+      e.preventDefault();
+      Router.instance.redirect(newPathname + location.search, false, true);
+    }
   }
 
   private setPageCategory(pageCategory: string): void {
@@ -88,7 +102,7 @@ export class Router extends EventTarget {
   }
 
   setUrl(url: string): void {
-    history.replaceState(undefined, "", "/" + url);
+    history.replaceState(undefined, "", window.documentRoot + url);
     this.currentURL = url;
     this.currentPage = url.split("?", 2)[0];
   }
@@ -116,7 +130,7 @@ export class Router extends EventTarget {
     let handler = this.publicRoutes.get(page);
 
     if (handler && !historyUpdated) {
-      history.pushState(undefined, "", "/" + url);
+      history.pushState(undefined, "", window.documentRoot + url);
     }
     if (handler == null && isPrivate) {
       const privateRoute = this.privateRoutes.get(page);

@@ -1,5 +1,5 @@
 import { requireAuth, userInfo } from "./common";
-import { getTaskTypes } from "admin";
+import { getTaskTypes } from "app";
 import katex from "katex";
 
 import { showInternalErrorScreen, toggleLoadingScreen } from "utils/common";
@@ -12,6 +12,9 @@ import { TaskType } from "proto/task-types_pb";
 import { Task } from "proto/tasks_pb";
 
 import { Component } from "components/component";
+
+import watchIcon from "static/watch.png";
+import fileIcon from "static/file.png";
 
 type TaskSettings = Task & {
   page: KimSolvePage;
@@ -66,7 +69,7 @@ class TaskComponent extends Component<TaskSettings> {
               download={attachment.getFilename()}
               href={`/api/attachment/${attachment.getHash()}`}
             >
-              <img src="/file.png" />
+              <img src={window.documentRoot + fileIcon} />
               {attachment.getFilename()}
             </a>
           </>
@@ -329,7 +332,7 @@ class KimSolvePage extends Page {
       <>
         <div class="solve-header fixed-top">
           <span class="solve-clock">
-            <img src="watch.png" />
+            <img src={window.documentRoot + watchIcon} />
             {this.countdown}
           </span>
           <span>КИМ № {this.kim.getId().toString().padStart(8, "0")}</span>

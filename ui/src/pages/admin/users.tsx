@@ -25,7 +25,7 @@ async function showUsersPage(): Promise<void> {
       user). После изменений надо перезагрузить страницу (можно без сброса кэша), чтобы новый
       список групп подхватился (переход по ссылке внутри приложения ничего не перезагружает).
       <br />
-      <textarea ref></textarea>
+      <textarea style="width: 100%;" ref /><br />
       <button
         onclick={async (): Promise<void> => {
           try {

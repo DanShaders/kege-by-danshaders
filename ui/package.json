@@ -14,28 +14,29 @@
     "gen-proto": "mkdir -p src/proto && protoc --plugin=\"protoc-gen-ts=./node_modules/.bin/protoc-gen-ts\" --plugin=\"protoc-gen-diff=/usr/local/bin/diff-proto\" --js_out=\"import_style=commonjs,binary:./src/proto\" --ts_out=\"./src/proto\" --diff_out=\"./src/proto\" -I ../proto `find ../proto -type f -printf \"%f \"` && sed -i 's/in: /pb_in: /g' src/proto/diff_pb.d.ts"
   },
   "devDependencies": {
-    "@types/bootstrap": "^5.2.0",
+    "@types/bootstrap": "^5.2.6",
     "@types/google-protobuf": "^3.15.6",
-    "@types/katex": "^0.14.0",
-    "@types/quill": "^2.0.9",
+    "@types/katex": "^0.16.0",
+    "@types/quill": "^2.0.10",
     "@types/ungap__structured-clone": "^0.3.0",
-    "@typescript-eslint/eslint-plugin": "^5.31.0",
-    "@typescript-eslint/parser": "^5.31.0",
-    "esbuild": "^0.14.51",
-    "eslint": "^8.20.0",
+    "@typescript-eslint/eslint-plugin": "^5.48.2",
+    "@typescript-eslint/parser": "^5.48.2",
+    "esbuild": "^0.17.4",
+    "esbuild-plugin-clean": "^1.0.1",
+    "eslint": "^8.32.0",
     "eslint-config-google": "^0.14.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-simple-import-sort": "^7.0.0",
-    "prettier": "^2.7.1",
+    "eslint-config-prettier": "^8.6.0",
+    "eslint-plugin-simple-import-sort": "^9.0.0",
+    "prettier": "^2.8.3",
     "ts-protoc-gen": "github:DanShaders/ts-protoc-gen#set-return-type",
-    "typescript": "^4.7.4"
+    "typescript": "^4.9.4"
   },
   "dependencies": {
     "@types/papaparse": "^5.3.7",
     "@ungap/structured-clone": "^1.0.1",
-    "async-mutex": "^0.3.2",
-    "bootstrap": "^5.2.0",
-    "google-protobuf": "^3.21.0",
+    "async-mutex": "^0.4.0",
+    "bootstrap": "^5.2.3",
+    "google-protobuf": "^3.21.2",
     "papaparse": "^5.3.2",
     "quill": "github:DanShaders/quill#develop"
   }

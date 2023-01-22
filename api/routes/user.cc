@@ -32,8 +32,9 @@ coro<void> handle_user_login(fcgx::request_t* r) {
   auto session_id = utils::urandom(32);
   co_await routes::session::save(session, session_id);
 
+  // FIXME: We need to enable SSL and not to remove "Secure;" here
   r->headers.push_back(
-      fmt::format("Set-Cookie: kege-session={}; Path=/; Max-Age=86400; Secure; HttpOnly",
+      fmt::format("Set-Cookie: kege-session={}; Path=/; Max-Age=86400; HttpOnly",
                   utils::b16_encode(session_id)));
 
   utils::ok<api::UserInfo>(r, session->serialize());

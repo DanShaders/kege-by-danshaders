@@ -267,9 +267,9 @@ def main():
 
               subprocess.run(["docker", "build", "-t", f"{DOCKER_REGISTRY}kege-by-danshaders/api", build_root], check=True)
 
-            case ["nginx-build-image"]:
+            case ["nginx-build-image", document_root]:
               kill_esbuild()
-              exec_in(builder_hash, "cd /kege/src/ui && rm -r /kege/src/ui/build/*; npm run gen-proto && npm run build-prod")
+              exec_in(builder_hash, f"cd /kege/src/ui && rm -r /kege/src/ui/build/*; npm run gen-proto && node build.mjs prod {document_root}")
 
               build_root = ROOT / "build/nginx-root"
               subprocess.run(["sh", "-c", f"rm -r {build_root}; mkdir -p {build_root}"], check=False)

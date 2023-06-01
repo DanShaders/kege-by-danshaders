@@ -3,9 +3,10 @@ import argparse
 from collections import namedtuple
 import logging as l
 from joblib import Parallel, delayed
+import os
 import pathlib
-import shutil
 import re
+import shutil
 import subprocess
 import threading
 
@@ -13,7 +14,17 @@ import threading
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DOCKER_REGISTRY = "docker-registry.dshpr.com/"
 
-Container = namedtuple("Container", ["build", "image", "name", "options", "command", "bootstrap"], defaults=([],))
+Container = namedtuple("Container", ["build", "image", "name", "options", "command", "bootstrap", "supply_uid"], defaults=([], False))
+
+BUILD_TREE = [
+  "build/bin",
+  "build/etc/nginx/conf.d",
+  "build/var/lib/kege",
+  "build/var/lib/postgresql",
+  "build/var/run/kege",
+  "build/var/run/postgresql",
+  "build/var/www/html",
+]
 
 BUILDER = Container(
   build=f"{ROOT}/meta/builder",
@@ -35,7 +46,8 @@ BUILDER = Container(
     "cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=g++-12 -DCMAKE_C_COMPILER=gcc-12 -S /kege/src/api -B /kege/build/debug",
     "cmake -G Ninja -DCMAKE_BUILD_TYPE=Thread -DCMAKE_CXX_COMPILER=g++-12 -DCMAKE_C_COMPILER=gcc-12 -S /kege/src/api -B /kege/build/thread",
     "cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++-12 -DCMAKE_C_COMPILER=gcc-12 -S /kege/src/api -B /kege/build/release",
-  ]
+  ],
+  supply_uid=True,
 )
 
 DB = Container(
@@ -50,12 +62,12 @@ DB = Container(
     "-e", "POSTGRES_PASSWORD=password",
     "-e", "POSTGRES_DB=kege",
   ],
-  command=["sh", "-c", "trap : TERM INT; tail -f /dev/null & wait"]
+  command=["sh", "-c", "trap : TERM INT; tail -f /dev/null & wait"],
 )
 
 NGINX = Container(
   build="dockerhub",
-  image="nginx:1.23-alpine",
+  image="nginx:1.25-alpine",
   name="managed-kege-nginx",
   options=[
     "-v", f"{ROOT}/build/etc/nginx/conf.d:/etc/nginx/conf.d",
@@ -64,7 +76,7 @@ NGINX = Container(
     "-v", f"{ROOT}/ui/static:/var/www/html/static",
     "-p", "5001:80"
   ],
-  command=["nginx", "-g", "daemon off;"]
+  command=[],
 )
 
 def expect_one_hash(command):
@@ -83,7 +95,7 @@ def expect_one_hash(command):
     raise Exception(f"Expected hash list, got ({process.stdout}) (while executing {command=})")
 
 
-def find_or_build_docker_image(tag, dockerfile):
+def find_or_build_docker_image(tag, dockerfile, supply_uid):
   find_hash = lambda: expect_one_hash([
     "docker", "images", "--no-trunc", "-qf",
     "reference=" + ("*/" + tag if dockerfile != "dockerhub" else tag)
@@ -95,7 +107,10 @@ def find_or_build_docker_image(tag, dockerfile):
     if dockerfile == "dockerhub":
       subprocess.run(["docker", "pull", tag], check=True)
     else:
-      subprocess.run(["docker", "build", "-t", f"{DOCKER_REGISTRY}{tag}", dockerfile], check=True)
+      command = ["docker", "build", "-t", f"{DOCKER_REGISTRY}{tag}", dockerfile]
+      if supply_uid:
+        command += ["--build-arg", f"uid={os.getuid()}"]
+      subprocess.run(command, check=True)
 
     image_hash = find_hash()
     if image_hash is None:
@@ -110,7 +125,7 @@ def exec_in(container, command, check=True):
 
 
 def find_or_create_container(container):
-  image_hash = find_or_build_docker_image(container.image, container.build)
+  image_hash = find_or_build_docker_image(container.image, container.build, container.supply_uid)
 
   find_hash = lambda: expect_one_hash(["docker", "ps", "--no-trunc", "-aqf", f"ancestor={image_hash}", "-f", f"name={container.name}"])
   container_hash = find_hash()
@@ -168,13 +183,18 @@ def main():
 
   match options.command:
     case "run":
+      for directory in BUILD_TREE:
+        (ROOT / directory).mkdir(parents=True, exist_ok=True)
+
       [nginx_hash, db_hash, builder_hash] = Parallel(n_jobs=3, prefer="threads") \
         (delayed(find_or_create_container)(container) for container in [NGINX, DB, BUILDER])
 
       if not (ROOT / "build/bin/sql-typer").exists():
-        exec_in(builder_hash, "ninja -C /kege/build/sql-typer install")
+        exec_in(builder_hash, "ninja -C /kege/build/sql-typer")
+        exec_in(builder_hash, "sudo ninja -C /kege/build/sql-typer install")
       if not (ROOT / "build/bin/diff-proto").exists():
-        exec_in(builder_hash, "ninja -C /kege/build/diff-proto install")
+        exec_in(builder_hash, "ninja -C /kege/build/diff-proto")
+        exec_in(builder_hash, "sudo ninja -C /kege/build/diff-proto install")
       copy_if_required("meta/config.json", "var/lib/kege/config.json")
       copy_if_required("meta/nginx-devel.conf", "etc/nginx/conf.d/nginx.conf")
 

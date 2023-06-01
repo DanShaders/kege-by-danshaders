@@ -52,4 +52,14 @@ RUN mkdir -p /third-party/fmt && \
     ninja -C Build install && \
     cd / && rm -r /third-party/
 
-RUN git config --global init.defaultBranch master
+# Remaining configuration
+ARG uid
+
+RUN git config --global init.defaultBranch master && \
+    ln -s /usr/bin/g++-12 /usr/bin/g++ && \
+    useradd -u $uid -m user && \
+    install -d -m 0755 -o user -g user /kege && \
+    apt-get install -y sudo && \
+    echo 'user ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+USER user

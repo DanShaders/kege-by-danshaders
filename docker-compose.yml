@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  nginx:
+    image: nginx:1.25-alpine
+
+    ports:
+      - "81:80"
+
+    volumes:
+      - ./meta/nginx:/etc/nginx/conf.d
+      - ./build/run:/var/run/kege
+
+  db:
+    image: postgres:15.4-alpine
+
+    volumes:
+      - ./build/db:/var/lib/postgresql/data
+      - ./build/run:/var/run/postgresql
+
+    environment:
+      - POSTGRES_USER=kege
+      - POSTGRES_DB=kege
+      - POSTGRES_PASSWORD=kege
+
+    healthcheck:
+      test: "pg_isready -U kege"
+      interval: 3s
+      timeout: 5s
+      retries: 10

@@ -1,15 +1,3 @@
-cmake_minimum_required(VERSION 3.10)
-
-project(KEGE VERSION 0.0.0)
-
-include(FindPkgConfig)
-include(ExternalProject)
-include(FetchContent)
-include(FindProtobuf)
-
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
-
 if (CMAKE_BUILD_TYPE STREQUAL Release)
 	set(KEGE_EXCEPTION_STACKTRACE 0)
 	set(KEGE_LOG_DEBUG_ENABLED 0)
@@ -20,17 +8,10 @@ endif()
 configure_file(include/KEGE.in.h KEGE.h)
 
 set(
-	SQL_TYPER_PATH
-	/usr/local/bin/sql-typer
-	CACHE STRING "Path to sql-typer binary"
-)
-
-set(
 	DB_CONNECT_STR
-	"postgresql://kege@/kege"
+	"host=${CMAKE_BINARY_DIR}/../run user=kege dbname=kege"
 	CACHE STRING "Connection string for database for sql-typer"
 )
-
 
 # ==== Sources ====
 set(
@@ -106,12 +87,11 @@ foreach(filename IN LISTS KEGE_SQL_SOURCES)
 		${filename}.cc
 	)
 	add_custom_command(
-		OUTPUT ${CMAKE_SOURCE_DIR}/${filename}.cc
-		COMMAND ${SQL_TYPER_PATH} ${DB_CONNECT_STR} ${CMAKE_SOURCE_DIR}/${filename}
+		OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${filename}.cc
+		COMMAND $<TARGET_FILE:sql-typer> ${DB_CONNECT_STR} ${CMAKE_CURRENT_SOURCE_DIR}/${filename}
 		DEPENDS
 			${filename}
 			../meta/postgres/db.sql
-			/usr/local/bin/sql-typer
 	)
 endforeach()
 
@@ -136,23 +116,6 @@ else()
 	set(BACKTRACE_INCLUDE_DIRS "")
 	set(BACKTRACE_LIBRARIES "")
 endif()
-
-
-# ==== Target cpp-protoc-initializers ====
-ExternalProject_Add(
-	CPP_PROTOC_INITIALIZERS
-	GIT_REPOSITORY "https://github.com/DanShaders/cpp-protoc-initializers.git"
-	GIT_TAG "1e9148ddc1748f6f74378d04dbce2f71d813ac71"
-	CMAKE_ARGS
-		-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-		-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-		-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-		-DCMAKE_BUILD_TYPE=Release
-	EXCLUDE_FROM_ALL
-	UPDATE_COMMAND ""
-)
-ExternalProject_Get_property(CPP_PROTOC_INITIALIZERS INSTALL_DIR)
-set(CPP_PROTOC_INITIALIZERS_PATH "${INSTALL_DIR}/bin")
 
 
 # ==== Target lexbor ====
@@ -184,9 +147,8 @@ ExternalProject_Add(
 		rm -rf <SOURCE_DIR> &&
 		git clone https://github.com/MengRao/fmtlog.git <SOURCE_DIR> &&
 		cd <SOURCE_DIR> &&
-		git checkout dbb4bfe389b53c84a06fc9529ef57aa82afccb06 &&
+		git checkout 01b6cd339101f36c37e50938ec11918c6229b2de &&
 		git submodule update --init ./fmt &&
-		echo > ./bench/CMakeLists.txt &&
 		echo > ./test/CMakeLists.txt &&
 		cd -
 	CMAKE_ARGS
@@ -274,14 +236,12 @@ set(NLOHMANN_JSON_INCLUDE_DIRS "${INSTALL_DIR}/include")
 
 
 # ==== *.proto -> *.pb.cc ====
-find_package(Protobuf REQUIRED)
-
 set(proto_cxx_all)
 protobuf_generate(
 	APPEND_PATH OUT_VAR proto_cxx_all
 	LANGUAGE cpp_initializers
 	GENERATE_EXTENSIONS .pb.h .pb.cc
-	PLUGIN protoc-gen-cpp_initializers=${CPP_PROTOC_INITIALIZERS_PATH}/protoc-gen-cpp_initializers
+	PLUGIN protoc-gen-cpp_initializers=$<TARGET_FILE:cpp-protoc-initializers>
 	PROTOS ${PROTO_SOURCES}
 )
 foreach(_file ${proto_cxx_all})
@@ -294,57 +254,43 @@ endforeach()
 # ==== Target KEGE_BASE ====
 add_library(KEGE_BASE INTERFACE)
 
-add_dependencies(KEGE_BASE CPP_PROTOC_INITIALIZERS LIBBACKTRACE EV LEXBOR FMTLOG NLOHMANN_JSON)
-pkg_check_modules(CURL REQUIRED libcurl)
-pkg_check_modules(FCGI REQUIRED fcgi)
-pkg_check_modules(FMT REQUIRED fmt)
-pkg_check_modules(OPENSSL REQUIRED openssl)
-pkg_check_modules(PQ REQUIRED libpq)
+add_dependencies(KEGE_BASE LIBBACKTRACE EV LEXBOR FMTLOG NLOHMANN_JSON) 
+pkg_check_modules(CURL REQUIRED IMPORTED_TARGET libcurl)
+pkg_check_modules(FCGI REQUIRED IMPORTED_TARGET fcgi)
+pkg_check_modules(FMT REQUIRED IMPORTED_TARGET fmt)
+pkg_check_modules(OPENSSL REQUIRED IMPORTED_TARGET openssl)
+pkg_check_modules(PQ REQUIRED IMPORTED_TARGET libpq)
 
 
 target_include_directories(
 	KEGE_BASE INTERFACE
-	"${PROJECT_BINARY_DIR}"
-	"${CMAKE_CURRENT_BINARY_DIR}"
-	"${PROJECT_SOURCE_DIR}/include"
 
+	${CMAKE_CURRENT_SOURCE_DIR}/include
+	${CMAKE_CURRENT_BINARY_DIR}
 	${BACKTRACE_INCLUDE_DIRS}
-	${CURL_INCLUDE_DIRS}
 	${EV_INCLUDE_DIRS}
-	${FCGI_INCLUDE_DIRS}
-	${FMT_INCLUDE_DIRS}
 	${FMTLOG_INCLUDE_DIRS}
 	${LEXBOR_INCLUDE_DIRS}
 	${NLOHMANN_JSON_INCLUDE_DIRS}
-	${OPENSSL_INCLUDE_DIRS}
-	${PQ_INCLUDE_DIRS}
-	${PROTOBUF_INCLUDE_DIRS}
 	${URIPARSER_INCLUDE_DIRS}
-)
-
-target_compile_options(
-	KEGE_BASE INTERFACE
-	-Wall -Wextra -Wshadow -Wconversion -masm=intel
-	-Wno-missing-field-initializers # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=82283
-	-fdiagnostics-color=always # https://github.com/ninja-build/ninja/issues/174
 )
 
 target_link_libraries(
 	KEGE_BASE INTERFACE
 	${BACKTRACE_LIBRARIES}
-	${CURL_LIBRARIES}
 	${EV_LIBRARIES}
-	${FCGI_LIBRARIES}
-	${FMT_LIBRARIES}
 	${FMTLOG_LIBRARIES}
 	${LEXBOR_LIBRARIES}
 	${NLOHMANN_JSON_LIBRARIES}
-	${OPENSSL_LIBRARIES}
-	${PQ_LIBRARIES}
-	${PROTOBUF_LIBRARIES}
 	${URIPARSER_LIBRARIES}
 	pthread
 	dl
+	PkgConfig::CURL
+	PkgConfig::FCGI
+	PkgConfig::FMT
+	PkgConfig::OPENSSL
+	PkgConfig::PQ
+	protobuf::libprotobuf
 )
 
 target_precompile_headers(
@@ -358,32 +304,6 @@ add_executable(KEGE ${KEGE_SOURCES} ${PROTO_CXX_SRC})
 target_link_libraries(KEGE PRIVATE KEGE_BASE)
 if (CMAKE_BUILD_TYPE STREQUAL Release)
 	set_property(TARGET KEGE PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-endif()
-
-
-# ==== Target format ====
-find_program(CLANG_FORMAT "clang-format")
-find_program(PG_FORMAT "pg_format")
-
-if(CLANG_FORMAT AND PG_FORMAT)
-	file(
-		GLOB_RECURSE ALL_CXX_SOURCE_FILES
-		*.cc *.h
-	)
-	foreach(filename IN LISTS KEGE_SQL_SOURCES)
-		add_custom_command(
-			OUTPUT ${CMAKE_SOURCE_DIR}/${filename}.formatted
-			COMMAND ${PG_FORMAT} -i ${CMAKE_SOURCE_DIR}/${filename}
-			DEPENDS ${filename}
-		)
-		list(APPEND PG_FORMAT_SOURCES ${CMAKE_SOURCE_DIR}/${filename}.formatted)
-	endforeach()
-
-	add_custom_target(
-		format
-		COMMAND ${CLANG_FORMAT} -i ${ALL_CXX_SOURCE_FILES}
-		DEPENDS ${PG_FORMAT_SOURCES}
-	)
 endif()
 
 

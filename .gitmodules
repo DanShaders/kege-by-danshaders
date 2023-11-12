@@ -1,0 +1,3 @@
+[submodule "tools/cpp-protoc-initializers"]
+	path = tools/cpp-protoc-initializers
+	url = https://github.com/DanShaders/cpp-protoc-initializers.git
